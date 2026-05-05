@@ -1971,9 +1971,22 @@
       pill.innerHTML = `<span class="dot"></span>${escapeHTML(text)}`;
     }
 
+    function getAddonBaseUrl() {
+      // Home Assistant Ingress mounts add-ons below /api/hassio_ingress/<token>/.
+      // Absolute /api/... requests would bypass the add-on, so API calls are
+      // resolved against the current ingress mount when that path is present.
+      const ingressMatch = window.location.pathname.match(/^(.*\/api\/hassio_ingress\/[^/]+)(?:\/.*)?$/);
+      if (ingressMatch) return `${window.location.origin}${ingressMatch[1]}/`;
+      return new URL('.', window.location.href).href;
+    }
+
+    function addonApiUrl(path) {
+      return new URL(path.replace(/^\/+/, ''), getAddonBaseUrl()).toString();
+    }
+
     async function apiJson(path, options = {}) {
       const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-      const response = await fetch(path, { ...options, headers });
+      const response = await fetch(addonApiUrl(path), { ...options, headers });
       const contentType = response.headers.get('content-type') || '';
       const text = await response.text();
       const payload = contentType.includes('application/json') && text

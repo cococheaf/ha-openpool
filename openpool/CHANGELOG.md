@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Fix Home Assistant Ingress API paths so frontend requests reach the add-on proxy.
+
 ## 0.1.2
 
 - Connect UI cards and controls to the Home Assistant API proxy.
