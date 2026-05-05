@@ -1,0 +1,37 @@
+name: OpenPool
+version: "0.1.0"
+slug: openpool
+description: OpenSource Pool System Controller for pump, chlorinator, heat pump and PV surplus control.
+url: https://github.com/cococheaf/ha-openpool
+arch:
+  - armhf
+  - aarch64
+  - amd64
+  - i386
+  - armv7
+startup: application
+boot: auto
+init: false
+stage: experimental
+ingress: true
+ingress_port: 8099
+ingress_stream: true
+panel_icon: mdi:pool
+panel_title: OpenPool
+panel_admin: false
+webui: http://[HOST]:[PORT:8099]/
+homeassistant_api: true
+hassio_api: true
+hassio_role: default
+ports:
+  8099/tcp: null
+ports_description:
+  8099/tcp: OpenPool web interface
+watchdog: http://[HOST]:[PORT:8099]/healthz
+map:
+  - type: addon_config
+    read_only: false
+options:
+  log_level: info
+schema:
+  log_level: list(trace|debug|info|notice|warning|error|fatal)

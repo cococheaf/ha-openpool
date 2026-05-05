@@ -1,0 +1,6 @@
+configuration:
+  log_level:
+    name: Log-Level
+    description: Detailgrad der OpenPool Add-on Logs.
+network:
+  8099/tcp: OpenPool Weboberfläche
