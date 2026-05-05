@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Small Home Assistant add-on web server for OpenPool.
 
-The add-on currently serves the static OpenPool UI and provides a minimal
-Home Assistant API proxy. The proxy keeps the browser from needing a long-lived
-token; it uses the Supervisor token that Home Assistant provides to add-ons.
+The add-on serves the static OpenPool UI and proxies selected Home Assistant
+Core API calls. Supervisor authentication is preferred; a configured long-lived
+access token is used as a fallback for installations where the Supervisor token
+is not injected into the add-on environment.
 """
 
 from __future__ import annotations
@@ -21,12 +22,13 @@ from urllib.request import Request, urlopen
 PORT = int(os.environ.get("OPENPOOL_PORT", "8099"))
 WWW_ROOT = Path(os.environ.get("OPENPOOL_WWW", "/app/www")).resolve()
 OPTIONS_PATH = Path("/data/options.json")
-HA_API_BASE = "http://supervisor/core/api"
-SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN", "")
+SUPERVISOR_HA_API_BASE = "http://supervisor/core/api"
+DEFAULT_HA_URL = "http://homeassistant:8123"
+SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN") or os.environ.get("HASSIO_TOKEN") or ""
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.1.3"
+    server_version = "OpenPool/0.1.4"
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
@@ -36,7 +38,7 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/api/config":
-            self._send_json(self._read_options())
+            self._send_json(self._read_public_options())
             return
 
         if parsed.path.startswith("/api/ha/states/"):
@@ -69,17 +71,48 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("content-length", "0"))
         return self.rfile.read(length) if length else b"{}"
 
+    def _read_public_options(self) -> dict:
+        options = json.loads(json.dumps(self._read_options()))
+        connection = options.get("connection")
+
+        if isinstance(connection, dict):
+            access_token = str(connection.get("access_token") or "").strip()
+            connection["access_token"] = ""
+            connection["access_token_configured"] = bool(access_token)
+
+        return options
+
+    def _ha_api_credentials(self) -> tuple[str, str, str] | None:
+        if SUPERVISOR_TOKEN:
+            return SUPERVISOR_HA_API_BASE, SUPERVISOR_TOKEN, "supervisor"
+
+        connection = self._read_options().get("connection") or {}
+        access_token = str(connection.get("access_token") or "").strip()
+        if not access_token:
+            return None
+
+        homeassistant_url = str(connection.get("homeassistant_url") or DEFAULT_HA_URL).rstrip("/")
+        return f"{homeassistant_url}/api", access_token, "configured_token"
+
     def _proxy_ha(self, method: str, path: str, body: bytes | None = None) -> None:
-        if not SUPERVISOR_TOKEN:
-            self._send_json({"error": "SUPERVISOR_TOKEN is not available"}, status=503)
+        credentials = self._ha_api_credentials()
+        if not credentials:
+            self._send_json(
+                {
+                    "error": "Home Assistant authentication is not configured",
+                    "detail": "SUPERVISOR_TOKEN is missing and no fallback access token is configured.",
+                },
+                status=503,
+            )
             return
 
+        api_base, token, _auth_source = credentials
         request = Request(
-            f"{HA_API_BASE}{path}",
+            f"{api_base}{path}",
             data=body,
             method=method,
             headers={
-                "Authorization": f"Bearer {SUPERVISOR_TOKEN}",
+                "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
             },
         )
@@ -93,6 +126,15 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(payload)
         except HTTPError as err:
+            error_payload = err.read()
+            if error_payload:
+                self.send_response(err.code)
+                self.send_header("Content-Type", err.headers.get("Content-Type", "application/json"))
+                self.send_header("Content-Length", str(len(error_payload)))
+                self.end_headers()
+                self.wfile.write(error_payload)
+                return
+
             self._send_json({"error": err.reason}, status=err.code)
         except URLError as err:
             self._send_json({"error": str(err.reason)}, status=502)
@@ -127,7 +169,26 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
 def main() -> None:
     server = ThreadingHTTPServer(("0.0.0.0", PORT), OpenPoolHandler)
     print(f"[openpool] listening on 0.0.0.0:{PORT}", flush=True)
+    print(f"[openpool] Home Assistant auth: {_startup_auth_status()}", flush=True)
     server.serve_forever()
+
+
+def _startup_auth_status() -> str:
+    if SUPERVISOR_TOKEN:
+        return "Supervisor token available"
+
+    options = {}
+    if OPTIONS_PATH.exists():
+        try:
+            options = json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            options = {}
+
+    connection = options.get("connection") or {}
+    if str(connection.get("access_token") or "").strip():
+        return "using configured fallback token"
+
+    return "missing token"
 
 
 if __name__ == "__main__":

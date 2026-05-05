@@ -1613,11 +1613,11 @@
           <div class="form-grid">
             <div class="wide">
               <label>Home Assistant URL</label>
-              <input value="http://homeassistant.local:8123" />
+              <input id="connection-homeassistant-url" value="http://homeassistant:8123" readonly />
             </div>
             <div class="wide">
-              <label>Long-Lived Access Token</label>
-              <input type="password" value="xxxxxxxxxxxxxxxxxxxxxxxx" />
+              <label>Long-Lived Access Token Fallback</label>
+              <input id="connection-access-token" type="password" placeholder="In den Add-on-Optionen hinterlegen" value="" readonly />
             </div>
           </div>
         </div>
@@ -2040,6 +2040,14 @@
     }
 
     function applyAddonOptions(options) {
+      const connection = options?.connection || {};
+      if (connection.homeassistant_url) {
+        document.getElementById('connection-homeassistant-url').value = connection.homeassistant_url;
+      }
+      if (connection.access_token_configured) {
+        document.getElementById('connection-access-token').placeholder = 'Token in Add-on-Optionen gesetzt';
+      }
+
       const entities = options?.entities || {};
       Object.entries(addonEntityOptionMap).forEach(([inputId, optionKey]) => {
         const input = document.getElementById(inputId);

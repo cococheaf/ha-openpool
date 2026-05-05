@@ -12,6 +12,10 @@ selected API calls:
 The browser UI should call the local add-on endpoints instead of storing a
 long-lived access token in the frontend.
 
+If the Supervisor token is not available in the add-on container, OpenPool can
+fall back to the configured `connection.homeassistant_url` and
+`connection.access_token` add-on options.
+
 ## Configuration
 
 The add-on options contain the default Home Assistant entity IDs and control

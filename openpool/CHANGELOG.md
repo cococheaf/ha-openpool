@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Add a Home Assistant URL and long-lived access token fallback when the Supervisor token is unavailable.
+- Hide configured fallback tokens from the frontend configuration response.
+- Log the selected Home Assistant authentication mode at startup.
+
 ## 0.1.3
 
 - Fix Home Assistant Ingress API paths so frontend requests reach the add-on proxy.
