@@ -2,5 +2,63 @@ configuration:
   log_level:
     name: Log-Level
     description: Detailgrad der OpenPool Add-on Logs.
+  connection:
+    name: Home Assistant Verbindung
+    description: Fallback-Zugang für Systeme ohne Supervisor-Token.
+    fields:
+      homeassistant_url:
+        name: Home Assistant URL
+        description: Interne URL der Home Assistant Instanz.
+      access_token:
+        name: Long-Lived Access Token
+        description: Optionaler Fallback-Token für die Home Assistant REST API.
+  entities:
+    name: Home Assistant Entitäten
+    description: Entitäten, die OpenPool für Anzeige und Steuerung verwendet.
+    fields:
+      pump_switch:
+        name: Pumpe / Chlorsystem Schalter
+      heater_climate:
+        name: Wärmepumpe Climate
+      weather:
+        name: Wetter Entity
+      pv_export:
+        name: PV Export Sensor
+      grid_import:
+        name: Netzimport Sensor
+      house_consumption:
+        name: Hausverbrauch Sensor
+      pump_power:
+        name: Pumpe Leistung Sensor
+      pump_current:
+        name: Pumpe Strom Sensor
+      pump_voltage:
+        name: Pumpe Spannung Sensor
+      pump_signal:
+        name: Pumpe Signal Sensor
+      heater_power:
+        name: Heizung Leistung Sensor
+      heater_current:
+        name: Heizung Netzstrom Sensor
+      heater_voltage:
+        name: Heizung Netzspannung Sensor
+      heater_fan:
+        name: Heizung Lüfter Sensor
+      heater_ambient:
+        name: Heizung Umgebungsluft Sensor
+      heater_water_in:
+        name: Heizung Wasser Eingang Sensor
+      heater_water_out:
+        name: Heizung Wasser Ausgang Sensor
+  thresholds:
+    name: Grenzwerte
+    description: Startwerte für PV-Freigabe und Temperaturbereich.
+    fields:
+      pv_start_export_w:
+        name: PV Start Export in Watt
+      heater_temp_min:
+        name: Minimale Heizungstemperatur
+      heater_temp_max:
+        name: Maximale Heizungstemperatur
 network:
   8099/tcp: OpenPool Weboberfläche

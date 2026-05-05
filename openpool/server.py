@@ -28,7 +28,7 @@ SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN") or os.environ.get("HASSIO_
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.1.4"
+    server_version = "OpenPool/0.1.5"
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
@@ -106,9 +106,11 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
             )
             return
 
-        api_base, token, _auth_source = credentials
+        api_base, token, auth_source = credentials
+        target_url = f"{api_base}{path}"
+        print(f"[openpool] HA {method} {path} via {auth_source}", flush=True)
         request = Request(
-            f"{api_base}{path}",
+            target_url,
             data=body,
             method=method,
             headers={
@@ -120,6 +122,7 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
         try:
             with urlopen(request, timeout=10) as response:
                 payload = response.read()
+                print(f"[openpool] HA {method} {path} -> {response.status}", flush=True)
                 self.send_response(response.status)
                 self.send_header("Content-Type", response.headers.get("Content-Type", "application/json"))
                 self.send_header("Content-Length", str(len(payload)))
@@ -127,6 +130,8 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
                 self.wfile.write(payload)
         except HTTPError as err:
             error_payload = err.read()
+            detail = error_payload.decode("utf-8", "replace")[:220] if error_payload else err.reason
+            print(f"[openpool] HA {method} {path} -> {err.code}: {detail}", flush=True)
             if error_payload:
                 self.send_response(err.code)
                 self.send_header("Content-Type", err.headers.get("Content-Type", "application/json"))
@@ -137,6 +142,7 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
 
             self._send_json({"error": err.reason}, status=err.code)
         except URLError as err:
+            print(f"[openpool] HA {method} {path} -> 502: {err.reason}", flush=True)
             self._send_json({"error": str(err.reason)}, status=502)
 
     def _serve_static(self, request_path: str) -> None:
@@ -150,6 +156,8 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
         payload = target.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", content_type)
+        if target.name == "index.html":
+            self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)

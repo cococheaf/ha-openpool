@@ -198,7 +198,7 @@
       color: var(--text);
     }
 
-    /* Shared card grid used by dashboard, info and settings pages. */
+    /* Shared card grid used by dashboard and settings pages. */
     .grid {
       display: grid;
       grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr);
@@ -208,14 +208,6 @@
 
     .dashboard .grid {
       grid-template-columns: minmax(310px, 1.08fr) minmax(240px, .86fr) minmax(260px, .92fr);
-    }
-
-    .info .grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .info .sensor-panel .sensor-grid {
-      grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
     }
 
     .dashboard .hero {
@@ -228,9 +220,12 @@
       min-height: 300px;
     }
 
+    .dashboard .sensor-list-card {
+      grid-column: 1 / -1;
+    }
+
     .weather-card .forecast-grid,
-    .control-card .mode-grid,
-    .info .power-flow {
+    .control-card .mode-grid {
       flex: 1;
     }
 
@@ -455,86 +450,6 @@
     .btn.danger { background: rgba(255,107,107,.14); border-color: rgba(255,107,107,.38); }
     .btn.evening { background: rgba(147,197,253,.16); border-color: rgba(147,197,253,.42); }
 
-    .power-flow {
-      display: grid;
-      gap: 10px;
-    }
-
-    .flow-switches {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-      gap: 6px;
-    }
-
-    .flow-switches button {
-      min-height: 32px;
-      padding: 7px 8px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      color: var(--muted);
-      cursor: pointer;
-      font: inherit;
-      font-size: 12px;
-    }
-
-    .flow-switches button.active {
-      color: var(--text);
-      background: rgba(55,212,166,.14);
-      border-color: rgba(55,212,166,.36);
-    }
-
-    .flowchart {
-      display: grid;
-      gap: 10px;
-      padding: 10px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: rgba(15,23,42,.34);
-    }
-
-    .flow-node {
-      display: grid;
-      grid-template-columns: 88px 1fr auto;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .flow-node .name {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .flow-node .value {
-      font-weight: 760;
-      white-space: nowrap;
-    }
-
-    .flow-track {
-      height: 12px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.08);
-      overflow: hidden;
-    }
-
-    .flow-track span {
-      display: block;
-      height: 100%;
-      border-radius: inherit;
-    }
-
-    .flow-track.pump span {
-      background: linear-gradient(90deg, #50b7ff, #7dd3fc);
-    }
-
-    .flow-track.heater span {
-      background: linear-gradient(90deg, #f6c85f, #fb7185);
-    }
-
-    .flow-track.house span {
-      background: linear-gradient(90deg, #94a3b8, #cbd5e1);
-    }
-
     /* Compact climate-style target temperature control. */
     .temperature-control {
       display: grid;
@@ -720,13 +635,8 @@
       gap: 18px;
     }
 
-    .settings .entities-card {
-      grid-column: 1 / -1;
-    }
-
     .settings.active { display: grid; }
-    .dashboard.hidden,
-    .info.hidden { display: none; }
+    .dashboard.hidden { display: none; }
 
     label {
       display: block;
@@ -1031,6 +941,85 @@
       line-height: 1.1;
     }
 
+    .sensor-categories {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .sensor-category {
+      min-width: 0;
+      min-height: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(15,23,42,.34);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .sensor-category.energy {
+      border-color: rgba(55,212,166,.25);
+    }
+
+    .sensor-category.pump {
+      border-color: rgba(80,183,255,.25);
+    }
+
+    .sensor-category.heater {
+      border-color: rgba(246,200,95,.25);
+    }
+
+    .sensor-category-title {
+      font-size: 13px;
+      font-weight: 780;
+      color: var(--text);
+    }
+
+    .sensor-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .sensor-list > div,
+    .config-summary > div {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+      padding: 7px 0;
+      border-top: 1px solid rgba(255,255,255,.07);
+    }
+
+    .sensor-list > div:first-child,
+    .config-summary > div:first-child {
+      border-top: 0;
+    }
+
+    .sensor-list span,
+    .config-summary span {
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .sensor-list strong,
+    .config-summary strong {
+      color: var(--text);
+      font-size: 13px;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    .config-summary {
+      display: grid;
+      gap: 2px;
+      padding: 4px 0;
+    }
+
     .forecast-tile {
       text-align: center;
       transition: transform .16s ease, background .16s ease;
@@ -1216,15 +1205,18 @@
       .dashboard .grid {
         grid-template-columns: minmax(0, 1fr) minmax(300px, .9fr);
       }
-      .info .grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
       .dashboard .hero,
       .dashboard .weather-card {
         grid-column: auto;
       }
+      .dashboard .sensor-list-card {
+        grid-column: 1 / -1;
+      }
       .dashboard #heater-control-card {
         grid-column: 1 / -1;
+      }
+      .sensor-categories {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .weather-card .forecast-grid,
       .weather-card .forecast-grid.daily-forecast {
@@ -1252,7 +1244,6 @@
     @media (max-width: 760px) {
       .grid,
       .dashboard .grid { grid-template-columns: minmax(0, 1fr); }
-      .info .grid { grid-template-columns: minmax(0, 1fr); }
       .dashboard #heater-control-card {
         grid-column: auto;
       }
@@ -1261,6 +1252,9 @@
       .weather-card .forecast-grid,
       .weather-card .forecast-grid.daily-forecast {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .sensor-categories {
+        grid-template-columns: minmax(0, 1fr);
       }
       .weather-summary { grid-column: auto; }
     }
@@ -1305,6 +1299,7 @@
       .metrics,
       .mode-grid,
       .mode-grid.pump-modes,
+      .sensor-categories,
       .form-grid,
       .forecast-grid,
       .forecast-grid.daily-forecast,
@@ -1359,7 +1354,6 @@
       </div>
       <nav>
         <button class="active" onclick="showTab('dashboard', this)">Dashboard</button>
-        <button onclick="showTab('info', this)">Info</button>
         <button onclick="showTab('settings', this)">Konfiguration</button>
       </nav>
       <div id="ha-status-pill" class="pill disconnected"><span class="dot"></span> Home Assistant wird verbunden</div>
@@ -1518,82 +1512,40 @@
           </div>
         </section>
 
-      </div>
-    </section>
-
-    <!-- Info: live technical values, separated from control actions. -->
-    <section id="info" class="info hidden">
-      <div class="grid">
-        <section class="card sensor-panel">
+        <section class="card sensor-list-card">
           <div class="card-inner">
             <div class="section-title">
-              <h3>Pumpe</h3>
+              <h3>Sensoren</h3>
             </div>
-            <div class="power-flow">
-              <div class="flow-switches">
-                <button class="active">Leistung</button>
-                <button>Strom</button>
-                <button>Spannung</button>
-                <button>Signal</button>
-              </div>
-              <div class="flowchart">
-                <div class="flow-node">
-                  <div class="name">Leistung</div>
-                  <div class="flow-track pump"><span id="pump-power-bar" style="width:0%"></span></div>
-                  <div class="value" id="pump-power-value">--</div>
-                </div>
-                <div class="flow-node">
-                  <div class="name">Strom</div>
-                  <div class="flow-track house"><span id="pump-current-bar" style="width:0%"></span></div>
-                  <div class="value" id="pump-current-value">--</div>
-                </div>
-                <div class="flow-node">
-                  <div class="name">Spannung</div>
-                  <div class="flow-track pump"><span id="pump-voltage-bar" style="width:0%"></span></div>
-                  <div class="value" id="pump-voltage-value">--</div>
-                </div>
-                <div class="flow-node">
-                  <div class="name">Signal</div>
-                  <div class="flow-track pump"><span id="pump-signal-bar" style="width:0%"></span></div>
-                  <div class="value" id="pump-signal-value">--</div>
+            <div class="sensor-categories">
+              <div class="sensor-category energy">
+                <div class="sensor-category-title">Energie</div>
+                <div class="sensor-list">
+                  <div><span>PV Export</span><strong id="pv-export-value">--</strong></div>
+                  <div><span>Netzimport</span><strong id="grid-import-value">--</strong></div>
+                  <div><span>Hausverbrauch</span><strong id="house-consumption-value">--</strong></div>
+                  <div><span>PV frei für WP</span><strong id="pv-free-list-value">--</strong></div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card sensor-panel">
-          <div class="card-inner">
-            <div class="section-title">
-              <h3>Heizung</h3>
-            </div>
-            <div class="power-flow">
-              <div class="flow-switches">
-                <button class="active">Leistung</button>
-                <button>Strom</button>
-                <button>Spannung</button>
-                <button>Lüfter</button>
+              <div class="sensor-category pump">
+                <div class="sensor-category-title">Pumpe</div>
+                <div class="sensor-list">
+                  <div><span>Leistung</span><strong id="pump-power-value">--</strong></div>
+                  <div><span>Strom</span><strong id="pump-current-value">--</strong></div>
+                  <div><span>Spannung</span><strong id="pump-voltage-value">--</strong></div>
+                  <div><span>Signal</span><strong id="pump-signal-value">--</strong></div>
+                </div>
               </div>
-              <div class="flowchart">
-                <div class="flow-node">
-                  <div class="name">Leistung</div>
-                  <div class="flow-track heater"><span id="heater-power-bar" style="width:0%"></span></div>
-                  <div class="value" id="heater-power-value">--</div>
-                </div>
-                <div class="flow-node">
-                  <div class="name">Strom</div>
-                  <div class="flow-track heater"><span id="heater-current-bar" style="width:0%"></span></div>
-                  <div class="value" id="heater-current-value">--</div>
-                </div>
-                <div class="flow-node">
-                  <div class="name">Spannung</div>
-                  <div class="flow-track house"><span id="heater-voltage-bar" style="width:0%"></span></div>
-                  <div class="value" id="heater-voltage-value">--</div>
-                </div>
-                <div class="flow-node">
-                  <div class="name">Lüfter</div>
-                  <div class="flow-track heater"><span id="heater-fan-bar" style="width:0%"></span></div>
-                  <div class="value" id="heater-fan-value">--</div>
+              <div class="sensor-category heater">
+                <div class="sensor-category-title">Heizung</div>
+                <div class="sensor-list">
+                  <div><span>Leistung</span><strong id="heater-power-value">--</strong></div>
+                  <div><span>Netzstrom</span><strong id="heater-current-value">--</strong></div>
+                  <div><span>Netzspannung</span><strong id="heater-voltage-value">--</strong></div>
+                  <div><span>Lüfter</span><strong id="heater-fan-value">--</strong></div>
+                  <div><span>Umgebungsluft</span><strong id="heater-ambient-value">--</strong></div>
+                  <div><span>Wasser Eingang</span><strong id="heater-water-in-value">--</strong></div>
+                  <div><span>Wasser Ausgang</span><strong id="heater-water-out-value">--</strong></div>
                 </div>
               </div>
             </div>
@@ -1603,99 +1555,25 @@
       </div>
     </section>
 
-    <!-- Settings: connection data, Home Assistant entities and automation thresholds. -->
+    <!-- Settings: runtime thresholds; entity mapping lives in the Home Assistant add-on options. -->
     <section id="settings" class="settings">
       <section class="card">
         <div class="card-inner">
           <div class="section-title">
-            <h3>Home Assistant Verbindung</h3>
+            <h3>Add-on-Konfiguration</h3>
           </div>
-          <div class="form-grid">
-            <div class="wide">
-              <label>Home Assistant URL</label>
-              <input id="connection-homeassistant-url" value="http://homeassistant:8123" readonly />
-            </div>
-            <div class="wide">
-              <label>Long-Lived Access Token Fallback</label>
-              <input id="connection-access-token" type="password" placeholder="In den Add-on-Optionen hinterlegen" value="" readonly />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card entities-card">
-        <div class="card-inner">
-          <div class="section-title">
-            <h3>Home Assistant Entitäten</h3>
-          </div>
-          <div class="form-grid">
+          <div class="config-summary">
             <div>
-              <label>Pumpe / Chlorsystem Schalter</label>
-              <input id="entity-pump-switch" value="switch.poolpumpe" />
+              <span>Home Assistant URL</span>
+              <strong id="connection-homeassistant-url">http://homeassistant:8123</strong>
             </div>
             <div>
-              <label>Wärmepumpe Climate</label>
-              <input id="entity-heater-climate" value="climate.poolheizung" />
+              <span>Token Fallback</span>
+              <strong id="connection-access-token">nicht gesetzt</strong>
             </div>
             <div>
-              <label>Wetter Entity</label>
-              <input id="entity-weather" value="weather.openweathermap" />
-            </div>
-            <div>
-              <label>PV Export Sensor</label>
-              <input id="entity-pv-export" value="sensor.stromzahler_active_power_minus" />
-            </div>
-            <div>
-              <label>Netzimport Sensor</label>
-              <input id="entity-grid-import" value="sensor.stromzahler_active_power_plus" />
-            </div>
-            <div>
-              <label>Hausverbrauch Sensor</label>
-              <input id="entity-house-consumption" value="sensor.hausverbrauch" />
-            </div>
-            <div>
-              <label>Pumpe Leistung Sensor</label>
-              <input id="entity-pump-power" value="sensor.poolpumpe_leistung" />
-            </div>
-            <div>
-              <label>Pumpe Strom Sensor</label>
-              <input id="entity-pump-current" value="sensor.poolpumpe_current" />
-            </div>
-            <div>
-              <label>Pumpe Spannung Sensor</label>
-              <input id="entity-pump-voltage" value="sensor.poolpumpe_spannung" />
-            </div>
-            <div>
-              <label>Pumpe Signal Sensor</label>
-              <input id="entity-pump-signal" value="sensor.poolpumpe_signal" />
-            </div>
-            <div>
-              <label>Heizung Leistung Sensor</label>
-              <input id="entity-heater-power" value="sensor.poolheizung_leistung" />
-            </div>
-            <div>
-              <label>Heizung Netzstrom Sensor</label>
-              <input id="entity-heater-current" value="sensor.poolheizung_netzstrom" />
-            </div>
-            <div>
-              <label>Heizung Netzspannung Sensor</label>
-              <input id="entity-heater-voltage" value="sensor.poolheizung_netzspannung" />
-            </div>
-            <div>
-              <label>Heizung Lüfter Sensor</label>
-              <input id="entity-heater-fan" value="sensor.poolheizung_lufter" />
-            </div>
-            <div>
-              <label>Heizung Umgebungsluft Sensor</label>
-              <input id="entity-heater-ambient" value="sensor.poolheizung_umgebungsluft_temperatur" />
-            </div>
-            <div>
-              <label>Heizung Wasser Eingang Sensor</label>
-              <input id="entity-heater-water-in" value="sensor.poolheizung_wassertemperatur_eingang" />
-            </div>
-            <div>
-              <label>Heizung Wasser Ausgang Sensor</label>
-              <input id="entity-heater-water-out" value="sensor.poolheizung_wassertemperatur_ausgang" />
+              <span>Entitäten</span>
+              <strong>Home Assistant Add-on Optionen</strong>
             </div>
           </div>
         </div>
@@ -1887,6 +1765,7 @@
       'entity-heater-water-in': 'sensor.poolheizung_wassertemperatur_eingang',
       'entity-heater-water-out': 'sensor.poolheizung_wassertemperatur_ausgang'
     };
+    let entityConfig = { ...entityInputDefaults };
     const addonEntityOptionMap = {
       'entity-pump-switch': 'pump_switch',
       'entity-heater-climate': 'heater_climate',
@@ -2002,7 +1881,7 @@
     }
 
     function getEntityId(inputId) {
-      return document.getElementById(inputId)?.value.trim() || entityInputDefaults[inputId] || '';
+      return entityConfig[inputId] || entityInputDefaults[inputId] || '';
     }
 
     function getNumberInput(id, fallback) {
@@ -2021,11 +1900,6 @@
     function applySettings(settings) {
       if (!settings || typeof settings !== 'object') return;
 
-      Object.entries(settings.entities || {}).forEach(([inputId, value]) => {
-        const input = document.getElementById(inputId);
-        if (input && value) input.value = value;
-      });
-
       if (settings.thresholds) {
         if (settings.thresholds.pvStartExportW !== undefined) {
           document.getElementById('pv-start-export-w').value = settings.thresholds.pvStartExportW;
@@ -2042,16 +1916,15 @@
     function applyAddonOptions(options) {
       const connection = options?.connection || {};
       if (connection.homeassistant_url) {
-        document.getElementById('connection-homeassistant-url').value = connection.homeassistant_url;
+        setText('connection-homeassistant-url', connection.homeassistant_url);
       }
       if (connection.access_token_configured) {
-        document.getElementById('connection-access-token').placeholder = 'Token in Add-on-Optionen gesetzt';
+        setText('connection-access-token', 'gesetzt');
       }
 
       const entities = options?.entities || {};
       Object.entries(addonEntityOptionMap).forEach(([inputId, optionKey]) => {
-        const input = document.getElementById(inputId);
-        if (input && entities[optionKey]) input.value = entities[optionKey];
+        if (entities[optionKey]) entityConfig[inputId] = entities[optionKey];
       });
 
       const thresholds = options?.thresholds || {};
@@ -2078,7 +1951,6 @@
 
     function saveSettings() {
       const settings = {
-        entities: {},
         thresholds: {
           pvStartExportW: getNumberInput('pv-start-export-w', 1500),
           heaterTempMin: getNumberInput('heater-temp-min', 18),
@@ -2086,12 +1958,8 @@
         }
       };
 
-      Object.keys(entityInputDefaults).forEach(inputId => {
-        settings.entities[inputId] = getEntityId(inputId);
-      });
-
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-      pushCommand('Konfiguration gespeichert', 'Entitäten und Grenzwerte lokal im Browser gespeichert.');
+      pushCommand('Konfiguration gespeichert', 'Grenzwerte lokal im Browser gespeichert.');
     }
 
     async function getHaState(inputId) {
@@ -2107,23 +1975,42 @@
       });
     }
 
+    function getEntityDomain(entityId) {
+      return String(entityId).split('.')[0] || 'homeassistant';
+    }
+
+    async function turnEntity(inputId, enabled) {
+      const entityId = getEntityId(inputId);
+      const domain = getEntityDomain(entityId);
+      const service = enabled ? 'turn_on' : 'turn_off';
+
+      try {
+        return await callHaService(domain, service, { entity_id: entityId });
+      } catch (error) {
+        if (domain === 'homeassistant') throw error;
+        return callHaService('homeassistant', service, { entity_id: entityId });
+      }
+    }
+
     async function switchPump(enabled) {
-      return callHaService('switch', enabled ? 'turn_on' : 'turn_off', {
-        entity_id: getEntityId('entity-pump-switch')
-      });
+      return turnEntity('entity-pump-switch', enabled);
     }
 
     async function setClimateHvacMode(mode) {
       const entityId = getEntityId('entity-heater-climate');
+      if (getEntityDomain(entityId) !== 'climate') {
+        return turnEntity('entity-heater-climate', mode !== 'off');
+      }
+
       try {
         return await callHaService('climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: mode });
       } catch (error) {
-        const fallbackService = mode === 'off' ? 'turn_off' : 'turn_on';
-        return callHaService('climate', fallbackService, { entity_id: entityId });
+        return turnEntity('entity-heater-climate', mode !== 'off');
       }
     }
 
     async function setClimateTemperature() {
+      if (getEntityDomain(getEntityId('entity-heater-climate')) !== 'climate') return null;
       return callHaService('climate', 'set_temperature', {
         entity_id: getEntityId('entity-heater-climate'),
         temperature: heaterTargetTemp
@@ -2210,11 +2097,15 @@
       const threshold = getNumberInput('pv-start-export-w', 1500);
       const thresholdText = formatPower(threshold);
 
+      setText('pv-export-value', formatPower(pvExport));
+      setText('grid-import-value', formatPower(gridImport));
+      setText('house-consumption-value', formatPower(houseConsumption));
       setText('pv-ready-threshold', thresholdText);
       setText('pv-surplus-hint', `Bereit ab ${thresholdText}`);
 
       if ([pvExport, gridImport, houseConsumption].some(value => value === null)) {
         setText('pv-free-value', '--');
+        setText('pv-free-list-value', '--');
         setText('pv-surplus-metric', '--');
         return;
       }
@@ -2222,6 +2113,7 @@
       const available = pvExport - gridImport - houseConsumption;
       const text = formatPower(available);
       setText('pv-free-value', text);
+      setText('pv-free-list-value', text);
       setText('pv-surplus-metric', text);
     }
 
@@ -2297,6 +2189,9 @@
       updateGenericFlow('heater-current-value', 'heater-current-bar', states['entity-heater-current'], 12, 'A', 1);
       updateGenericFlow('heater-voltage-value', 'heater-voltage-bar', states['entity-heater-voltage'], 240, 'V', 0);
       updateGenericFlow('heater-fan-value', 'heater-fan-bar', states['entity-heater-fan'], 3000, '', 0);
+      updateGenericFlow('heater-ambient-value', 'heater-ambient-bar', states['entity-heater-ambient'], 40, '°C', 1);
+      updateGenericFlow('heater-water-in-value', 'heater-water-in-bar', states['entity-heater-water-in'], 40, '°C', 1);
+      updateGenericFlow('heater-water-out-value', 'heater-water-out-bar', states['entity-heater-water-out'], 40, '°C', 1);
     }
 
     async function refreshHomeAssistantState() {
@@ -2343,7 +2238,6 @@
       document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
       button.classList.add('active');
       document.getElementById('dashboard').classList.toggle('hidden', tab !== 'dashboard');
-      document.getElementById('info').classList.toggle('hidden', tab !== 'info');
       document.getElementById('settings').classList.toggle('active', tab === 'settings');
     }
 
@@ -2801,13 +2695,6 @@
     document.querySelectorAll('.mini-switch').forEach(toggle => {
       toggle.addEventListener('click', () => {
         toggle.classList.toggle('on');
-      });
-    });
-
-    document.querySelectorAll('.flow-switches button').forEach(button => {
-      button.addEventListener('click', () => {
-        button.parentElement.querySelectorAll('button').forEach(item => item.classList.remove('active'));
-        button.classList.add('active');
       });
     });
 

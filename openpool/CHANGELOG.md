@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Remove Home Assistant entity and API forms from the web settings view.
+- Show categorized live sensor values on the dashboard and remove the Info tab.
+- Log proxied Home Assistant service calls and disable caching for the HTML shell.
+
 ## 0.1.4
 
 - Add a Home Assistant URL and long-lived access token fallback when the Supervisor token is unavailable.
