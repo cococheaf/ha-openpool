@@ -8,7 +8,7 @@ surplus based heating logic from one compact tablet-friendly interface.
 
 - `openpool/` contains the Home Assistant add-on and bundled UI.
 - The add-on serves the UI through Home Assistant Ingress and includes a small
-  API proxy for future Home Assistant state and service calls.
+  API proxy for Home Assistant state reads and service calls.
 
 ## Install As Home Assistant Add-on
 

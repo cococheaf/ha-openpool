@@ -26,7 +26,7 @@ SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN", "")
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.1"
+    server_version = "OpenPool/0.1.2"
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)

@@ -1,5 +1,5 @@
 name: OpenPool
-version: "0.1.1"
+version: "0.1.2"
 slug: openpool
 description: OpenSource Pool System Controller for pump, chlorinator, heat pump and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool
@@ -33,5 +33,49 @@ map:
     read_only: false
 options:
   log_level: info
+  entities:
+    pump_switch: switch.poolpumpe
+    heater_climate: climate.poolheizung
+    weather: weather.openweathermap
+    pv_export: sensor.stromzahler_active_power_minus
+    grid_import: sensor.stromzahler_active_power_plus
+    house_consumption: sensor.hausverbrauch
+    pump_power: sensor.poolpumpe_leistung
+    pump_current: sensor.poolpumpe_current
+    pump_voltage: sensor.poolpumpe_spannung
+    pump_signal: sensor.poolpumpe_signal
+    heater_power: sensor.poolheizung_leistung
+    heater_current: sensor.poolheizung_netzstrom
+    heater_voltage: sensor.poolheizung_netzspannung
+    heater_fan: sensor.poolheizung_lufter
+    heater_ambient: sensor.poolheizung_umgebungsluft_temperatur
+    heater_water_in: sensor.poolheizung_wassertemperatur_eingang
+    heater_water_out: sensor.poolheizung_wassertemperatur_ausgang
+  thresholds:
+    pv_start_export_w: 1500
+    heater_temp_min: 18
+    heater_temp_max: 32
 schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)
+  entities:
+    pump_switch: str
+    heater_climate: str
+    weather: str
+    pv_export: str
+    grid_import: str
+    house_consumption: str
+    pump_power: str
+    pump_current: str
+    pump_voltage: str
+    pump_signal: str
+    heater_power: str
+    heater_current: str
+    heater_voltage: str
+    heater_fan: str
+    heater_ambient: str
+    heater_water_in: str
+    heater_water_out: str
+  thresholds:
+    pv_start_export_w: int
+    heater_temp_min: float
+    heater_temp_max: float

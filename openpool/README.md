@@ -7,15 +7,12 @@ provides a small internal proxy for Home Assistant Core API calls.
 
 ## Installation
 
-1. Push this repository to GitHub.
-2. Replace the placeholder repository URL in `repository.yaml` and
-   `openpool/config.yaml`.
-3. In Home Assistant, go to **Settings -> Add-ons -> Add-on Store**.
-4. Open **Repositories**, add your GitHub repository URL and reload the store.
-5. Install **OpenPool** and enable **Show in sidebar**.
+1. In Home Assistant, go to **Settings -> Add-ons -> Add-on Store**.
+2. Open **Repositories**, add `https://github.com/cococheaf/ha-openpool` and reload the store.
+3. Install **OpenPool** and enable **Show in sidebar**.
 
 ## Status
 
-The current UI is still the single-file prototype with demo state. The add-on
-packaging is ready for Home Assistant installation and provides the integration
-surface for the real controller backend.
+The UI reads the configured Home Assistant entities through the add-on proxy and
+sends manual pump, restart-pulse, heat pump mode and target-temperature commands
+back to Home Assistant services.

@@ -14,9 +14,10 @@ long-lived access token in the frontend.
 
 ## Configuration
 
-Most OpenPool settings are currently visible inside the OpenPool UI under
-**Konfiguration**. The add-on configuration only contains operational settings
-needed before the web app starts.
+The add-on options contain the default Home Assistant entity IDs and control
+thresholds. The same values are visible inside the OpenPool UI under
+**Konfiguration**; saving there stores a browser-local override for the current
+Home Assistant frontend session.
 
 ## Files
 

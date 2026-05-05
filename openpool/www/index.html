@@ -1362,7 +1362,7 @@
         <button onclick="showTab('info', this)">Info</button>
         <button onclick="showTab('settings', this)">Konfiguration</button>
       </nav>
-      <div class="pill connected"><span class="dot"></span> Home Assistant verbunden</div>
+      <div id="ha-status-pill" class="pill disconnected"><span class="dot"></span> Home Assistant wird verbunden</div>
     </header>
 
     <!-- Dashboard: daily operating view for the Home Assistant panel. -->
@@ -1372,8 +1372,8 @@
           <div class="card-inner">
             <div class="hero-top">
               <div class="hero-copy">
-                <h2 id="hero-title">Pool aktiv</h2>
-                <p class="sub" id="hero-subtitle">Badebetrieb läuft. Pumpe ist eingeschaltet, Heizung wartet auf stabilen PV-Überschuss.</p>
+                <h2 id="hero-title">Warte auf Home Assistant</h2>
+                <p class="sub" id="hero-subtitle">Live-Zustand wird geladen. Die Kacheln werden aus den konfigurierten Home-Assistant-Entitäten befüllt.</p>
               </div>
               <div class="master">
                 <div class="switch on" onclick="toggleSwitch(this)"><div class="knob"></div></div>
@@ -1387,23 +1387,23 @@
             <div class="metrics">
               <div class="metric">
                 <div class="label">Pumpe</div>
-                <div class="value" id="pump-status">EIN</div>
-                <div class="hint" id="pump-hint">Badebetrieb bis 22:00</div>
+                <div class="value" id="pump-status">--</div>
+                <div class="hint" id="pump-hint">warte auf Home Assistant</div>
               </div>
               <div class="metric">
                 <div class="label">Chlorinator</div>
-                <div class="value" id="chlor-status">aktiv</div>
-                <div class="hint" id="chlor-hint">550 W Systemlast</div>
+                <div class="value" id="chlor-status">--</div>
+                <div class="hint" id="chlor-hint">warte auf Home Assistant</div>
               </div>
               <div class="metric">
                 <div class="label">Heizung</div>
-                <div class="value" id="heater-status">Auto</div>
-                <div class="hint" id="heater-hint">Warte auf PV-Freigabe</div>
+                <div class="value" id="heater-status">--</div>
+                <div class="hint" id="heater-hint">warte auf Home Assistant</div>
               </div>
               <div class="metric">
                 <div class="label">Überschussheizung</div>
-                <div class="value">1.38 kW</div>
-                <div class="hint">Bereit ab 1.50 kW</div>
+                <div class="value" id="pv-surplus-metric">--</div>
+                <div class="hint" id="pv-surplus-hint">Bereit ab 1,50 kW</div>
               </div>
             </div>
           </div>
@@ -1415,9 +1415,7 @@
               <h3>Letztes Kommando</h3>
             </div>
             <div class="timeline command-log" id="command-log">
-              <div class="event"><time>17:00</time><div>PV-Automatik wartet<small>Wärmepumpe wartet auf stabile Freigabe.</small></div></div>
-              <div class="event"><time>16:59</time><div>Restart-Pulse<small>Chlorinator wurde neu angestoßen.</small></div></div>
-              <div class="event"><time>07:30</time><div>Badefenster gestartet<small>Pumpe wurde nach Zeitplan freigegeben.</small></div></div>
+              <div class="event"><time>--:--</time><div>Warte auf Home Assistant<small>Live-Zustand wird geladen.</small></div></div>
             </div>
             <div class="sequence" id="shutdown-sequence">
               <div class="sequence-step done"><div class="bubble">1</div><div><strong>Heizung AUS</strong><small>Wärmepumpe bekommt Abschaltbefehl</small></div><div class="state">fertig</div></div>
@@ -1484,10 +1482,10 @@
               <h3>Heizungsmodus</h3>
             </div>
             <div class="mode-grid">
-              <div class="mode"><div class="icon">⏻</div><strong>Aus</strong><small>Wärmepumpe bleibt aus.</small></div>
-              <div class="mode"><div class="icon">🔥</div><strong>Ein</strong><small>Heizen erzwingen, aber nur mit Pumpenflow.</small></div>
-              <div class="mode active"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach Export, Import und Sperrzeit.</small></div>
-              <div class="mode"><div class="icon">🌤️</div><strong>Wetterautomatik</strong><small>Optional: Modus nach Wetterempfehlung setzen.</small></div>
+              <div class="mode" data-heater-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Wärmepumpe bleibt aus.</small></div>
+              <div class="mode" data-heater-mode="Ein"><div class="icon">🔥</div><strong>Ein</strong><small>Heizen erzwingen, aber nur mit Pumpenflow.</small></div>
+              <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach Export, Import und Sperrzeit.</small></div>
+              <div class="mode" data-heater-mode="Wetterautomatik"><div class="icon">🌤️</div><strong>Wetterautomatik</strong><small>Optional: Modus nach Wetterempfehlung setzen.</small></div>
             </div>
             <div class="temperature-control">
               <div class="section-title">
@@ -1496,7 +1494,7 @@
               <div class="temperature-readout">
                 <div class="temperature-value">
                   <div class="label">Ist</div>
-                  <strong>24,8°</strong>
+                  <strong id="heater-current-temp">--</strong>
                 </div>
                 <div class="temperature-value">
                   <div class="label">Ziel</div>
@@ -1512,9 +1510,9 @@
                 <h3>PV-Freigabe</h3>
               </div>
               <div class="energy-line">
-                <div class="energy-tile">PV frei für WP<strong>1,38 kW</strong></div>
+                <div class="energy-tile">PV frei für WP<strong id="pv-free-value">--</strong></div>
                 <div class="arrow"></div>
-                <div class="energy-tile">Bereit ab<strong>1,50 kW</strong></div>
+                <div class="energy-tile">Bereit ab<strong id="pv-ready-threshold">1,50 kW</strong></div>
               </div>
             </div>
           </div>
@@ -1541,23 +1539,23 @@
               <div class="flowchart">
                 <div class="flow-node">
                   <div class="name">Leistung</div>
-                  <div class="flow-track pump"><span style="width:34%"></span></div>
-                  <div class="value">550 W</div>
+                  <div class="flow-track pump"><span id="pump-power-bar" style="width:0%"></span></div>
+                  <div class="value" id="pump-power-value">--</div>
                 </div>
                 <div class="flow-node">
                   <div class="name">Strom</div>
-                  <div class="flow-track house"><span style="width:58%"></span></div>
-                  <div class="value">2,4 A</div>
+                  <div class="flow-track house"><span id="pump-current-bar" style="width:0%"></span></div>
+                  <div class="value" id="pump-current-value">--</div>
                 </div>
                 <div class="flow-node">
                   <div class="name">Spannung</div>
-                  <div class="flow-track pump"><span style="width:100%"></span></div>
-                  <div class="value">230 V</div>
+                  <div class="flow-track pump"><span id="pump-voltage-bar" style="width:0%"></span></div>
+                  <div class="value" id="pump-voltage-value">--</div>
                 </div>
                 <div class="flow-node">
                   <div class="name">Signal</div>
-                  <div class="flow-track pump"><span style="width:78%"></span></div>
-                  <div class="value">78%</div>
+                  <div class="flow-track pump"><span id="pump-signal-bar" style="width:0%"></span></div>
+                  <div class="value" id="pump-signal-value">--</div>
                 </div>
               </div>
             </div>
@@ -1579,23 +1577,23 @@
               <div class="flowchart">
                 <div class="flow-node">
                   <div class="name">Leistung</div>
-                  <div class="flow-track heater"><span style="width:90%"></span></div>
-                  <div class="value">1,45 kW</div>
+                  <div class="flow-track heater"><span id="heater-power-bar" style="width:0%"></span></div>
+                  <div class="value" id="heater-power-value">--</div>
                 </div>
                 <div class="flow-node">
                   <div class="name">Strom</div>
-                  <div class="flow-track heater"><span style="width:63%"></span></div>
-                  <div class="value">6,3 A</div>
+                  <div class="flow-track heater"><span id="heater-current-bar" style="width:0%"></span></div>
+                  <div class="value" id="heater-current-value">--</div>
                 </div>
                 <div class="flow-node">
                   <div class="name">Spannung</div>
-                  <div class="flow-track house"><span style="width:99%"></span></div>
-                  <div class="value">229 V</div>
+                  <div class="flow-track house"><span id="heater-voltage-bar" style="width:0%"></span></div>
+                  <div class="value" id="heater-voltage-value">--</div>
                 </div>
                 <div class="flow-node">
                   <div class="name">Lüfter</div>
-                  <div class="flow-track heater"><span style="width:72%"></span></div>
-                  <div class="value">aktiv</div>
+                  <div class="flow-track heater"><span id="heater-fan-bar" style="width:0%"></span></div>
+                  <div class="value" id="heater-fan-value">--</div>
                 </div>
               </div>
             </div>
@@ -1633,71 +1631,71 @@
           <div class="form-grid">
             <div>
               <label>Pumpe / Chlorsystem Schalter</label>
-              <input value="switch.poolpumpe" />
+              <input id="entity-pump-switch" value="switch.poolpumpe" />
             </div>
             <div>
               <label>Wärmepumpe Climate</label>
-              <input value="climate.poolheizung" />
+              <input id="entity-heater-climate" value="climate.poolheizung" />
             </div>
             <div>
               <label>Wetter Entity</label>
-              <input value="weather.openweathermap" />
+              <input id="entity-weather" value="weather.openweathermap" />
             </div>
             <div>
               <label>PV Export Sensor</label>
-              <input value="sensor.stromzahler_active_power_minus" />
+              <input id="entity-pv-export" value="sensor.stromzahler_active_power_minus" />
             </div>
             <div>
               <label>Netzimport Sensor</label>
-              <input value="sensor.stromzahler_active_power_plus" />
+              <input id="entity-grid-import" value="sensor.stromzahler_active_power_plus" />
             </div>
             <div>
               <label>Hausverbrauch Sensor</label>
-              <input value="sensor.hausverbrauch" />
+              <input id="entity-house-consumption" value="sensor.hausverbrauch" />
             </div>
             <div>
               <label>Pumpe Leistung Sensor</label>
-              <input value="sensor.poolpumpe_leistung" />
+              <input id="entity-pump-power" value="sensor.poolpumpe_leistung" />
             </div>
             <div>
               <label>Pumpe Strom Sensor</label>
-              <input value="sensor.poolpumpe_current" />
+              <input id="entity-pump-current" value="sensor.poolpumpe_current" />
             </div>
             <div>
               <label>Pumpe Spannung Sensor</label>
-              <input value="sensor.poolpumpe_spannung" />
+              <input id="entity-pump-voltage" value="sensor.poolpumpe_spannung" />
             </div>
             <div>
               <label>Pumpe Signal Sensor</label>
-              <input value="sensor.poolpumpe_signal" />
+              <input id="entity-pump-signal" value="sensor.poolpumpe_signal" />
             </div>
             <div>
               <label>Heizung Leistung Sensor</label>
-              <input value="sensor.poolheizung_leistung" />
+              <input id="entity-heater-power" value="sensor.poolheizung_leistung" />
             </div>
             <div>
               <label>Heizung Netzstrom Sensor</label>
-              <input value="sensor.poolheizung_netzstrom" />
+              <input id="entity-heater-current" value="sensor.poolheizung_netzstrom" />
             </div>
             <div>
               <label>Heizung Netzspannung Sensor</label>
-              <input value="sensor.poolheizung_netzspannung" />
+              <input id="entity-heater-voltage" value="sensor.poolheizung_netzspannung" />
             </div>
             <div>
               <label>Heizung Lüfter Sensor</label>
-              <input value="sensor.poolheizung_lufter" />
+              <input id="entity-heater-fan" value="sensor.poolheizung_lufter" />
             </div>
             <div>
               <label>Heizung Umgebungsluft Sensor</label>
-              <input value="sensor.poolheizung_umgebungsluft_temperatur" />
+              <input id="entity-heater-ambient" value="sensor.poolheizung_umgebungsluft_temperatur" />
             </div>
             <div>
               <label>Heizung Wasser Eingang Sensor</label>
-              <input value="sensor.poolheizung_wassertemperatur_eingang" />
+              <input id="entity-heater-water-in" value="sensor.poolheizung_wassertemperatur_eingang" />
             </div>
             <div>
               <label>Heizung Wasser Ausgang Sensor</label>
-              <input value="sensor.poolheizung_wassertemperatur_ausgang" />
+              <input id="entity-heater-water-out" value="sensor.poolheizung_wassertemperatur_ausgang" />
             </div>
           </div>
         </div>
@@ -1790,7 +1788,7 @@
           <div class="form-grid">
             <div>
               <label>Start Export über W</label>
-              <input type="number" value="1500" />
+              <input id="pv-start-export-w" type="number" value="1500" />
             </div>
             <div>
               <label>Startverzögerung Minuten</label>
@@ -1855,8 +1853,8 @@
               </div>
             </div>
             <div class="wide">
-              <button class="btn primary">Konfiguration speichern</button>
-              <button class="btn">Verbindung testen</button>
+              <button id="save-settings" class="btn primary">Konfiguration speichern</button>
+              <button id="test-connection" class="btn">Verbindung testen</button>
             </div>
           </div>
         </div>
@@ -1865,11 +1863,55 @@
   </main>
 
   <script>
-    // Demo state for the static prototype. The Home Assistant add-on serves this UI
-    // first; the backend proxy added in the add-on is the next integration point.
+    // Runtime state for the touch UI. Home Assistant values are fetched through
+    // the add-on proxy so the browser never needs to know a long-lived token.
+    const SETTINGS_STORAGE_KEY = 'openpool.settings.v1';
+    const HA_POLL_INTERVAL_MS = 15000;
+    const RESTART_PULSE_MS = 5000;
+    const entityInputDefaults = {
+      'entity-pump-switch': 'switch.poolpumpe',
+      'entity-heater-climate': 'climate.poolheizung',
+      'entity-weather': 'weather.openweathermap',
+      'entity-pv-export': 'sensor.stromzahler_active_power_minus',
+      'entity-grid-import': 'sensor.stromzahler_active_power_plus',
+      'entity-house-consumption': 'sensor.hausverbrauch',
+      'entity-pump-power': 'sensor.poolpumpe_leistung',
+      'entity-pump-current': 'sensor.poolpumpe_current',
+      'entity-pump-voltage': 'sensor.poolpumpe_spannung',
+      'entity-pump-signal': 'sensor.poolpumpe_signal',
+      'entity-heater-power': 'sensor.poolheizung_leistung',
+      'entity-heater-current': 'sensor.poolheizung_netzstrom',
+      'entity-heater-voltage': 'sensor.poolheizung_netzspannung',
+      'entity-heater-fan': 'sensor.poolheizung_lufter',
+      'entity-heater-ambient': 'sensor.poolheizung_umgebungsluft_temperatur',
+      'entity-heater-water-in': 'sensor.poolheizung_wassertemperatur_eingang',
+      'entity-heater-water-out': 'sensor.poolheizung_wassertemperatur_ausgang'
+    };
+    const addonEntityOptionMap = {
+      'entity-pump-switch': 'pump_switch',
+      'entity-heater-climate': 'heater_climate',
+      'entity-weather': 'weather',
+      'entity-pv-export': 'pv_export',
+      'entity-grid-import': 'grid_import',
+      'entity-house-consumption': 'house_consumption',
+      'entity-pump-power': 'pump_power',
+      'entity-pump-current': 'pump_current',
+      'entity-pump-voltage': 'pump_voltage',
+      'entity-pump-signal': 'pump_signal',
+      'entity-heater-power': 'heater_power',
+      'entity-heater-current': 'heater_current',
+      'entity-heater-voltage': 'heater_voltage',
+      'entity-heater-fan': 'heater_fan',
+      'entity-heater-ambient': 'heater_ambient',
+      'entity-heater-water-in': 'heater_water_in',
+      'entity-heater-water-out': 'heater_water_out'
+    };
     let shutdownActive = false;
     let restartPulseActive = false;
     let heaterTargetTemp = 28;
+    let pumpRunOnTimer = null;
+    let refreshTimer = null;
+    let liveStateAvailable = false;
 
     // Safety rule: pump run-on is only required while the heat pump is running
     // or less than five minutes after it stopped.
@@ -1877,9 +1919,7 @@
     let heaterOffSince = Date.now() - heaterRunOnMs - 1000;
     let lastCommandSignature = '';
     const commandLog = [
-      { time: '17:00', title: 'PV-Automatik wartet', detail: 'Wärmepumpe wartet auf stabile Freigabe.' },
-      { time: '16:59', title: 'Restart-Pulse', detail: 'Chlorinator wurde neu angestoßen.' },
-      { time: '07:30', title: 'Badefenster gestartet', detail: 'Pumpe wurde nach Zeitplan freigegeben.' }
+      { time: '--:--', title: 'Warte auf Home Assistant', detail: 'Live-Zustand wird geladen.' }
     ];
 
     function escapeHTML(value) {
@@ -1918,6 +1958,364 @@
       renderCommandLog();
     }
 
+    function setText(id, value) {
+      const node = document.getElementById(id);
+      if (node) node.textContent = value;
+    }
+
+    function setConnectionStatus(connected, text) {
+      const pill = document.getElementById('ha-status-pill');
+      if (!pill) return;
+      pill.classList.toggle('connected', connected);
+      pill.classList.toggle('disconnected', !connected);
+      pill.innerHTML = `<span class="dot"></span>${escapeHTML(text)}`;
+    }
+
+    async function apiJson(path, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+      const response = await fetch(path, { ...options, headers });
+      const contentType = response.headers.get('content-type') || '';
+      const text = await response.text();
+      const payload = contentType.includes('application/json') && text
+        ? JSON.parse(text)
+        : text;
+
+      if (!response.ok) {
+        const message = typeof payload === 'string' ? payload : (payload.error || response.statusText);
+        throw new Error(message || `HTTP ${response.status}`);
+      }
+
+      return payload;
+    }
+
+    function getEntityId(inputId) {
+      return document.getElementById(inputId)?.value.trim() || entityInputDefaults[inputId] || '';
+    }
+
+    function getNumberInput(id, fallback) {
+      const value = Number(document.getElementById(id)?.value);
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function readStoredSettings() {
+      try {
+        return JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) || '{}');
+      } catch {
+        return {};
+      }
+    }
+
+    function applySettings(settings) {
+      if (!settings || typeof settings !== 'object') return;
+
+      Object.entries(settings.entities || {}).forEach(([inputId, value]) => {
+        const input = document.getElementById(inputId);
+        if (input && value) input.value = value;
+      });
+
+      if (settings.thresholds) {
+        if (settings.thresholds.pvStartExportW !== undefined) {
+          document.getElementById('pv-start-export-w').value = settings.thresholds.pvStartExportW;
+        }
+        if (settings.thresholds.heaterTempMin !== undefined) {
+          document.getElementById('heater-temp-min').value = settings.thresholds.heaterTempMin;
+        }
+        if (settings.thresholds.heaterTempMax !== undefined) {
+          document.getElementById('heater-temp-max').value = settings.thresholds.heaterTempMax;
+        }
+      }
+    }
+
+    function applyAddonOptions(options) {
+      const entities = options?.entities || {};
+      Object.entries(addonEntityOptionMap).forEach(([inputId, optionKey]) => {
+        const input = document.getElementById(inputId);
+        if (input && entities[optionKey]) input.value = entities[optionKey];
+      });
+
+      const thresholds = options?.thresholds || {};
+      if (thresholds.pv_start_export_w !== undefined) {
+        document.getElementById('pv-start-export-w').value = thresholds.pv_start_export_w;
+      }
+      if (thresholds.heater_temp_min !== undefined) {
+        document.getElementById('heater-temp-min').value = thresholds.heater_temp_min;
+      }
+      if (thresholds.heater_temp_max !== undefined) {
+        document.getElementById('heater-temp-max').value = thresholds.heater_temp_max;
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        applyAddonOptions(await apiJson('/api/config'));
+      } catch {
+        // The UI can still work with defaults or locally saved values.
+      }
+
+      applySettings(readStoredSettings());
+    }
+
+    function saveSettings() {
+      const settings = {
+        entities: {},
+        thresholds: {
+          pvStartExportW: getNumberInput('pv-start-export-w', 1500),
+          heaterTempMin: getNumberInput('heater-temp-min', 18),
+          heaterTempMax: getNumberInput('heater-temp-max', 32)
+        }
+      };
+
+      Object.keys(entityInputDefaults).forEach(inputId => {
+        settings.entities[inputId] = getEntityId(inputId);
+      });
+
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      pushCommand('Konfiguration gespeichert', 'Entitäten und Grenzwerte lokal im Browser gespeichert.');
+    }
+
+    async function getHaState(inputId) {
+      const entityId = getEntityId(inputId);
+      if (!entityId) throw new Error(`Keine Entität für ${inputId}`);
+      return apiJson(`/api/ha/states/${encodeURIComponent(entityId)}`);
+    }
+
+    async function callHaService(domain, service, data) {
+      return apiJson(`/api/ha/services/${domain}/${service}`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    }
+
+    async function switchPump(enabled) {
+      return callHaService('switch', enabled ? 'turn_on' : 'turn_off', {
+        entity_id: getEntityId('entity-pump-switch')
+      });
+    }
+
+    async function setClimateHvacMode(mode) {
+      const entityId = getEntityId('entity-heater-climate');
+      try {
+        return await callHaService('climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: mode });
+      } catch (error) {
+        const fallbackService = mode === 'off' ? 'turn_off' : 'turn_on';
+        return callHaService('climate', fallbackService, { entity_id: entityId });
+      }
+    }
+
+    async function setClimateTemperature() {
+      return callHaService('climate', 'set_temperature', {
+        entity_id: getEntityId('entity-heater-climate'),
+        temperature: heaterTargetTemp
+      });
+    }
+
+    function isUnavailableState(entityState) {
+      return !entityState || ['unknown', 'unavailable', 'none'].includes(String(entityState.state).toLowerCase());
+    }
+
+    function parseEntityNumber(entityState) {
+      if (isUnavailableState(entityState)) return null;
+      const normalized = String(entityState.state).replace(',', '.').replace(/[^\d.-]/g, '');
+      const value = Number(normalized);
+      return Number.isFinite(value) ? value : null;
+    }
+
+    function entityUnit(entityState, fallback = '') {
+      return entityState?.attributes?.unit_of_measurement || fallback;
+    }
+
+    function entityPowerWatts(entityState) {
+      const value = parseEntityNumber(entityState);
+      if (value === null) return null;
+      const unit = entityUnit(entityState).toLowerCase();
+      return unit.includes('kw') ? value * 1000 : value;
+    }
+
+    function formatDecimal(value, digits = 1) {
+      return Number(value).toLocaleString('de-DE', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function formatPower(watts) {
+      if (watts === null || !Number.isFinite(watts)) return '--';
+      return Math.abs(watts) >= 1000
+        ? `${formatDecimal(watts / 1000, 2)} kW`
+        : `${Math.round(watts).toLocaleString('de-DE')} W`;
+    }
+
+    function formatSensorValue(entityState, fallbackUnit = '', digits = 1) {
+      if (isUnavailableState(entityState)) return '--';
+
+      const raw = String(entityState.state);
+      const lower = raw.toLowerCase();
+      if (lower === 'on') return 'EIN';
+      if (lower === 'off') return 'AUS';
+
+      const value = parseEntityNumber(entityState);
+      const unit = entityUnit(entityState, fallbackUnit);
+      if (value === null) return unit ? `${raw} ${unit}` : raw;
+
+      const formatted = digits === 0
+        ? Math.round(value).toLocaleString('de-DE')
+        : formatDecimal(value, digits);
+      return unit ? `${formatted} ${unit}` : formatted;
+    }
+
+    function updateBar(id, percent) {
+      const bar = document.getElementById(id);
+      if (!bar) return;
+      const bounded = Math.min(100, Math.max(0, percent || 0));
+      bar.style.width = `${bounded}%`;
+    }
+
+    function updatePowerFlow(valueId, barId, entityState, maxWatts) {
+      const watts = entityPowerWatts(entityState);
+      setText(valueId, formatPower(watts));
+      updateBar(barId, watts === null ? 0 : (Math.abs(watts) / maxWatts) * 100);
+    }
+
+    function updateGenericFlow(valueId, barId, entityState, maxValue, fallbackUnit, digits = 1) {
+      const value = parseEntityNumber(entityState);
+      setText(valueId, formatSensorValue(entityState, fallbackUnit, digits));
+      updateBar(barId, value === null ? 0 : (Math.abs(value) / maxValue) * 100);
+    }
+
+    function updatePvAvailability(states) {
+      const pvExport = entityPowerWatts(states['entity-pv-export']);
+      const gridImport = entityPowerWatts(states['entity-grid-import']);
+      const houseConsumption = entityPowerWatts(states['entity-house-consumption']);
+      const threshold = getNumberInput('pv-start-export-w', 1500);
+      const thresholdText = formatPower(threshold);
+
+      setText('pv-ready-threshold', thresholdText);
+      setText('pv-surplus-hint', `Bereit ab ${thresholdText}`);
+
+      if ([pvExport, gridImport, houseConsumption].some(value => value === null)) {
+        setText('pv-free-value', '--');
+        setText('pv-surplus-metric', '--');
+        return;
+      }
+
+      const available = pvExport - gridImport - houseConsumption;
+      const text = formatPower(available);
+      setText('pv-free-value', text);
+      setText('pv-surplus-metric', text);
+    }
+
+    function updateWeather(states) {
+      const weather = states['entity-weather'];
+      if (isUnavailableState(weather)) return;
+
+      const state = String(weather.state).toLowerCase();
+      const temperature = weather.attributes?.temperature;
+      const rainy = ['rainy', 'pouring', 'lightning-rainy', 'snowy-rainy'].includes(state);
+      const recommendation = rainy ? 'Schlechtwetter' : 'Badebetrieb';
+      const icon = rainy ? '🌧️' : (state.includes('cloud') ? '🌤️' : '☀️');
+      const temperatureValue = Number(temperature);
+      const tempText = Number.isFinite(temperatureValue) ? `${formatDecimal(temperatureValue, 1)}°` : 'Wetter';
+
+      setText('weather-recommendation', recommendation);
+      setText('weather-reason', `Home Assistant meldet ${weather.state} · ${tempText}.`);
+      setText('weather-badge', `${icon} Heute: ${recommendation} empfohlen`);
+    }
+
+    function updateHomeAssistantValues(states) {
+      const pump = states['entity-pump-switch'];
+      const heater = states['entity-heater-climate'];
+      let pumpOn = null;
+      let heaterRunning = null;
+
+      if (!isUnavailableState(pump) && !restartPulseActive) {
+        pumpOn = String(pump.state).toLowerCase() === 'on';
+        setText('pump-status', pumpOn ? 'EIN' : 'AUS');
+        setText('pump-hint', pumpOn ? 'Home Assistant Schalter EIN' : 'Home Assistant Schalter AUS');
+        setText('chlor-status', pumpOn ? 'aktiv' : 'AUS');
+        setText('chlor-hint', pumpOn ? 'läuft mit der Pumpe' : 'gemeinsam mit Pumpe aus');
+      }
+
+      if (!isUnavailableState(heater)) {
+        const heaterState = String(heater.state).toLowerCase();
+        heaterRunning = !['off', 'idle'].includes(heaterState);
+        if (heaterRunning) {
+          heaterOffSince = null;
+        } else if (heaterOffSince === null) {
+          heaterOffSince = Date.now();
+        }
+
+        setText('heater-status', heaterRunning ? 'EIN' : 'AUS');
+        setText('heater-hint', `Home Assistant: ${heater.state}`);
+
+        const currentTemp = Number(heater.attributes?.current_temperature);
+        const targetTemp = Number(heater.attributes?.temperature);
+        if (Number.isFinite(currentTemp)) {
+          setText('heater-current-temp', `${formatDecimal(currentTemp, 1)}°`);
+        }
+        if (Number.isFinite(targetTemp)) {
+          heaterTargetTemp = targetTemp;
+          setTargetTemp(targetTemp);
+        }
+      }
+
+      if (!restartPulseActive && (pumpOn !== null || heaterRunning !== null)) {
+        const pumpText = pumpOn === true ? 'Pumpe läuft' : 'Pumpe ist aus';
+        const heaterText = heaterRunning === true ? 'Wärmepumpe läuft' : 'Wärmepumpe ist aus';
+        const active = pumpOn === true || heaterRunning === true;
+        setText('hero-title', active ? 'Pool aktiv' : 'Pool inaktiv');
+        setText('hero-subtitle', `${pumpText}. ${heaterText}. Status kommt live aus Home Assistant.`);
+      }
+
+      updatePvAvailability(states);
+      updateWeather(states);
+      updatePowerFlow('pump-power-value', 'pump-power-bar', states['entity-pump-power'], 1600);
+      updateGenericFlow('pump-current-value', 'pump-current-bar', states['entity-pump-current'], 10, 'A', 1);
+      updateGenericFlow('pump-voltage-value', 'pump-voltage-bar', states['entity-pump-voltage'], 240, 'V', 0);
+      updateGenericFlow('pump-signal-value', 'pump-signal-bar', states['entity-pump-signal'], 100, '%', 0);
+      updatePowerFlow('heater-power-value', 'heater-power-bar', states['entity-heater-power'], 2500);
+      updateGenericFlow('heater-current-value', 'heater-current-bar', states['entity-heater-current'], 12, 'A', 1);
+      updateGenericFlow('heater-voltage-value', 'heater-voltage-bar', states['entity-heater-voltage'], 240, 'V', 0);
+      updateGenericFlow('heater-fan-value', 'heater-fan-bar', states['entity-heater-fan'], 3000, '', 0);
+    }
+
+    async function refreshHomeAssistantState() {
+      const inputIds = Object.keys(entityInputDefaults);
+      const results = await Promise.allSettled(inputIds.map(inputId => getHaState(inputId)));
+      const states = {};
+      let successCount = 0;
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          states[inputIds[index]] = result.value;
+          successCount += 1;
+        }
+      });
+
+      const criticalOk = !isUnavailableState(states['entity-pump-switch'])
+        && !isUnavailableState(states['entity-heater-climate']);
+
+      if (criticalOk) {
+        liveStateAvailable = true;
+        setConnectionStatus(true, 'Home Assistant verbunden');
+      } else if (successCount > 0) {
+        setConnectionStatus(false, 'Konfiguration prüfen');
+      } else {
+        setConnectionStatus(false, 'Home Assistant getrennt');
+      }
+
+      if (successCount > 0) {
+        updateHomeAssistantValues(states);
+      }
+
+      return states;
+    }
+
+    function handleHaError(context, error) {
+      console.error(context, error);
+      setConnectionStatus(false, 'Home Assistant Fehler');
+      pushCommand(`${context} fehlgeschlagen`, String(error.message || error).slice(0, 96));
+    }
+
     function showTab(tab, button) {
       // The app uses real sections rather than page reloads, which keeps it fast
       // inside Home Assistant ingress on tablets.
@@ -1931,6 +2329,7 @@
     function toggleSwitch(el) {
       el.classList.toggle('on');
       updateDecision();
+      applyMasterStateToHomeAssistant(isMasterEnabled());
     }
 
     function isMasterEnabled() {
@@ -1942,7 +2341,7 @@
     }
 
     function getHeaterMode() {
-      return document.querySelector('#heater-control-card .mode.active strong')?.textContent.trim() || 'Aus';
+      return document.querySelector('#heater-control-card .mode.active')?.dataset.heaterMode || 'Aus';
     }
 
     function isHeaterRunningForFlow(pumpMode, heaterMode) {
@@ -1996,10 +2395,129 @@
       setShutdownSequenceVisible(true);
     }
 
-    function manualRestartPulse() {
+    function clearPumpRunOnTimer() {
+      if (!pumpRunOnTimer) return;
+      window.clearTimeout(pumpRunOnTimer);
+      pumpRunOnTimer = null;
+    }
+
+    async function schedulePumpStopAfterRunOn() {
+      clearPumpRunOnTimer();
+      const elapsed = heaterOffSince === null ? 0 : Date.now() - heaterOffSince;
+      const remaining = Math.max(0, heaterRunOnMs - elapsed);
+
+      if (remaining <= 0) {
+        await switchPump(false);
+        shutdownActive = false;
+        setShutdownSequenceVisible(false);
+        pushCommand('Pumpe direkt aus', 'Heizung ist seit mehr als 5 Minuten aus, kein Nachlauf nötig.');
+        return;
+      }
+
+      await switchPump(true);
+      pushCommand('Pumpennachlauf gestartet', 'Pumpe bleibt für den Heizungs-Nachlauf eingeschaltet.');
+      pumpRunOnTimer = window.setTimeout(async () => {
+        try {
+          await switchPump(false);
+          shutdownActive = false;
+          setShutdownSequenceVisible(false);
+          pushCommand('Pumpennachlauf fertig', 'Pumpe wurde nach dem Heizungs-Nachlauf ausgeschaltet.');
+          refreshHomeAssistantState();
+        } catch (error) {
+          handleHaError('Pumpennachlauf', error);
+        }
+      }, remaining);
+    }
+
+    async function applyMasterStateToHomeAssistant(enabled) {
+      clearPumpRunOnTimer();
+
+      try {
+        if (!enabled) {
+          const results = await Promise.allSettled([
+            setClimateHvacMode('off'),
+            switchPump(false)
+          ]);
+          const failed = results.find(result => result.status === 'rejected');
+          if (failed) throw failed.reason;
+          pushCommand('Hauptfreigabe AUS', 'Pumpe und Wärmepumpe wurden über Home Assistant ausgeschaltet.');
+        } else if (getPumpMode() !== 'Aus') {
+          await switchPump(true);
+          if (getPumpMode() === 'Nachtbaden') {
+            await setClimateHvacMode('heat');
+          }
+          pushCommand('Hauptfreigabe EIN', 'Home Assistant Schalter wurde passend zum aktiven Modus gesetzt.');
+        }
+
+        refreshHomeAssistantState();
+      } catch (error) {
+        handleHaError('Hauptfreigabe', error);
+      }
+    }
+
+    async function applyPumpModeToHomeAssistant(pumpMode) {
+      if (!isMasterEnabled()) return;
+
+      try {
+        if (pumpMode === 'Aus') {
+          try {
+            await setClimateHvacMode('off');
+          } catch (error) {
+            handleHaError('Heizung ausschalten', error);
+          }
+
+          if (needsPumpRunOnForHeater()) {
+            await schedulePumpStopAfterRunOn();
+          } else {
+            clearPumpRunOnTimer();
+            await switchPump(false);
+          }
+        } else {
+          clearPumpRunOnTimer();
+          await switchPump(true);
+          if (pumpMode === 'Nachtbaden') {
+            await setClimateHvacMode('heat');
+          }
+        }
+
+        refreshHomeAssistantState();
+      } catch (error) {
+        handleHaError('Pumpenmodus', error);
+      }
+    }
+
+    async function applyHeaterModeToHomeAssistant(heaterMode) {
+      if (!isMasterEnabled() || getPumpMode() === 'Aus') return;
+
+      try {
+        if (heaterMode === 'Aus') {
+          await setClimateHvacMode('off');
+          pushCommand('Heizung AUS', 'Wärmepumpe wurde über Home Assistant ausgeschaltet.');
+        } else if (heaterMode === 'Ein') {
+          await switchPump(true);
+          await setClimateHvacMode('heat');
+          try {
+            await setClimateTemperature();
+          } catch {
+            // Some climate integrations accept the HVAC mode but not target
+            // temperature in the same state. The slider can still retry it.
+          }
+          pushCommand('Heizung EIN', 'Wärmepumpe wurde über Home Assistant eingeschaltet.');
+        } else {
+          pushCommand(heaterMode + ' gewählt', 'Automatikmodus aktiv, manuelle Schaltung bleibt unverändert.');
+        }
+
+        refreshHomeAssistantState();
+      } catch (error) {
+        handleHaError('Heizungsmodus', error);
+      }
+    }
+
+    async function manualRestartPulse() {
       if (!isMasterEnabled() || getPumpMode() === 'Aus') return;
       restartPulseActive = true;
       shutdownActive = false;
+      clearPumpRunOnTimer();
       setShutdownSequenceVisible(false);
       document.getElementById('hero-title').textContent = 'Chlorsystem neu starten';
       document.getElementById('hero-subtitle').textContent = 'Kurzer Restart-Pulse: Die Pumpe wird für wenige Sekunden ausgeschaltet und direkt wieder eingeschaltet. Der Betriebsmodus bleibt unverändert.';
@@ -2008,6 +2526,24 @@
       document.getElementById('chlor-status').textContent = 'Neustart';
       document.getElementById('chlor-hint').textContent = 'Chlorinator wird neu angestoßen';
       pushCommand('Chlorsystem neu starten', 'Restart-Pulse aktiv, Modus bleibt unverändert.');
+
+      try {
+        await switchPump(false);
+        window.setTimeout(async () => {
+          try {
+            await switchPump(true);
+            restartPulseActive = false;
+            pushCommand('Chlorsystem neu gestartet', 'Restart-Pulse abgeschlossen, Pumpe wieder EIN.');
+            refreshHomeAssistantState();
+          } catch (error) {
+            restartPulseActive = false;
+            handleHaError('Restart-Pulse', error);
+          }
+        }, RESTART_PULSE_MS);
+      } catch (error) {
+        restartPulseActive = false;
+        handleHaError('Restart-Pulse', error);
+      }
     }
 
     function getTemperatureBounds() {
@@ -2052,8 +2588,8 @@
     }
 
     function updateDecision() {
-      // Main rules engine for the prototype. It mirrors the intended controller
-      // behavior while no persistent backend state is connected yet.
+      // Local rules engine for the visible mode selection. Actual switching is
+      // performed separately through Home Assistant service calls.
       const masterEnabled = isMasterEnabled();
       const pumpMode = getPumpMode();
       const heaterMode = getHeaterMode();
@@ -2214,6 +2750,7 @@
         const parent = mode.parentElement;
         const isPumpMode = mode.closest('#pump-control-card');
         const targetPumpMode = mode.dataset.pumpMode;
+        const targetHeaterMode = mode.dataset.heaterMode;
 
         if (mode.dataset.action === 'restart') {
           manualRestartPulse();
@@ -2232,6 +2769,11 @@
         mode.classList.add('active');
 
         updateDecision();
+        if (isPumpMode && targetPumpMode) {
+          applyPumpModeToHomeAssistant(targetPumpMode);
+        } else if (targetHeaterMode) {
+          applyHeaterModeToHomeAssistant(targetHeaterMode);
+        }
       });
     });
 
@@ -2252,9 +2794,41 @@
       document.getElementById(id)?.addEventListener('input', updateTemperatureRange);
     });
 
-    updateTemperatureRange();
-    renderCommandLog();
-    updateDecision();
+    document.getElementById('heater-target-slider')?.addEventListener('change', async () => {
+      try {
+        await setClimateTemperature();
+        pushCommand('Zieltemperatur gesetzt', `${formatDecimal(heaterTargetTemp, 1)}° an Home Assistant gesendet.`);
+        refreshHomeAssistantState();
+      } catch (error) {
+        handleHaError('Zieltemperatur', error);
+      }
+    });
+
+    document.getElementById('save-settings')?.addEventListener('click', () => {
+      saveSettings();
+      updateTemperatureRange();
+      refreshHomeAssistantState();
+    });
+
+    document.getElementById('test-connection')?.addEventListener('click', async () => {
+      const states = await refreshHomeAssistantState();
+      const ok = !isUnavailableState(states['entity-pump-switch']) && !isUnavailableState(states['entity-heater-climate']);
+      pushCommand(ok ? 'Verbindung OK' : 'Konfiguration prüfen', ok
+        ? 'Pumpe und Wärmepumpe sind über Home Assistant erreichbar.'
+        : 'Mindestens eine Kernentität konnte nicht gelesen werden.');
+    });
+
+    async function bootOpenPool() {
+      await loadSettings();
+      updateTemperatureRange();
+      renderCommandLog();
+      document.getElementById('pump-control-card').classList.toggle('disabled', !isMasterEnabled());
+      updateHeaterLock();
+      refreshHomeAssistantState();
+      refreshTimer = window.setInterval(refreshHomeAssistantState, HA_POLL_INTERVAL_MS);
+    }
+
+    bootOpenPool();
   </script>
 </body>
 </html>
