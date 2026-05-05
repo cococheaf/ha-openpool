@@ -6,8 +6,7 @@ surplus based heating logic from one compact tablet-friendly interface.
 
 ## Current State
 
-- `index.html` contains the current single-file UI prototype.
-- `openpool/` contains a Home Assistant add-on wrapper.
+- `openpool/` contains the Home Assistant add-on and bundled UI.
 - The add-on serves the UI through Home Assistant Ingress and includes a small
   API proxy for future Home Assistant state and service calls.
 
@@ -20,8 +19,8 @@ surplus based heating logic from one compact tablet-friendly interface.
 
 ## Development
 
-The UI prototype can still be opened directly via `index.html`. For the add-on
-build, Home Assistant uses `openpool/config.yaml` and `openpool/Dockerfile`.
+For the add-on build, Home Assistant uses `openpool/config.yaml` and
+`openpool/Dockerfile`. The bundled frontend lives in `openpool/www/index.html`.
 
 The add-on is modeled after the repository-based installation flow used by
 projects such as evcc, where Home Assistant users add a GitHub add-on

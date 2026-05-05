@@ -1,3 +1,10 @@
 .DS_Store
 __pycache__/
 *.pyc
+
+# Local prototype/workspace files. The Home Assistant add-on uses openpool/www.
+/index.html
+/icons/
+/PROJECT_CONTEXT.md
+/READ_ME.md
+/OpenPool.code-workspace
