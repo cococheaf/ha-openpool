@@ -1,5 +1,5 @@
 name: OpenPool
-version: "0.2.7"
+version: "0.2.8"
 slug: openpool
 description: OpenSource Pool System Controller for pump, chlorinator, heat pump and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool
@@ -58,6 +58,9 @@ options:
     heater_water_out: sensor.poolheizung_wassertemperatur_ausgang
   thresholds:
     pv_start_export_w: 1500
+    pv_stop_export_w: 1500
+    pv_start_stable_minutes: 5
+    pv_stop_stable_minutes: 1
     heater_temp_min: 18
     heater_temp_max: 32
   profiles:
@@ -110,6 +113,9 @@ schema:
     heater_water_out: str
   thresholds:
     pv_start_export_w: int
+    pv_stop_export_w: int
+    pv_start_stable_minutes: float
+    pv_stop_stable_minutes: float
     heater_temp_min: float
     heater_temp_max: float
   profiles:

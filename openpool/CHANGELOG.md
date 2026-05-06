@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.8
+
+- Add configurable PV start/stop thresholds and stability times for heat-pump release.
+- Keep PV release stability state in the shared controller state so browser sessions show the same control basis.
+- Show the configured PV start stability time in the dashboard PV release tile.
+
 ## 0.2.7
 
 - Rename the command card to `Aufgabenverlauf`.

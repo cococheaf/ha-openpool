@@ -270,6 +270,9 @@ class OpenPoolController:
             "pump_runtime_today_s": 0,
             "runtime_day": today_key(),
             "heater_off_since": now_ts() - RUN_ON_SECONDS - 1,
+            "pv_above_since": None,
+            "pv_below_since": None,
+            "pv_last_available_w": None,
             "pending_job": None,
             "restart_pulses_done": {},
             "command_log": [
@@ -307,7 +310,14 @@ class OpenPoolController:
         return entities
 
     def thresholds(self) -> dict:
-        values = {"pv_start_export_w": 1500, "heater_temp_min": 18, "heater_temp_max": 32}
+        values = {
+            "pv_start_export_w": 1500,
+            "pv_stop_export_w": 1500,
+            "pv_start_stable_minutes": 5,
+            "pv_stop_stable_minutes": 1,
+            "heater_temp_min": 18,
+            "heater_temp_max": 32,
+        }
         values.update((self.options().get("thresholds") or {}))
         return values
 
@@ -401,6 +411,8 @@ class OpenPoolController:
                 self.command("Pumpenmodus", self.state["pump_mode"])
                 self._save_state()
             elif action_type == "heater_mode":
+                if str(action.get("mode") or "Aus") != self.state.get("heater_mode"):
+                    self._reset_pv_tracking()
                 self.state["heater_mode"] = str(action.get("mode") or "Aus")
                 self.command("Heizungsmodus", self.state["heater_mode"])
                 self._save_state()
@@ -531,6 +543,7 @@ class OpenPoolController:
         heater_mode = str(self.state.get("heater_mode") or "Aus")
 
         if not master_enabled:
+            self._reset_pv_tracking()
             self._turn_heater(False)
             self._turn_pump(False)
             return
@@ -542,6 +555,7 @@ class OpenPoolController:
             self.command("Nachtbaden beendet", "Maximale Laufzeit erreicht, Heizung wird mit Nachlauf ausgeschaltet.")
 
         if pump_mode == "Aus":
+            self._reset_pv_tracking()
             self._turn_heater(False)
             if self._heater_needs_run_on():
                 self.state["pending_job"] = {"type": "pump_run_on", "until": now_ts() + RUN_ON_SECONDS}
@@ -561,10 +575,13 @@ class OpenPoolController:
             return
 
         if pump_mode == "Nachtbaden":
+            self._reset_pv_tracking()
             self._turn_heater(True)
         elif heater_mode == "Aus":
+            self._reset_pv_tracking()
             self._turn_heater(False)
         elif heater_mode == "Ein":
+            self._reset_pv_tracking()
             self._turn_heater(True)
         elif heater_mode in {"PV-Automatik", "Wetterautomatik"}:
             self._apply_pv_heating(pump_should_run)
@@ -593,11 +610,68 @@ class OpenPoolController:
 
     def _apply_pv_heating(self, pump_should_run: bool) -> None:
         if not pump_should_run:
+            self._reset_pv_tracking()
             self._turn_heater(False)
             return
         available = self._pv_available_watts()
-        threshold = float(self.thresholds().get("pv_start_export_w") or 1500)
-        self._turn_heater(available is not None and available >= threshold)
+        if available is None:
+            self._reset_pv_tracking()
+            self._turn_heater(False)
+            return
+
+        current_ts = now_ts()
+        config = self._pv_release_settings()
+        self.state["pv_last_available_w"] = round(available, 1)
+
+        if self._heater_is_active():
+            self.state["pv_above_since"] = None
+            if available < config["stop_w"]:
+                if not self.state.get("pv_below_since"):
+                    self.state["pv_below_since"] = current_ts
+                if current_ts - float(self.state["pv_below_since"]) >= config["stop_stable_s"]:
+                    self._turn_heater(False)
+            else:
+                self.state["pv_below_since"] = None
+            return
+
+        self.state["pv_below_since"] = None
+        if available >= config["start_w"]:
+            if not self.state.get("pv_above_since"):
+                self.state["pv_above_since"] = current_ts
+            if current_ts - float(self.state["pv_above_since"]) >= config["start_stable_s"]:
+                self._turn_heater(True)
+            return
+
+        self.state["pv_above_since"] = None
+        self._turn_heater(False)
+
+    def _pv_release_settings(self) -> dict[str, float]:
+        thresholds = self.thresholds()
+        start_w = self._threshold_float(thresholds, "pv_start_export_w", 1500)
+        stop_w = self._threshold_float(thresholds, "pv_stop_export_w", start_w)
+        start_stable_s = max(0.0, self._threshold_float(thresholds, "pv_start_stable_minutes", 5) * 60)
+        stop_stable_s = max(0.0, self._threshold_float(thresholds, "pv_stop_stable_minutes", 1) * 60)
+
+        # Keep the stop threshold at or below the start threshold so a configured
+        # hysteresis cannot make the heat pump flap at one boundary.
+        return {
+            "start_w": max(0.0, start_w),
+            "stop_w": max(0.0, min(stop_w, start_w)),
+            "start_stable_s": start_stable_s,
+            "stop_stable_s": stop_stable_s,
+        }
+
+    def _threshold_float(self, thresholds: dict, key: str, fallback: float) -> float:
+        try:
+            value = thresholds.get(key)
+            return float(value if value is not None else fallback)
+        except (TypeError, ValueError):
+            return fallback
+
+    def _reset_pv_tracking(self) -> None:
+        self.state["pv_above_since"] = None
+        self.state["pv_below_since"] = None
+        self.state["pv_last_available_w"] = None
 
     def _pv_available_watts(self) -> float | None:
         pv_generation = self._entity_power_watts("pv_generation")

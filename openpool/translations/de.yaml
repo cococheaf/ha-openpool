@@ -57,10 +57,20 @@ configuration:
         name: Heizung Wasser Ausgang Sensor
   thresholds:
     name: Grenzwerte
-    description: Startwerte für PV-Freigabe und Temperaturbereich.
+    description: Grenzwerte für PV-Freigabe, Stabilzeiten und Temperaturbereich.
     fields:
       pv_start_export_w:
-        name: PV Start Export in Watt
+        name: PV Startfreigabe in Watt
+        description: Verfügbare PV-Leistung, die mindestens erreicht werden muss, bevor die Wärmepumpe starten darf.
+      pv_stop_export_w:
+        name: PV Stoppfreigabe in Watt
+        description: Verfügbare PV-Leistung, unter der die Wärmepumpe wieder ausgeschaltet wird.
+      pv_start_stable_minutes:
+        name: PV Start stabil Minuten
+        description: Minuten, die die Startfreigabe durchgehend erfüllt sein muss.
+      pv_stop_stable_minutes:
+        name: PV Stopp stabil Minuten
+        description: Minuten, die die Stoppgrenze durchgehend unterschritten sein muss.
       heater_temp_min:
         name: Minimale Heizungstemperatur
       heater_temp_max:

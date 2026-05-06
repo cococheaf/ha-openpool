@@ -38,6 +38,13 @@ current power sensor is added back to estimate the surplus that would exist
 without the heat pump load.
 OpenPool only enables the heat pump after the pump switch is confirmed on by
 Home Assistant, so the pump load is already represented at the grid meter.
+The add-on options control the PV release with a start threshold, stop
+threshold and separate stability times. `pv_start_export_w` is the legacy option
+name for the calculated available PV power needed to start the heat pump. The
+heat pump starts only after that value has been reached continuously for
+`pv_start_stable_minutes`. While the heat pump is running, OpenPool waits until
+the available PV power stays below `pv_stop_export_w` for
+`pv_stop_stable_minutes` before switching it off.
 
 ## Configuration
 

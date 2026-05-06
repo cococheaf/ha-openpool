@@ -1317,7 +1317,7 @@
             <div class="mode-grid">
               <div class="mode" data-heater-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Wärmepumpe bleibt aus.</small></div>
               <div class="mode" data-heater-mode="Ein"><div class="icon">🔥</div><strong>Ein</strong><small>Heizen erzwingen, aber nur mit Pumpenflow.</small></div>
-              <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach Export, Import und Sperrzeit.</small></div>
+              <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach PV-Leistung und Stabilzeit.</small></div>
               <div class="mode" data-heater-mode="Wetterautomatik"><div class="icon">🌤️</div><strong>Wetterautomatik</strong><small>Optional: Modus nach Wetterempfehlung setzen.</small></div>
             </div>
             <div class="temperature-control">
@@ -1405,6 +1405,9 @@
     const LIVE_STREAM_STALE_MS = 2500;
     const controlConfig = {
       pvStartExportW: 1500,
+      pvStopExportW: 1500,
+      pvStartStableMinutes: 5,
+      pvStopStableMinutes: 1,
       heaterTempMin: 18,
       heaterTempMax: 32
     };
@@ -1649,6 +1652,9 @@
       const options = snapshot?.options || {};
       const thresholds = snapshot?.thresholds || options?.thresholds || {};
       controlConfig.pvStartExportW = optionNumber(thresholds.pv_start_export_w, controlConfig.pvStartExportW);
+      controlConfig.pvStopExportW = optionNumber(thresholds.pv_stop_export_w, controlConfig.pvStopExportW);
+      controlConfig.pvStartStableMinutes = optionNumber(thresholds.pv_start_stable_minutes, controlConfig.pvStartStableMinutes);
+      controlConfig.pvStopStableMinutes = optionNumber(thresholds.pv_stop_stable_minutes, controlConfig.pvStopStableMinutes);
       controlConfig.heaterTempMin = optionNumber(thresholds.heater_temp_min, controlConfig.heaterTempMin);
       controlConfig.heaterTempMax = optionNumber(thresholds.heater_temp_max, controlConfig.heaterTempMax);
     }
@@ -1741,6 +1747,13 @@
       return `${hours}h ${String(minutes).padStart(2, '0')}m`;
     }
 
+    function formatStableMinutes(value, compact = false) {
+      const minutes = Math.max(0, Number(value) || 0);
+      if (minutes === 0) return 'sofort';
+      if (minutes < 1) return `${Math.round(minutes * 60)}s${compact ? '' : ' stabil'}`;
+      return `${formatDecimal(minutes, minutes % 1 === 0 ? 0 : 1)} min${compact ? '' : ' stabil'}`;
+    }
+
     function optionNumber(value, fallback) {
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : fallback;
@@ -1755,13 +1768,15 @@
       const heaterActive = isHeaterActive(states['entity-heater-climate']);
       const threshold = optionNumber(controlConfig.pvStartExportW, 1500);
       const thresholdText = formatPower(threshold);
+      const stableText = formatStableMinutes(controlConfig.pvStartStableMinutes, true);
+      const readyText = stableText === 'sofort' ? thresholdText : `${thresholdText} · ${stableText}`;
 
       setText('pv-generation-value', formatPower(pvGeneration));
       setText('pv-export-value', formatPower(pvExport));
       setText('grid-import-value', formatPower(gridImport));
       setText('net-load-value', formatPower(netConsumption));
-      setText('pv-ready-threshold', thresholdText);
-      setText('pv-surplus-hint', `Bereit ab ${thresholdText}`);
+      setText('pv-ready-threshold', readyText);
+      setText('pv-surplus-hint', `Bereit ab ${readyText}`);
 
       if ([pvGeneration, pvExport, gridImport].some(value => value === null)) {
         setText('house-consumption-value', '--');
@@ -2254,7 +2269,7 @@
         'PV-Automatik': {
           status: 'Auto',
           hint: 'Warte auf PV-Freigabe',
-          reason: '<strong>PV-Automatik.</strong> Start bei stabilem Überschuss ohne Sperrzeit.'
+          reason: '<strong>PV-Automatik.</strong> Start bei stabiler PV-Freigabe.'
         },
         'Wetterautomatik': {
           status: 'Wetter',
