@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+
+- Only allow heat-pump control after the pump switch is confirmed on by Home Assistant, so pump load and flow are accounted for before PV heating starts.
+
 ## 0.2.4
 
 - Calculate PV heat-pump availability from grid export minus grid import instead of subtracting a net-load sensor again.

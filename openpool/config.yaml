@@ -1,5 +1,5 @@
 name: OpenPool
-version: "0.2.4"
+version: "0.2.5"
 slug: openpool
 description: OpenSource Pool System Controller for pump, chlorinator, heat pump and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool

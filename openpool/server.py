@@ -547,9 +547,14 @@ class OpenPoolController:
         pump_should_run = self._pump_should_run(pump_mode)
         self._turn_pump(pump_should_run)
 
+        if not pump_should_run or not self._pump_is_active():
+            self._turn_heater(False)
+            self._save_state()
+            return
+
         if pump_mode == "Nachtbaden":
             self._turn_heater(True)
-        elif heater_mode == "Aus" or not pump_should_run:
+        elif heater_mode == "Aus":
             self._turn_heater(False)
         elif heater_mode == "Ein":
             self._turn_heater(True)
@@ -616,6 +621,9 @@ class OpenPoolController:
         heater_state = str((self.ha_states.get("heater_climate") or {}).get("state", "")).lower()
         return heater_state not in {"", "off", "idle", "unavailable", "unknown"}
 
+    def _pump_is_active(self) -> bool:
+        return str((self.ha_states.get("pump_switch") or {}).get("state", "")).lower() == "on"
+
     def _turn_pump(self, enabled: bool) -> None:
         entity_id = self.entities().get("pump_switch")
         if not entity_id:
@@ -668,7 +676,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.4"
+    server_version = "OpenPool/0.2.5"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

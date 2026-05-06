@@ -34,6 +34,8 @@ The heat-pump PV release is calculated from the grid meter values:
 `sensor.nettobezug` is displayed for information only and is not subtracted
 again. When the heat pump is already running, its current power sensor is added
 back to estimate the surplus that would exist without the heat pump load.
+OpenPool only enables the heat pump after the pump switch is confirmed on by
+Home Assistant, so the pump load is already represented at the grid meter.
 
 ## Configuration
 
