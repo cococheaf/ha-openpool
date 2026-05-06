@@ -47,19 +47,19 @@
       overflow-x: hidden;
     }
 
-    /* App shell: header, centered navigation and responsive page width. */
+    /* App shell: compact title bar plus one responsive dashboard surface. */
     .app {
-      width: min(1280px, calc(100% - (var(--page-gap) * 2)));
+      width: min(1320px, calc(100% - (var(--page-gap) * 2)));
       margin: 0 auto;
-      padding: 10px 0 18px;
+      padding: 12px 0 18px;
     }
 
     header {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      align-items: flex-start;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
       gap: 12px;
-      margin-bottom: 18px;
+      margin-bottom: clamp(14px, 2vw, 24px);
     }
 
     .brand {
@@ -130,7 +130,6 @@
     }
 
     header > .pill {
-      grid-column: 3;
       justify-self: end;
       min-width: 230px;
     }
@@ -162,62 +161,28 @@
       box-shadow: 0 0 0 5px rgba(255,107,107,.12);
     }
 
-    nav {
-      display: flex;
-      gap: 8px;
-      flex: 0 1 auto;
-      background: rgba(255,255,255,.055);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 5px;
-      height: 42px;
-      width: min(430px, 100%);
-      grid-column: 2;
-      justify-self: center;
-    }
-
-    nav button, .btn, .seg button {
-      border: 0;
-      cursor: pointer;
-      font: inherit;
-    }
-
-    nav button {
-      background: transparent;
-      color: var(--muted);
-      padding: 0 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      white-space: nowrap;
-      min-height: 30px;
-      flex: 1;
-    }
-
-    nav button.active {
-      background: rgba(255,255,255,.13);
-      color: var(--text);
-    }
-
-    /* Shared card grid used by dashboard and settings pages. */
+    /* The dashboard uses a 12-column grid on wide screens and folds down at
+       tablet and phone widths without changing the control order. */
     .grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr);
-      gap: 10px;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: clamp(9px, 1vw, 14px);
       align-items: stretch;
     }
 
-    .dashboard .grid {
-      grid-template-columns: minmax(310px, 1.08fr) minmax(240px, .86fr) minmax(260px, .92fr);
+    .dashboard .hero {
+      grid-column: span 8;
     }
 
-    .dashboard .hero {
-      grid-column: span 2;
+    .dashboard .decision-card {
+      grid-column: span 4;
     }
 
     .dashboard .weather-card,
     .dashboard #pump-control-card,
     .dashboard #heater-control-card {
-      min-height: 300px;
+      grid-column: span 4;
+      min-height: 292px;
     }
 
     .dashboard .sensor-list-card {
@@ -230,8 +195,6 @@
     }
 
     .grid > *,
-    .settings > *,
-    .form-grid > *,
     .forecast-grid > * {
       min-width: 0;
     }
@@ -435,21 +398,6 @@
     .mode strong { display: block; font-size: 14px; margin-bottom: 2px; overflow-wrap: anywhere; }
     .mode small { color: var(--muted); font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; align-self: start; }
 
-    .btn {
-      padding: 8px 10px;
-      color: var(--text);
-      border-radius: 12px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid var(--line);
-      min-height: 36px;
-      white-space: normal;
-    }
-
-    .btn.primary { background: rgba(55,212,166,.18); border-color: rgba(55,212,166,.45); }
-    .btn.warn { background: rgba(246,200,95,.14); border-color: rgba(246,200,95,.38); }
-    .btn.danger { background: rgba(255,107,107,.14); border-color: rgba(255,107,107,.38); }
-    .btn.evening { background: rgba(147,197,253,.16); border-color: rgba(147,197,253,.42); }
-
     /* Compact climate-style target temperature control. */
     .temperature-control {
       display: grid;
@@ -551,52 +499,6 @@
       outline-offset: 3px;
     }
 
-    .pulse-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .pulse-row {
-      display: grid;
-      grid-template-columns: auto 1fr minmax(112px, 150px);
-      gap: 12px;
-      align-items: end;
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: rgba(15,23,42,.32);
-    }
-
-    .mini-switch {
-      width: 46px;
-      height: 26px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.14);
-      padding: 3px;
-      align-self: center;
-      cursor: pointer;
-      transition: .2s ease;
-    }
-
-    .mini-switch::before {
-      content: "";
-      display: block;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 4px 10px rgba(0,0,0,.22);
-      transition: .2s ease;
-    }
-
-    .mini-switch.on {
-      background: rgba(55,212,166,.9);
-    }
-
-    .mini-switch.on::before {
-      transform: translateX(20px);
-    }
-
     .timeline {
       display: grid;
       gap: 5px;
@@ -629,67 +531,6 @@
 
     .event small { display: block; color: var(--muted); margin-top: 1px; font-size: 10px; line-height: 1.2; }
 
-    .settings {
-      display: none;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
-      gap: 18px;
-    }
-
-    .settings.active { display: grid; }
-    .dashboard.hidden { display: none; }
-
-    label {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 7px;
-    }
-
-    input, select {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: rgba(15,23,42,.5);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 12px 13px;
-      font: inherit;
-      outline: none;
-      min-height: 44px;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-      gap: 14px;
-    }
-
-    .wide { grid-column: 1 / -1; }
-
-    .seg {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      background: rgba(15,23,42,.5);
-      border: 1px solid var(--line);
-      padding: 6px;
-      border-radius: 18px;
-      min-width: 0;
-    }
-
-    .seg button {
-      border-radius: 14px;
-      padding: 11px 8px;
-      background: transparent;
-      color: var(--muted);
-      min-height: 42px;
-      overflow-wrap: anywhere;
-    }
-
-    .seg button.active {
-      background: rgba(255,255,255,.12);
-      color: var(--text);
-    }
-
     .decision-card .card-inner {
       padding: 10px;
     }
@@ -717,7 +558,6 @@
     }
 
     .control-card.disabled .mode,
-    .control-card.disabled .btn,
     .control-card.disabled .temperature-control {
       pointer-events: none;
     }
@@ -983,8 +823,7 @@
       gap: 6px;
     }
 
-    .sensor-list > div,
-    .config-summary > div {
+    .sensor-list > div {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 10px;
@@ -994,30 +833,21 @@
       border-top: 1px solid rgba(255,255,255,.07);
     }
 
-    .sensor-list > div:first-child,
-    .config-summary > div:first-child {
+    .sensor-list > div:first-child {
       border-top: 0;
     }
 
-    .sensor-list span,
-    .config-summary span {
+    .sensor-list span {
       color: var(--muted);
       font-size: 12px;
       overflow-wrap: anywhere;
     }
 
-    .sensor-list strong,
-    .config-summary strong {
+    .sensor-list strong {
       color: var(--text);
       font-size: 13px;
       white-space: nowrap;
       text-align: right;
-    }
-
-    .config-summary {
-      display: grid;
-      gap: 2px;
-      padding: 4px 0;
     }
 
     .forecast-tile {
@@ -1186,12 +1016,15 @@
     }
 
     @media (max-width: 1180px) {
-      .dashboard .grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
       .dashboard .hero,
       .dashboard .sensor-list-card {
         grid-column: 1 / -1;
+      }
+      .dashboard .decision-card,
+      .dashboard .weather-card,
+      .dashboard #pump-control-card,
+      .dashboard #heater-control-card {
+        grid-column: span 6;
       }
       .forecast-grid,
       .forecast-grid.daily-forecast {
@@ -1205,21 +1038,10 @@
         --card-pad: 11px;
       }
 
-      .settings { grid-template-columns: 1fr; }
-      .dashboard .grid {
-        grid-template-columns: minmax(0, 1fr) minmax(300px, .9fr);
-      }
-      .dashboard .weather-card {
-        grid-column: auto;
-      }
-      .dashboard .hero {
-        grid-column: 1 / -1;
-      }
-      .dashboard .sensor-list-card {
-        grid-column: 1 / -1;
-      }
+      .dashboard .weather-card,
+      .dashboard #pump-control-card,
       .dashboard #heater-control-card {
-        grid-column: 1 / -1;
+        min-height: 0;
       }
       .sensor-categories {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1229,28 +1051,24 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
       header {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
       }
-      .brand,
-      nav,
       header > .pill {
-        grid-column: 1;
-        justify-content: center;
-        justify-self: center;
-      }
-      nav,
-      header > .pill {
-        width: min(430px, 100%);
+        width: auto;
         min-width: 0;
       }
       .hero h2 { font-size: 16px; }
     }
 
     @media (max-width: 760px) {
-      .grid,
-      .dashboard .grid { grid-template-columns: minmax(0, 1fr); }
-      .dashboard #heater-control-card {
+      .grid { grid-template-columns: minmax(0, 1fr); }
+      .dashboard .hero,
+      .dashboard .decision-card,
+      .dashboard .weather-card,
+      .dashboard #pump-control-card,
+      .dashboard #heater-control-card,
+      .dashboard .sensor-list-card {
         grid-column: auto;
       }
       .forecast-grid,
@@ -1273,8 +1091,19 @@
       }
 
       .app { padding-top: 10px; padding-bottom: 20px; }
-      header { gap: 10px; margin-bottom: 16px; }
+      header {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
       .brand { gap: 10px; }
+      .brand,
+      header > .pill {
+        justify-self: stretch;
+      }
+      header > .pill {
+        width: 100%;
+      }
       .logo {
         width: 36px;
         height: 36px;
@@ -1287,11 +1116,6 @@
       .pill {
         justify-content: center;
         font-size: 13px;
-      }
-      nav { min-width: 0; }
-      nav button {
-        flex: 1;
-        padding: 0 6px;
       }
       .hero-top { grid-template-columns: 1fr; }
       .hero-copy,
@@ -1306,7 +1130,6 @@
       .mode-grid,
       .mode-grid.pump-modes,
       .sensor-categories,
-      .form-grid,
       .forecast-grid,
       .forecast-grid.daily-forecast,
       .weather-card .forecast-grid,
@@ -1330,14 +1153,6 @@
         grid-column: 2;
         white-space: normal;
       }
-      .pulse-row {
-        grid-template-columns: auto 1fr;
-        align-items: center;
-      }
-      .pulse-row > div:last-child {
-        grid-column: 2;
-      }
-      .seg { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 380px) {
@@ -1358,10 +1173,6 @@
           <p class="brand-tagline">OpenSource Pool System Controller</p>
         </div>
       </div>
-      <nav>
-        <button class="active" onclick="showTab('dashboard', this)">Dashboard</button>
-        <button onclick="showTab('settings', this)">Konfiguration</button>
-      </nav>
       <div id="ha-status-pill" class="pill disconnected"><span class="dot"></span> Home Assistant wird verbunden</div>
     </header>
 
@@ -1561,189 +1372,6 @@
       </div>
     </section>
 
-    <!-- Settings: runtime thresholds; entity mapping lives in the Home Assistant add-on options. -->
-    <section id="settings" class="settings">
-      <section class="card">
-        <div class="card-inner">
-          <div class="section-title">
-            <h3>Add-on-Konfiguration</h3>
-          </div>
-          <div class="config-summary">
-            <div>
-              <span>Home Assistant URL</span>
-              <strong id="connection-homeassistant-url">http://homeassistant:8123</strong>
-            </div>
-            <div>
-              <span>Token Fallback</span>
-              <strong id="connection-access-token">nicht gesetzt</strong>
-            </div>
-            <div>
-              <span>Entitäten</span>
-              <strong>Home Assistant Add-on Optionen</strong>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="card-inner">
-          <div class="section-title">
-            <h3>Pumpenprofile</h3>
-          </div>
-          <div class="form-grid">
-            <div>
-              <label>Pumpenstart</label>
-              <input type="time" value="07:30" />
-            </div>
-            <div>
-              <label>Pumpenende</label>
-              <input type="time" value="22:00" />
-            </div>
-            <div class="wide">
-              <label>Restart-Pulse</label>
-              <div class="pulse-list">
-                <div class="pulse-row">
-                  <div class="mini-switch on"></div>
-                  <div>
-                    <label>Pulse 1</label>
-                    <input type="time" value="11:59" />
-                  </div>
-                  <div>
-                    <label>Dauer in Sekunden</label>
-                    <input type="number" value="5" />
-                  </div>
-                </div>
-                <div class="pulse-row">
-                  <div class="mini-switch on"></div>
-                  <div>
-                    <label>Pulse 2</label>
-                    <input type="time" value="16:59" />
-                  </div>
-                  <div>
-                    <label>Dauer in Sekunden</label>
-                    <input type="number" value="5" />
-                  </div>
-                </div>
-                <div class="pulse-row">
-                  <div class="mini-switch on"></div>
-                  <div>
-                    <label>Pulse 3</label>
-                    <input type="time" value="23:59" />
-                  </div>
-                  <div>
-                    <label>Dauer in Sekunden</label>
-                    <input type="number" value="5" />
-                  </div>
-                </div>
-                <div class="pulse-row">
-                  <div class="mini-switch"></div>
-                  <div>
-                    <label>Pulse 4</label>
-                    <input type="time" value="00:00" />
-                  </div>
-                  <div>
-                    <label>Dauer in Sekunden</label>
-                    <input type="number" value="5" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label>Nachtbaden Max. Dauer Minuten</label>
-              <input type="number" value="600" />
-            </div>
-            <div>
-              <label>Schlechtwetter Start</label>
-              <input type="time" value="13:00" />
-            </div>
-            <div>
-              <label>Schlechtwetter Ende</label>
-              <input type="time" value="16:15" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="card-inner">
-          <div class="section-title">
-            <h3>PV-Heizungsautomatik</h3>
-          </div>
-          <div class="form-grid">
-            <div>
-              <label>Start Export über W</label>
-              <input id="pv-start-export-w" type="number" value="1500" />
-            </div>
-            <div>
-              <label>Startverzögerung Minuten</label>
-              <input type="number" value="10" />
-            </div>
-            <div>
-              <label>Stopp Netzbezug über W</label>
-              <input type="number" value="300" />
-            </div>
-            <div>
-              <label>Stoppverzögerung Minuten</label>
-              <input type="number" value="20" />
-            </div>
-            <div>
-              <label>Mindestlaufzeit Minuten</label>
-              <input type="number" value="30" />
-            </div>
-            <div>
-              <label>Sperrzeit nach Stopp Minuten</label>
-              <input type="number" value="20" />
-            </div>
-            <div>
-              <label>Min. Heizungstemperatur</label>
-              <input id="heater-temp-min" type="number" min="5" max="40" step="0.5" value="18" />
-            </div>
-            <div>
-              <label>Max. Heizungstemperatur</label>
-              <input id="heater-temp-max" type="number" min="5" max="40" step="0.5" value="32" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="card-inner">
-          <div class="section-title">
-            <h3>Wetter & Profile</h3>
-          </div>
-          <div class="form-grid">
-            <div>
-              <label>Badebetrieb ab Temperatur</label>
-              <input type="number" value="24" />
-            </div>
-            <div>
-              <label>Schlechtwetter ab Regenwahrscheinlichkeit %</label>
-              <input type="number" value="60" />
-            </div>
-            <div>
-              <label>Schlechtwetter unter Temperatur</label>
-              <input type="number" value="21" />
-            </div>
-            <div>
-              <label>Prognosetage</label>
-              <input type="number" value="3" />
-            </div>
-            <div class="wide">
-              <label>Automatisches Umschalten</label>
-              <div class="seg">
-                <button>Aus</button>
-                <button class="active">Nur Empfehlung</button>
-                <button>Automatisch</button>
-              </div>
-            </div>
-            <div class="wide">
-              <button id="save-settings" class="btn primary">Konfiguration speichern</button>
-              <button id="test-connection" class="btn">Verbindung testen</button>
-            </div>
-          </div>
-        </div>
-      </section>
-    </section>
   </main>
 
   <script>
@@ -1751,50 +1379,14 @@
     // the add-on proxy so the browser never needs to know a long-lived token.
     const HA_POLL_INTERVAL_MS = 3000;
     const LIVE_STREAM_STALE_MS = 4000;
-    const RESTART_PULSE_MS = 5000;
-    const entityInputDefaults = {
-      'entity-pump-switch': 'switch.poolpumpe',
-      'entity-heater-climate': 'climate.poolheizung',
-      'entity-weather': 'weather.openweathermap',
-      'entity-pv-export': 'sensor.stromzahler_active_power_minus',
-      'entity-grid-import': 'sensor.stromzahler_active_power_plus',
-      'entity-house-consumption': 'sensor.hausverbrauch',
-      'entity-pump-power': 'sensor.poolpumpe_leistung',
-      'entity-pump-current': 'sensor.poolpumpe_current',
-      'entity-pump-voltage': 'sensor.poolpumpe_spannung',
-      'entity-pump-signal': 'sensor.poolpumpe_signal',
-      'entity-heater-power': 'sensor.poolheizung_leistung',
-      'entity-heater-current': 'sensor.poolheizung_netzstrom',
-      'entity-heater-voltage': 'sensor.poolheizung_netzspannung',
-      'entity-heater-fan': 'sensor.poolheizung_lufter',
-      'entity-heater-ambient': 'sensor.poolheizung_umgebungsluft_temperatur',
-      'entity-heater-water-in': 'sensor.poolheizung_wassertemperatur_eingang',
-      'entity-heater-water-out': 'sensor.poolheizung_wassertemperatur_ausgang'
-    };
-    let entityConfig = { ...entityInputDefaults };
-    const addonEntityOptionMap = {
-      'entity-pump-switch': 'pump_switch',
-      'entity-heater-climate': 'heater_climate',
-      'entity-weather': 'weather',
-      'entity-pv-export': 'pv_export',
-      'entity-grid-import': 'grid_import',
-      'entity-house-consumption': 'house_consumption',
-      'entity-pump-power': 'pump_power',
-      'entity-pump-current': 'pump_current',
-      'entity-pump-voltage': 'pump_voltage',
-      'entity-pump-signal': 'pump_signal',
-      'entity-heater-power': 'heater_power',
-      'entity-heater-current': 'heater_current',
-      'entity-heater-voltage': 'heater_voltage',
-      'entity-heater-fan': 'heater_fan',
-      'entity-heater-ambient': 'heater_ambient',
-      'entity-heater-water-in': 'heater_water_in',
-      'entity-heater-water-out': 'heater_water_out'
+    const controlConfig = {
+      pvStartExportW: 1500,
+      heaterTempMin: 18,
+      heaterTempMax: 32
     };
     let shutdownActive = false;
     let restartPulseActive = false;
     let heaterTargetTemp = 28;
-    let pumpRunOnTimer = null;
     let refreshTimer = null;
     let stateStream = null;
     let lastSnapshotAt = 0;
@@ -1889,74 +1481,21 @@
       return payload;
     }
 
-    function getEntityId(inputId) {
-      return entityConfig[inputId] || entityInputDefaults[inputId] || '';
+    function applyAddonOptions(snapshot) {
+      const options = snapshot?.options || {};
+      const thresholds = snapshot?.thresholds || options?.thresholds || {};
+      controlConfig.pvStartExportW = optionNumber(thresholds.pv_start_export_w, controlConfig.pvStartExportW);
+      controlConfig.heaterTempMin = optionNumber(thresholds.heater_temp_min, controlConfig.heaterTempMin);
+      controlConfig.heaterTempMax = optionNumber(thresholds.heater_temp_max, controlConfig.heaterTempMax);
     }
 
-    function getNumberInput(id, fallback) {
-      const value = Number(document.getElementById(id)?.value);
-      return Number.isFinite(value) ? value : fallback;
-    }
-
-    function readStoredSettings() {
-      return {};
-    }
-
-    function applySettings(settings) {
-      if (!settings || typeof settings !== 'object') return;
-
-      if (settings.thresholds) {
-        if (settings.thresholds.pvStartExportW !== undefined) {
-          document.getElementById('pv-start-export-w').value = settings.thresholds.pvStartExportW;
-        }
-        if (settings.thresholds.heaterTempMin !== undefined) {
-          document.getElementById('heater-temp-min').value = settings.thresholds.heaterTempMin;
-        }
-        if (settings.thresholds.heaterTempMax !== undefined) {
-          document.getElementById('heater-temp-max').value = settings.thresholds.heaterTempMax;
-        }
-      }
-    }
-
-    function applyAddonOptions(options) {
-      const connection = options?.connection || {};
-      if (connection.homeassistant_url) {
-        setText('connection-homeassistant-url', connection.homeassistant_url);
-      }
-      if (connection.access_token_configured) {
-        setText('connection-access-token', 'gesetzt');
-      }
-
-      const entities = options?.entities || {};
-      Object.entries(addonEntityOptionMap).forEach(([inputId, optionKey]) => {
-        if (entities[optionKey]) entityConfig[inputId] = entities[optionKey];
-      });
-
-      const thresholds = options?.thresholds || {};
-      if (thresholds.pv_start_export_w !== undefined) {
-        document.getElementById('pv-start-export-w').value = thresholds.pv_start_export_w;
-      }
-      if (thresholds.heater_temp_min !== undefined) {
-        document.getElementById('heater-temp-min').value = thresholds.heater_temp_min;
-      }
-      if (thresholds.heater_temp_max !== undefined) {
-        document.getElementById('heater-temp-max').value = thresholds.heater_temp_max;
-      }
-    }
-
-    async function loadSettings() {
+    async function loadInitialState() {
       try {
         const snapshot = await apiJson('/api/openpool/state');
         applyServerSnapshot(snapshot);
       } catch {
-        // The UI can still work with defaults or locally saved values.
+        // The UI can still boot with sane defaults until the live stream arrives.
       }
-
-      applySettings(readStoredSettings());
-    }
-
-    function saveSettings() {
-      pushCommand('Konfiguration', 'Entitäten und Automatikwerte bitte in den Add-on-Optionen ändern.');
     }
 
     async function sendOpenPoolAction(action) {
@@ -2022,23 +1561,13 @@
       return unit ? `${formatted} ${unit}` : formatted;
     }
 
-    function updateBar(id, percent) {
-      const bar = document.getElementById(id);
-      if (!bar) return;
-      const bounded = Math.min(100, Math.max(0, percent || 0));
-      bar.style.width = `${bounded}%`;
-    }
-
-    function updatePowerFlow(valueId, barId, entityState, maxWatts) {
+    function updatePowerValue(valueId, entityState) {
       const watts = entityPowerWatts(entityState);
       setText(valueId, formatPower(watts));
-      updateBar(barId, watts === null ? 0 : (Math.abs(watts) / maxWatts) * 100);
     }
 
-    function updateGenericFlow(valueId, barId, entityState, maxValue, fallbackUnit, digits = 1) {
-      const value = parseEntityNumber(entityState);
+    function updateSensorValue(valueId, entityState, fallbackUnit, digits = 1) {
       setText(valueId, formatSensorValue(entityState, fallbackUnit, digits));
-      updateBar(barId, value === null ? 0 : (Math.abs(value) / maxValue) * 100);
     }
 
     function formatDuration(seconds) {
@@ -2048,11 +1577,16 @@
       return `${hours}h ${String(minutes).padStart(2, '0')}m`;
     }
 
+    function optionNumber(value, fallback) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
     function updatePvAvailability(states) {
       const pvExport = entityPowerWatts(states['entity-pv-export']);
       const gridImport = entityPowerWatts(states['entity-grid-import']);
       const houseConsumption = entityPowerWatts(states['entity-house-consumption']);
-      const threshold = getNumberInput('pv-start-export-w', 1500);
+      const threshold = optionNumber(controlConfig.pvStartExportW, 1500);
       const thresholdText = formatPower(threshold);
 
       setText('pv-export-value', formatPower(pvExport));
@@ -2139,17 +1673,17 @@
 
       updatePvAvailability(states);
       updateWeather(states);
-      updatePowerFlow('pump-power-value', 'pump-power-bar', states['entity-pump-power'], 1600);
-      updateGenericFlow('pump-current-value', 'pump-current-bar', states['entity-pump-current'], 10, 'A', 1);
-      updateGenericFlow('pump-voltage-value', 'pump-voltage-bar', states['entity-pump-voltage'], 240, 'V', 0);
-      updateGenericFlow('pump-signal-value', 'pump-signal-bar', states['entity-pump-signal'], 100, '%', 0);
-      updatePowerFlow('heater-power-value', 'heater-power-bar', states['entity-heater-power'], 2500);
-      updateGenericFlow('heater-current-value', 'heater-current-bar', states['entity-heater-current'], 12, 'A', 1);
-      updateGenericFlow('heater-voltage-value', 'heater-voltage-bar', states['entity-heater-voltage'], 240, 'V', 0);
-      updateGenericFlow('heater-fan-value', 'heater-fan-bar', states['entity-heater-fan'], 3000, '', 0);
-      updateGenericFlow('heater-ambient-value', 'heater-ambient-bar', states['entity-heater-ambient'], 40, '°C', 1);
-      updateGenericFlow('heater-water-in-value', 'heater-water-in-bar', states['entity-heater-water-in'], 40, '°C', 1);
-      updateGenericFlow('heater-water-out-value', 'heater-water-out-bar', states['entity-heater-water-out'], 40, '°C', 1);
+      updatePowerValue('pump-power-value', states['entity-pump-power']);
+      updateSensorValue('pump-current-value', states['entity-pump-current'], 'A', 1);
+      updateSensorValue('pump-voltage-value', states['entity-pump-voltage'], 'V', 0);
+      updateSensorValue('pump-signal-value', states['entity-pump-signal'], '%', 0);
+      updatePowerValue('heater-power-value', states['entity-heater-power']);
+      updateSensorValue('heater-current-value', states['entity-heater-current'], 'A', 1);
+      updateSensorValue('heater-voltage-value', states['entity-heater-voltage'], 'V', 0);
+      updateSensorValue('heater-fan-value', states['entity-heater-fan'], '', 0);
+      updateSensorValue('heater-ambient-value', states['entity-heater-ambient'], '°C', 1);
+      updateSensorValue('heater-water-in-value', states['entity-heater-water-in'], '°C', 1);
+      updateSensorValue('heater-water-out-value', states['entity-heater-water-out'], '°C', 1);
     }
 
     function setActiveMode(cardSelector, dataName, value) {
@@ -2163,7 +1697,7 @@
       const controller = snapshot.controller || {};
       const states = snapshot.ha_states || {};
 
-      applyAddonOptions(snapshot.options || {});
+      applyAddonOptions(snapshot);
       liveStateAvailable = Boolean(snapshot.connected);
       setConnectionStatus(liveStateAvailable, liveStateAvailable ? 'Home Assistant verbunden' : 'Home Assistant getrennt');
 
@@ -2247,15 +1781,6 @@
       }
     }
 
-    function showTab(tab, button) {
-      // The app uses real sections rather than page reloads, which keeps it fast
-      // inside Home Assistant ingress on tablets.
-      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-      button.classList.add('active');
-      document.getElementById('dashboard').classList.toggle('hidden', tab !== 'dashboard');
-      document.getElementById('settings').classList.toggle('active', tab === 'settings');
-    }
-
     function toggleSwitch(el) {
       el.classList.toggle('on');
       updateDecision();
@@ -2325,15 +1850,7 @@
       setShutdownSequenceVisible(true);
     }
 
-    function clearPumpRunOnTimer() {
-      if (!pumpRunOnTimer) return;
-      window.clearTimeout(pumpRunOnTimer);
-      pumpRunOnTimer = null;
-    }
-
     async function applyMasterStateToHomeAssistant(enabled) {
-      clearPumpRunOnTimer();
-
       try {
         await sendOpenPoolAction({ type: 'master', enabled });
       } catch (error) {
@@ -2365,7 +1882,6 @@
       if (!isMasterEnabled() || getPumpMode() === 'Aus') return;
       restartPulseActive = true;
       shutdownActive = false;
-      clearPumpRunOnTimer();
       setShutdownSequenceVisible(false);
       document.getElementById('hero-title').textContent = 'Chlorsystem neu starten';
       document.getElementById('hero-subtitle').textContent = 'Kurzer Restart-Pulse: Die Pumpe wird für wenige Sekunden ausgeschaltet und direkt wieder eingeschaltet. Der Betriebsmodus bleibt unverändert.';
@@ -2384,13 +1900,8 @@
     }
 
     function getTemperatureBounds() {
-      const minInput = document.getElementById('heater-temp-min');
-      const maxInput = document.getElementById('heater-temp-max');
-      let min = Number(minInput?.value ?? 18);
-      let max = Number(maxInput?.value ?? 32);
-
-      if (!Number.isFinite(min)) min = 18;
-      if (!Number.isFinite(max)) max = 32;
+      let min = optionNumber(controlConfig.heaterTempMin, 18);
+      let max = optionNumber(controlConfig.heaterTempMax, 32);
       if (max <= min) max = min + 0.5;
 
       return { min, max };
@@ -2405,8 +1916,8 @@
     }
 
     function setTargetTemp(value) {
-      // Clamp the target temperature to the user-defined bounds from Settings
-      // and update the colored slider fill in one place.
+      // Clamp the target temperature to the bounds configured in the add-on
+      // options and update the colored slider fill in one place.
       const { min, max } = getTemperatureBounds();
       heaterTargetTemp = Math.min(max, Math.max(min, Number(value)));
       const formatted = heaterTargetTemp.toFixed(1).replace('.', ',');
@@ -2614,16 +2125,6 @@
       });
     });
 
-    document.querySelectorAll('.mini-switch').forEach(toggle => {
-      toggle.addEventListener('click', () => {
-        toggle.classList.toggle('on');
-      });
-    });
-
-    ['heater-temp-min', 'heater-temp-max'].forEach(id => {
-      document.getElementById(id)?.addEventListener('input', updateTemperatureRange);
-    });
-
     document.getElementById('heater-target-slider')?.addEventListener('change', async () => {
       try {
         await sendOpenPoolAction({ type: 'target_temp', value: heaterTargetTemp });
@@ -2632,26 +2133,8 @@
       }
     });
 
-    document.getElementById('save-settings')?.addEventListener('click', () => {
-      saveSettings();
-      updateTemperatureRange();
-      refreshHomeAssistantState();
-    });
-
-    document.getElementById('test-connection')?.addEventListener('click', async () => {
-      try {
-        const states = await refreshHomeAssistantState();
-        const ok = !isUnavailableState(states['entity-pump-switch']) && !isUnavailableState(states['entity-heater-climate']);
-        pushCommand(ok ? 'Verbindung OK' : 'Konfiguration prüfen', ok
-          ? 'Pumpe und Wärmepumpe sind über Home Assistant erreichbar.'
-          : 'Mindestens eine Kernentität konnte nicht gelesen werden.');
-      } catch (error) {
-        handleHaError('Verbindungstest', error);
-      }
-    });
-
     async function bootOpenPool() {
-      await loadSettings();
+      await loadInitialState();
       updateTemperatureRange();
       renderCommandLog();
       document.getElementById('pump-control-card').classList.toggle('disabled', !isMasterEnabled());

@@ -30,9 +30,8 @@ allows automation jobs to continue when the UI is closed.
 ## Configuration
 
 The add-on options contain the Home Assistant entity IDs, profile times, restart
-pulses and control thresholds. The OpenPool UI displays these values under
-**Konfiguration**; permanent changes are made in the Home Assistant add-on
-options.
+pulses and control thresholds. The OpenPool UI is intentionally control-only;
+permanent configuration changes are made in the Home Assistant add-on options.
 
 ## Files
 
