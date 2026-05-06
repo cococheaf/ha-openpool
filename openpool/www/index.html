@@ -1608,14 +1608,22 @@
       const aboveSince = Number(controller.pv_above_since);
       if (!Number.isFinite(aboveSince)) return null;
 
+      const available = Number(controller.pv_last_available_w);
+      const startThreshold = optionNumber(
+        snapshot?.thresholds?.pv_start_export_w,
+        controlConfig.pvStartExportW
+      );
+      if (!Number.isFinite(available) || available < startThreshold) return null;
+
       const stableMinutes = optionNumber(
         snapshot?.thresholds?.pv_start_stable_minutes,
         controlConfig.pvStartStableMinutes
       );
       const at = aboveSince + Math.max(0, stableMinutes) * 60;
       const now = snapshotNowSeconds(snapshot);
+      if (at <= now) return null;
 
-      return { title: 'Wärmepumpe startet', at: Math.max(now, at) };
+      return { title: 'Wärmepumpe startet', at };
     }
 
     function updateUpcomingTask(snapshot) {

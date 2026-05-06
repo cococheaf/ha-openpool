@@ -727,6 +727,8 @@ class OpenPoolController:
                     self.state["pv_below_since"] = current_ts
                 if current_ts - float(self.state["pv_below_since"]) >= config["stop_stable_s"]:
                     self._turn_heater(False)
+                    self.state["pv_below_since"] = None
+                    self.state["pv_above_since"] = None
             else:
                 self.state["pv_below_since"] = None
             return
@@ -737,6 +739,7 @@ class OpenPoolController:
                 self.state["pv_above_since"] = current_ts
             if current_ts - float(self.state["pv_above_since"]) >= config["start_stable_s"]:
                 self._turn_heater(True)
+                self.state["pv_above_since"] = None
             return
 
         self.state["pv_above_since"] = None

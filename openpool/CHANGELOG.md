@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.17
+
+- Clear stale PV stability timers after heat-pump start/stop actions.
+- Hide the heat-pump start Upcoming task when the PV release is no longer
+  currently valid or its countdown has already expired.
+
 ## 0.2.16
 
 - Replace the dashboard surplus metric with a heat energy source tile that
