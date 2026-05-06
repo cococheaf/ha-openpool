@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Add server-sent live state updates so multiple browser sessions stay in sync.
+- Disable browser caching for UI, API and Home Assistant proxy responses.
+- Add a polling fallback for browsers or ingress sessions where the live stream is interrupted.
+
 ## 0.2.0
 
 - Move OpenPool control state and automation jobs into the add-on server.

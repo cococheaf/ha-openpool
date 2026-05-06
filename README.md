@@ -9,6 +9,8 @@ surplus based heating logic from one compact tablet-friendly interface.
 - `openpool/` contains the Home Assistant add-on and bundled UI.
 - The add-on serves the UI through Home Assistant Ingress, owns the OpenPool
   controller state and executes pump, restart-pulse and heating automation.
+- Open UI sessions receive the shared controller state from the add-on server, so
+  browser, tablet and phone views stay aligned.
 
 ## Install As Home Assistant Add-on
 

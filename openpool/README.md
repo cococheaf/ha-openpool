@@ -14,5 +14,6 @@ based heat pump decisions.
 
 ## Status
 
-The add-on keeps shared controller state in `/data/openpool_state.json`, so
-multiple browsers stay in sync and runtime counters survive add-on restarts.
+The add-on keeps shared controller state in `/data/openpool_state.json` and
+streams it to every open UI session, so multiple browsers stay in sync and
+runtime counters survive add-on restarts.

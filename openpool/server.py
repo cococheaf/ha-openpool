@@ -27,6 +27,7 @@ STATE_PATH = Path(os.environ.get("OPENPOOL_STATE", "/data/openpool_state.json"))
 SUPERVISOR_HA_API_BASE = "http://supervisor/core/api"
 DEFAULT_HA_URL = "http://homeassistant:8123"
 POLL_INTERVAL_SECONDS = 10
+STATE_STREAM_INTERVAL_SECONDS = 2
 RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
 
@@ -601,7 +602,8 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.0"
+    server_version = "OpenPool/0.2.1"
+    protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
@@ -616,6 +618,10 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/openpool/state":
             self._send_json(CONTROLLER.snapshot())
+            return
+
+        if parsed.path == "/api/openpool/events":
+            self._send_event_stream()
             return
 
         if parsed.path.startswith("/api/ha/states/"):
@@ -670,6 +676,7 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
         status, content_type, payload = HA.request(method, path, raw_body=raw_body)
         self.send_response(status)
         self.send_header("Content-Type", content_type)
+        self._send_no_cache_headers()
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
@@ -685,8 +692,7 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
         payload = target.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", content_type)
-        if target.name == "index.html":
-            self.send_header("Cache-Control", "no-store")
+        self._send_no_cache_headers()
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
@@ -695,9 +701,32 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
         payload = json.dumps(data).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        self._send_no_cache_headers()
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
+
+    def _send_event_stream(self) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self._send_no_cache_headers()
+        self.send_header("Connection", "keep-alive")
+        self.send_header("X-Accel-Buffering", "no")
+        self.end_headers()
+
+        while True:
+            payload = json.dumps(CONTROLLER.snapshot(), ensure_ascii=True)
+            try:
+                self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
+                self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError):
+                return
+            time.sleep(STATE_STREAM_INTERVAL_SECONDS)
+
+    def _send_no_cache_headers(self) -> None:
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(f"[openpool] {self.address_string()} - {fmt % args}", flush=True)

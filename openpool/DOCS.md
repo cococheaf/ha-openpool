@@ -22,16 +22,17 @@ OpenPool keeps its runtime state in the add-on server, not in the browser. The
 state is persisted in `/data/openpool_state.json` and contains the active modes,
 pump runtime counters, pending jobs and command history.
 
-The frontend reads shared state from `GET /api/openpool/state` and sends user
-actions to `POST /api/openpool/action`. This keeps multiple browser sessions in
-sync and allows automation jobs to continue when the UI is closed.
+The frontend listens to `GET /api/openpool/events` for live state updates, uses
+`GET /api/openpool/state` as a fallback and sends user actions to
+`POST /api/openpool/action`. This keeps multiple browser sessions in sync and
+allows automation jobs to continue when the UI is closed.
 
 ## Configuration
 
-The add-on options contain the default Home Assistant entity IDs and control
-thresholds. The same values are visible inside the OpenPool UI under
-**Konfiguration**; saving there stores a browser-local override for the current
-Home Assistant frontend session.
+The add-on options contain the Home Assistant entity IDs, profile times, restart
+pulses and control thresholds. The OpenPool UI displays these values under
+**Konfiguration**; permanent changes are made in the Home Assistant add-on
+options.
 
 ## Files
 

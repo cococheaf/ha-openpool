@@ -1749,8 +1749,8 @@
   <script>
     // Runtime state for the touch UI. Home Assistant values are fetched through
     // the add-on proxy so the browser never needs to know a long-lived token.
-    const SETTINGS_STORAGE_KEY = 'openpool.settings.v1';
-    const HA_POLL_INTERVAL_MS = 15000;
+    const HA_POLL_INTERVAL_MS = 3000;
+    const LIVE_STREAM_STALE_MS = 4000;
     const RESTART_PULSE_MS = 5000;
     const entityInputDefaults = {
       'entity-pump-switch': 'switch.poolpumpe',
@@ -1796,6 +1796,8 @@
     let heaterTargetTemp = 28;
     let pumpRunOnTimer = null;
     let refreshTimer = null;
+    let stateStream = null;
+    let lastSnapshotAt = 0;
     let liveStateAvailable = false;
     let latestSnapshot = null;
 
@@ -1872,7 +1874,7 @@
 
     async function apiJson(path, options = {}) {
       const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-      const response = await fetch(addonApiUrl(path), { ...options, headers });
+      const response = await fetch(addonApiUrl(path), { ...options, headers, cache: 'no-store' });
       const contentType = response.headers.get('content-type') || '';
       const text = await response.text();
       const payload = contentType.includes('application/json') && text
@@ -1945,7 +1947,7 @@
     async function loadSettings() {
       try {
         const snapshot = await apiJson('/api/openpool/state');
-        applySnapshot(snapshot);
+        applyServerSnapshot(snapshot);
       } catch {
         // The UI can still work with defaults or locally saved values.
       }
@@ -1962,7 +1964,7 @@
         method: 'POST',
         body: JSON.stringify(action)
       });
-      applySnapshot(snapshot);
+      applyServerSnapshot(snapshot);
       return snapshot;
     }
 
@@ -2197,15 +2199,52 @@
       return states;
     }
 
+    function applyServerSnapshot(snapshot) {
+      lastSnapshotAt = Date.now();
+      return applySnapshot(snapshot);
+    }
+
     async function refreshHomeAssistantState() {
       const snapshot = await apiJson('/api/openpool/state');
-      return applySnapshot(snapshot);
+      return applyServerSnapshot(snapshot);
     }
 
     function handleHaError(context, error) {
       console.error(context, error);
       setConnectionStatus(false, 'Home Assistant Fehler');
       pushCommand(`${context} fehlgeschlagen`, String(error.message || error).slice(0, 96));
+    }
+
+    function connectStateStream() {
+      if (!window.EventSource) return;
+
+      if (stateStream) {
+        stateStream.close();
+      }
+
+      stateStream = new EventSource(addonApiUrl(`/api/openpool/events?ts=${Date.now()}`));
+      stateStream.onmessage = event => {
+        try {
+          applyServerSnapshot(JSON.parse(event.data));
+        } catch (error) {
+          console.warn('OpenPool Live-Sync konnte Snapshot nicht lesen.', error);
+        }
+      };
+      stateStream.onerror = () => {
+        if (Date.now() - lastSnapshotAt > LIVE_STREAM_STALE_MS) {
+          setConnectionStatus(false, 'Live-Sync wartet');
+        }
+      };
+    }
+
+    async function refreshWhenStreamIsStale() {
+      if (Date.now() - lastSnapshotAt <= LIVE_STREAM_STALE_MS) return;
+
+      try {
+        await refreshHomeAssistantState();
+      } catch (error) {
+        handleHaError('Live-Sync', error);
+      }
     }
 
     function showTab(tab, button) {
@@ -2600,11 +2639,15 @@
     });
 
     document.getElementById('test-connection')?.addEventListener('click', async () => {
-      const states = await refreshHomeAssistantState();
-      const ok = !isUnavailableState(states['entity-pump-switch']) && !isUnavailableState(states['entity-heater-climate']);
-      pushCommand(ok ? 'Verbindung OK' : 'Konfiguration prüfen', ok
-        ? 'Pumpe und Wärmepumpe sind über Home Assistant erreichbar.'
-        : 'Mindestens eine Kernentität konnte nicht gelesen werden.');
+      try {
+        const states = await refreshHomeAssistantState();
+        const ok = !isUnavailableState(states['entity-pump-switch']) && !isUnavailableState(states['entity-heater-climate']);
+        pushCommand(ok ? 'Verbindung OK' : 'Konfiguration prüfen', ok
+          ? 'Pumpe und Wärmepumpe sind über Home Assistant erreichbar.'
+          : 'Mindestens eine Kernentität konnte nicht gelesen werden.');
+      } catch (error) {
+        handleHaError('Verbindungstest', error);
+      }
     });
 
     async function bootOpenPool() {
@@ -2613,9 +2656,16 @@
       renderCommandLog();
       document.getElementById('pump-control-card').classList.toggle('disabled', !isMasterEnabled());
       updateHeaterLock();
-      refreshHomeAssistantState();
-      refreshTimer = window.setInterval(refreshHomeAssistantState, HA_POLL_INTERVAL_MS);
+      connectStateStream();
+      refreshHomeAssistantState().catch(error => handleHaError('Start-Sync', error));
+      refreshTimer = window.setInterval(refreshWhenStreamIsStale, HA_POLL_INTERVAL_MS);
     }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        refreshHomeAssistantState().catch(error => handleHaError('Live-Sync', error));
+      }
+    });
 
     bootOpenPool();
   </script>
