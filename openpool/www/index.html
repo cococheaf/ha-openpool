@@ -1238,9 +1238,9 @@
                 <div class="hint" id="heater-hint">warte auf Home Assistant</div>
               </div>
               <div class="metric">
-                <div class="label">Überschussheizung</div>
-                <div class="value" id="pv-surplus-metric">--</div>
-                <div class="hint" id="pv-surplus-hint">Bereit ab 1,50 kW</div>
+                <div class="label">Heizenergiequelle</div>
+                <div class="value" id="heat-source-metric">--</div>
+                <div class="hint" id="heat-source-hint">warte auf Steuerzustand</div>
               </div>
             </div>
           </div>
@@ -1801,6 +1801,28 @@
       return Number.isFinite(parsed) ? parsed : fallback;
     }
 
+    function heatSourceForMode(masterEnabled, pumpMode, heaterMode) {
+      if (!masterEnabled || pumpMode === 'Aus' || heaterMode === 'Aus') {
+        return { value: 'AUS', hint: 'Wärmepumpe ist nicht freigegeben.' };
+      }
+
+      if (pumpMode === 'Nachtbaden' || heaterMode === 'Ein') {
+        return { value: 'NETZ', hint: 'Manuelles Heizen, PV-Automatik wird ignoriert.' };
+      }
+
+      if (['PV-Automatik', 'Wetterautomatik'].includes(heaterMode)) {
+        return { value: 'PV', hint: 'Heizen nur bei stabiler Wärmepumpenfreigabe.' };
+      }
+
+      return { value: '--', hint: 'warte auf Steuerzustand' };
+    }
+
+    function updateHeatSourceMetric(masterEnabled = isMasterEnabled(), pumpMode = getPumpMode(), heaterMode = getHeaterMode()) {
+      const source = heatSourceForMode(masterEnabled, pumpMode, heaterMode);
+      setText('heat-source-metric', source.value);
+      setText('heat-source-hint', source.hint);
+    }
+
     function updatePvAvailability(states) {
       const pvGeneration = entityPowerWatts(states['entity-pv-generation']);
       const pvExport = entityPowerWatts(states['entity-pv-export']);
@@ -1816,13 +1838,12 @@
       setText('pv-export-value', formatPower(pvExport));
       setText('grid-import-value', formatPower(gridImport));
       setText('pv-ready-threshold', readyText);
-      setText('pv-surplus-hint', `Start ab ${readyText}`);
+      updateHeatSourceMetric();
 
       if ([pvGeneration, pvExport, gridImport].some(value => value === null)) {
         setText('house-consumption-value', '--');
         setText('pv-free-value', '--');
         setText('pv-free-list-value', '--');
-        setText('pv-surplus-metric', '--');
         return;
       }
 
@@ -1833,7 +1854,6 @@
       const text = formatPower(available);
       setText('pv-free-value', text);
       setText('pv-free-list-value', text);
-      setText('pv-surplus-metric', text);
     }
 
     function isHeaterActive(entityState) {
@@ -2178,6 +2198,7 @@
 
       pumpCard.classList.toggle('disabled', !masterEnabled);
       updateHeaterLock();
+      updateHeatSourceMetric(masterEnabled, pumpMode, heaterMode);
 
       document.getElementById('master-state-label').textContent = masterEnabled ? 'Poolsystem EIN' : 'Poolsystem AUS';
 

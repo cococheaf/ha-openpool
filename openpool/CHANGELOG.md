@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.16
+
+- Replace the dashboard surplus metric with a heat energy source tile that
+  shows PV for automatic surplus heating and NETZ for manual heating modes.
+
 ## 0.2.15
 
 - Add `connection.auth_mode` so installations can keep the Supervisor token or
