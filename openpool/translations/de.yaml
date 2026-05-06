@@ -60,5 +60,31 @@ configuration:
         name: Minimale Heizungstemperatur
       heater_temp_max:
         name: Maximale Heizungstemperatur
+  profiles:
+    name: Profile
+    description: Zeitfenster für die OpenPool Steuerlogik.
+    fields:
+      pump_start:
+        name: Pumpenstart
+      pump_end:
+        name: Pumpenende
+      bad_weather_start:
+        name: Schlechtwetter Start
+      bad_weather_end:
+        name: Schlechtwetter Ende
+      night_swim_max_minutes:
+        name: Nachtbaden Max. Dauer Minuten
+  restart_pulses:
+    name: Restart-Pulse
+    description: Automatische kurze Ausschaltimpulse für das Chlorsystem.
+    fields:
+      pulse_1:
+        name: Pulse 1
+      pulse_2:
+        name: Pulse 2
+      pulse_3:
+        name: Pulse 3
+      pulse_4:
+        name: Pulse 4
 network:
   8099/tcp: OpenPool Weboberfläche

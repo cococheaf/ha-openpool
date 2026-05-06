@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Small Home Assistant add-on web server for OpenPool.
+"""OpenPool Home Assistant add-on server.
 
-The add-on serves the static OpenPool UI and proxies selected Home Assistant
-Core API calls. Supervisor authentication is preferred; a configured long-lived
-access token is used as a fallback for installations where the Supervisor token
-is not injected into the add-on environment.
+The server owns OpenPool runtime state, serves the tablet UI and proxies Home
+Assistant API calls. Keeping controller state here means every browser sees the
+same state and pump runtimes/jobs survive frontend reloads and add-on restarts.
 """
 
 from __future__ import annotations
@@ -12,6 +11,8 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -21,72 +22,126 @@ from urllib.request import Request, urlopen
 
 PORT = int(os.environ.get("OPENPOOL_PORT", "8099"))
 WWW_ROOT = Path(os.environ.get("OPENPOOL_WWW", "/app/www")).resolve()
-OPTIONS_PATH = Path("/data/options.json")
+OPTIONS_PATH = Path(os.environ.get("OPENPOOL_OPTIONS", "/data/options.json"))
+STATE_PATH = Path(os.environ.get("OPENPOOL_STATE", "/data/openpool_state.json"))
 SUPERVISOR_HA_API_BASE = "http://supervisor/core/api"
 DEFAULT_HA_URL = "http://homeassistant:8123"
-SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN") or os.environ.get("HASSIO_TOKEN") or ""
+POLL_INTERVAL_SECONDS = 10
+RUN_ON_SECONDS = 5 * 60
+RESTART_PULSE_SECONDS = 5
+
+DEFAULT_ENTITIES = {
+    "pump_switch": "switch.poolpumpe",
+    "heater_climate": "climate.poolheizung",
+    "weather": "weather.openweathermap",
+    "pv_export": "sensor.stromzahler_active_power_minus",
+    "grid_import": "sensor.stromzahler_active_power_plus",
+    "house_consumption": "sensor.hausverbrauch",
+    "pump_power": "sensor.poolpumpe_leistung",
+    "pump_current": "sensor.poolpumpe_current",
+    "pump_voltage": "sensor.poolpumpe_spannung",
+    "pump_signal": "sensor.poolpumpe_signal",
+    "heater_power": "sensor.poolheizung_leistung",
+    "heater_current": "sensor.poolheizung_netzstrom",
+    "heater_voltage": "sensor.poolheizung_netzspannung",
+    "heater_fan": "sensor.poolheizung_lufter",
+    "heater_ambient": "sensor.poolheizung_umgebungsluft_temperatur",
+    "heater_water_in": "sensor.poolheizung_wassertemperatur_eingang",
+    "heater_water_out": "sensor.poolheizung_wassertemperatur_ausgang",
+}
+
+UI_ENTITY_KEYS = {
+    "entity-pump-switch": "pump_switch",
+    "entity-heater-climate": "heater_climate",
+    "entity-weather": "weather",
+    "entity-pv-export": "pv_export",
+    "entity-grid-import": "grid_import",
+    "entity-house-consumption": "house_consumption",
+    "entity-pump-power": "pump_power",
+    "entity-pump-current": "pump_current",
+    "entity-pump-voltage": "pump_voltage",
+    "entity-pump-signal": "pump_signal",
+    "entity-heater-power": "heater_power",
+    "entity-heater-current": "heater_current",
+    "entity-heater-voltage": "heater_voltage",
+    "entity-heater-fan": "heater_fan",
+    "entity-heater-ambient": "heater_ambient",
+    "entity-heater-water-in": "heater_water_in",
+    "entity-heater-water-out": "heater_water_out",
+}
 
 
-class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.1.5"
+def read_options() -> dict:
+    if not OPTIONS_PATH.exists():
+        return {}
 
-    def do_GET(self) -> None:
-        parsed = urlparse(self.path)
+    try:
+        return json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
 
-        if parsed.path == "/healthz":
-            self._send_json({"ok": True})
-            return
 
-        if parsed.path == "/api/config":
-            self._send_json(self._read_public_options())
-            return
+def public_options(options: dict) -> dict:
+    public = json.loads(json.dumps(options))
+    connection = public.get("connection")
 
-        if parsed.path.startswith("/api/ha/states/"):
-            entity_id = unquote(parsed.path.removeprefix("/api/ha/states/"))
-            self._proxy_ha("GET", f"/states/{quote(entity_id, safe='')}")
-            return
+    if isinstance(connection, dict):
+        access_token = str(connection.get("access_token") or "").strip()
+        connection["access_token"] = ""
+        connection["access_token_configured"] = bool(access_token)
 
-        self._serve_static(parsed.path)
+    return public
 
-    def do_POST(self) -> None:
-        parsed = urlparse(self.path)
 
-        if parsed.path.startswith("/api/ha/services/"):
-            service_path = parsed.path.removeprefix("/api/ha/services/")
-            self._proxy_ha("POST", f"/services/{service_path}", self._read_body())
-            return
+def read_s6_environment(name: str) -> str:
+    for folder in ("/run/s6/container_environment", "/var/run/s6/container_environment"):
+        path = Path(folder) / name
+        if path.exists():
+            try:
+                return path.read_text(encoding="utf-8").strip().strip("\x00")
+            except OSError:
+                pass
+    return ""
 
-        self._send_json({"error": "Not found"}, status=404)
 
-    def _read_options(self) -> dict:
-        if not OPTIONS_PATH.exists():
-            return {}
+def supervisor_token() -> str:
+    return (
+        os.environ.get("SUPERVISOR_TOKEN")
+        or os.environ.get("HASSIO_TOKEN")
+        or read_s6_environment("SUPERVISOR_TOKEN")
+        or read_s6_environment("HASSIO_TOKEN")
+        or ""
+    )
 
-        try:
-            return json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return {}
 
-    def _read_body(self) -> bytes:
-        length = int(self.headers.get("content-length", "0"))
-        return self.rfile.read(length) if length else b"{}"
+def entity_domain(entity_id: str) -> str:
+    return entity_id.split(".", 1)[0] if "." in entity_id else "homeassistant"
 
-    def _read_public_options(self) -> dict:
-        options = json.loads(json.dumps(self._read_options()))
-        connection = options.get("connection")
 
-        if isinstance(connection, dict):
-            access_token = str(connection.get("access_token") or "").strip()
-            connection["access_token"] = ""
-            connection["access_token_configured"] = bool(access_token)
+def now_ts() -> float:
+    return time.time()
 
-        return options
 
-    def _ha_api_credentials(self) -> tuple[str, str, str] | None:
-        if SUPERVISOR_TOKEN:
-            return SUPERVISOR_HA_API_BASE, SUPERVISOR_TOKEN, "supervisor"
+def today_key() -> str:
+    return time.strftime("%Y-%m-%d", time.localtime())
 
-        connection = self._read_options().get("connection") or {}
+
+def seconds_to_clock(value: float | None) -> str:
+    if not value:
+        return "--:--"
+    return time.strftime("%H:%M", time.localtime(value))
+
+
+class HomeAssistantClient:
+    def __init__(self) -> None:
+        self._last_auth_source = "missing"
+
+    def credentials(self) -> tuple[str, str, str] | None:
+        token = supervisor_token()
+        if token:
+            return SUPERVISOR_HA_API_BASE, token, "supervisor"
+
+        connection = read_options().get("connection") or {}
         access_token = str(connection.get("access_token") or "").strip()
         if not access_token:
             return None
@@ -94,21 +149,27 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
         homeassistant_url = str(connection.get("homeassistant_url") or DEFAULT_HA_URL).rstrip("/")
         return f"{homeassistant_url}/api", access_token, "configured_token"
 
-    def _proxy_ha(self, method: str, path: str, body: bytes | None = None) -> None:
-        credentials = self._ha_api_credentials()
+    def auth_status(self) -> str:
+        credentials = self.credentials()
         if not credentials:
-            self._send_json(
-                {
-                    "error": "Home Assistant authentication is not configured",
-                    "detail": "SUPERVISOR_TOKEN is missing and no fallback access token is configured.",
-                },
-                status=503,
-            )
-            return
+            return "missing token"
+        return "Supervisor token available" if credentials[2] == "supervisor" else "using configured fallback token"
+
+    def request(self, method: str, path: str, data: dict | None = None, raw_body: bytes | None = None) -> tuple[int, str, bytes]:
+        credentials = self.credentials()
+        if not credentials:
+            payload = {
+                "error": "Home Assistant authentication is not configured",
+                "detail": "SUPERVISOR_TOKEN is missing and no fallback access token is configured.",
+            }
+            return 503, "application/json", json.dumps(payload).encode("utf-8")
 
         api_base, token, auth_source = credentials
+        self._last_auth_source = auth_source
+        body = json.dumps(data).encode("utf-8") if data is not None else raw_body
         target_url = f"{api_base}{path}"
         print(f"[openpool] HA {method} {path} via {auth_source}", flush=True)
+
         request = Request(
             target_url,
             data=body,
@@ -123,27 +184,495 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
             with urlopen(request, timeout=10) as response:
                 payload = response.read()
                 print(f"[openpool] HA {method} {path} -> {response.status}", flush=True)
-                self.send_response(response.status)
-                self.send_header("Content-Type", response.headers.get("Content-Type", "application/json"))
-                self.send_header("Content-Length", str(len(payload)))
-                self.end_headers()
-                self.wfile.write(payload)
+                return response.status, response.headers.get("Content-Type", "application/json"), payload
         except HTTPError as err:
-            error_payload = err.read()
-            detail = error_payload.decode("utf-8", "replace")[:220] if error_payload else err.reason
+            payload = err.read()
+            detail = payload.decode("utf-8", "replace")[:220] if payload else err.reason
             print(f"[openpool] HA {method} {path} -> {err.code}: {detail}", flush=True)
-            if error_payload:
-                self.send_response(err.code)
-                self.send_header("Content-Type", err.headers.get("Content-Type", "application/json"))
-                self.send_header("Content-Length", str(len(error_payload)))
-                self.end_headers()
-                self.wfile.write(error_payload)
-                return
-
-            self._send_json({"error": err.reason}, status=err.code)
+            if not payload:
+                payload = json.dumps({"error": err.reason}).encode("utf-8")
+            return err.code, err.headers.get("Content-Type", "application/json"), payload
         except URLError as err:
             print(f"[openpool] HA {method} {path} -> 502: {err.reason}", flush=True)
-            self._send_json({"error": str(err.reason)}, status=502)
+            return 502, "application/json", json.dumps({"error": str(err.reason)}).encode("utf-8")
+
+    def json_request(self, method: str, path: str, data: dict | None = None) -> dict | list | None:
+        status, _content_type, payload = self.request(method, path, data=data)
+        if status < 200 or status >= 300:
+            message = payload.decode("utf-8", "replace")[:240]
+            raise RuntimeError(f"HA {method} {path} failed with {status}: {message}")
+        if not payload:
+            return None
+        return json.loads(payload.decode("utf-8"))
+
+    def service(self, domain: str, service: str, entity_id: str | None = None, data: dict | None = None) -> dict | list | None:
+        payload = dict(data or {})
+        if entity_id:
+            payload["entity_id"] = entity_id
+
+        try:
+            return self.json_request("POST", f"/services/{domain}/{service}", payload)
+        except RuntimeError:
+            if entity_id and domain != "homeassistant" and service in {"turn_on", "turn_off"}:
+                return self.json_request("POST", f"/services/homeassistant/{service}", {"entity_id": entity_id})
+            raise
+
+
+class OpenPoolController:
+    def __init__(self, ha: HomeAssistantClient) -> None:
+        self.ha = ha
+        self.lock = threading.RLock()
+        self.state = self._load_state()
+        self.ha_states: dict[str, dict] = {}
+        self.connected = False
+        self.last_error = ""
+        self._stop = threading.Event()
+        self.thread = threading.Thread(target=self._run, name="openpool-controller", daemon=True)
+
+    def start(self) -> None:
+        self.thread.start()
+
+    def _default_state(self) -> dict:
+        return {
+            "version": 1,
+            "master_enabled": True,
+            "pump_mode": "Badebetrieb",
+            "heater_mode": "PV-Automatik",
+            "heater_target_temp": 28,
+            "pump_running_since": None,
+            "pump_runtime_total_s": 0,
+            "pump_runtime_today_s": 0,
+            "runtime_day": today_key(),
+            "heater_off_since": now_ts() - RUN_ON_SECONDS - 1,
+            "pending_job": None,
+            "restart_pulses_done": {},
+            "command_log": [
+                {"time": "--:--", "title": "OpenPool gestartet", "detail": "Controller wartet auf Home Assistant."}
+            ],
+            "updated_at": now_ts(),
+        }
+
+    def _load_state(self) -> dict:
+        if not STATE_PATH.exists():
+            return self._default_state()
+        try:
+            loaded = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return self._default_state()
+
+        state = self._default_state()
+        state.update(loaded)
+        return state
+
+    def _save_state(self) -> None:
+        STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = STATE_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(self.state, ensure_ascii=True, indent=2), encoding="utf-8")
+        tmp.replace(STATE_PATH)
+
+    def options(self) -> dict:
+        return read_options()
+
+    def entities(self) -> dict:
+        entities = dict(DEFAULT_ENTITIES)
+        entities.update((self.options().get("entities") or {}))
+        return entities
+
+    def thresholds(self) -> dict:
+        values = {"pv_start_export_w": 1500, "heater_temp_min": 18, "heater_temp_max": 32}
+        values.update((self.options().get("thresholds") or {}))
+        return values
+
+    def profile(self) -> dict:
+        values = {
+            "pump_start": "07:30",
+            "pump_end": "22:00",
+            "bad_weather_start": "13:00",
+            "bad_weather_end": "16:15",
+            "night_swim_max_minutes": 600,
+        }
+        values.update((self.options().get("profiles") or {}))
+        return values
+
+    def restart_pulses(self) -> list[dict]:
+        configured = self.options().get("restart_pulses") or {}
+        defaults = [
+            {"key": "pulse_1", "enabled": True, "time": "11:59", "duration_s": 5},
+            {"key": "pulse_2", "enabled": True, "time": "16:59", "duration_s": 5},
+            {"key": "pulse_3", "enabled": True, "time": "23:59", "duration_s": 5},
+            {"key": "pulse_4", "enabled": False, "time": "00:00", "duration_s": 5},
+        ]
+        for pulse in defaults:
+            options = configured.get(pulse["key"]) or {}
+            pulse.update({key: options[key] for key in pulse.keys() & options.keys()})
+        return defaults
+
+    def snapshot(self) -> dict:
+        with self.lock:
+            runtime = self._runtime_snapshot(now_ts())
+            return {
+                "controller": dict(self.state),
+                "runtime": runtime,
+                "connected": self.connected,
+                "last_error": self.last_error,
+                "auth_status": self.ha.auth_status(),
+                "ha_states": self._ui_ha_states(),
+                "options": public_options(self.options()),
+                "entities": self.entities(),
+                "thresholds": self.thresholds(),
+                "profiles": self.profile(),
+                "restart_pulses": self.restart_pulses(),
+                "now": now_ts(),
+            }
+
+    def _ui_ha_states(self) -> dict:
+        entities = self.entities()
+        return {ui_key: self.ha_states.get(option_key) for ui_key, option_key in UI_ENTITY_KEYS.items()}
+
+    def _runtime_snapshot(self, current_ts: float) -> dict:
+        runtime_today = float(self.state.get("pump_runtime_today_s") or 0)
+        runtime_total = float(self.state.get("pump_runtime_total_s") or 0)
+        running_since = self.state.get("pump_running_since")
+        if running_since:
+            delta = max(0, current_ts - float(running_since))
+            runtime_today += delta
+            runtime_total += delta
+        return {
+            "pump_running_since": running_since,
+            "pump_runtime_today_s": int(runtime_today),
+            "pump_runtime_total_s": int(runtime_total),
+        }
+
+    def command(self, title: str, detail: str) -> None:
+        signature = f"{title}|{detail}"
+        log = self.state.setdefault("command_log", [])
+        if log and f"{log[0].get('title')}|{log[0].get('detail')}" == signature:
+            return
+        log.insert(0, {"time": time.strftime("%H:%M", time.localtime()), "title": title, "detail": detail})
+        del log[3:]
+
+    def handle_action(self, action: dict) -> dict:
+        action_type = action.get("type")
+        with self.lock:
+            if action_type == "master":
+                self.state["master_enabled"] = bool(action.get("enabled"))
+                self.command("Hauptfreigabe EIN" if self.state["master_enabled"] else "Hauptfreigabe AUS", "Von der OpenPool UI gesetzt.")
+                self._save_state()
+            elif action_type == "pump_mode":
+                self.state["pump_mode"] = str(action.get("mode") or "Aus")
+                self.command("Pumpenmodus", self.state["pump_mode"])
+                self._save_state()
+            elif action_type == "heater_mode":
+                self.state["heater_mode"] = str(action.get("mode") or "Aus")
+                self.command("Heizungsmodus", self.state["heater_mode"])
+                self._save_state()
+            elif action_type == "target_temp":
+                self.state["heater_target_temp"] = float(action.get("value") or self.state.get("heater_target_temp") or 28)
+                self.command("Zieltemperatur gesetzt", f"{self.state['heater_target_temp']:.1f} Grad")
+                self._save_state()
+                self._set_heater_temperature()
+            elif action_type == "restart_pulse":
+                self._start_restart_pulse(RESTART_PULSE_SECONDS, "Manueller Restart-Pulse")
+            else:
+                raise ValueError(f"Unknown action type: {action_type}")
+
+        self._apply_control_rules()
+        return self.snapshot()
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.poll_home_assistant()
+                if self.connected:
+                    self._apply_jobs()
+                    self._apply_control_rules()
+            except Exception as err:  # noqa: BLE001 - controller must keep running
+                self.last_error = str(err)
+                print(f"[openpool] controller error: {err}", flush=True)
+            self._stop.wait(POLL_INTERVAL_SECONDS)
+
+    def poll_home_assistant(self) -> None:
+        entities = self.entities()
+        states: dict[str, dict] = {}
+        success = 0
+
+        for key, entity_id in entities.items():
+            try:
+                states[key] = self.ha.json_request("GET", f"/states/{quote(entity_id, safe='')}")  # type: ignore[assignment]
+                success += 1
+            except Exception as err:  # noqa: BLE001
+                self.last_error = str(err)
+
+        with self.lock:
+            self.connected = success >= 2
+            self.ha_states = states
+            self._track_runtime(states)
+            self.state["updated_at"] = now_ts()
+            self._save_state()
+
+    def _track_runtime(self, states: dict[str, dict]) -> None:
+        current_day = today_key()
+        current_ts = now_ts()
+        if self.state.get("runtime_day") != current_day:
+            self.state["runtime_day"] = current_day
+            self.state["pump_runtime_today_s"] = 0
+            self.state["restart_pulses_done"] = {}
+
+        pump_on = str((states.get("pump_switch") or {}).get("state", "")).lower() == "on"
+        heater_state = str((states.get("heater_climate") or {}).get("state", "")).lower()
+        heater_on = heater_state not in {"", "off", "idle", "unavailable", "unknown"}
+
+        running_since = self.state.get("pump_running_since")
+        if pump_on and not running_since:
+            self.state["pump_running_since"] = current_ts
+        elif not pump_on and running_since:
+            elapsed = max(0, current_ts - float(running_since))
+            self.state["pump_runtime_today_s"] = int(float(self.state.get("pump_runtime_today_s") or 0) + elapsed)
+            self.state["pump_runtime_total_s"] = int(float(self.state.get("pump_runtime_total_s") or 0) + elapsed)
+            self.state["pump_running_since"] = None
+
+        if heater_on:
+            self.state["heater_off_since"] = None
+        elif self.state.get("heater_off_since") is None:
+            self.state["heater_off_since"] = current_ts
+
+    def _apply_jobs(self) -> None:
+        job = self.state.get("pending_job")
+        if not job:
+            self._apply_scheduled_pulses()
+            return
+
+        current_ts = now_ts()
+        if current_ts < float(job.get("until") or 0):
+            return
+
+        if job.get("type") == "restart_pulse":
+            self._turn_pump(True)
+            self.command("Restart-Pulse fertig", "Pumpe wieder eingeschaltet.")
+        elif job.get("type") == "pump_run_on":
+            self._turn_pump(False)
+            self.command("Pumpennachlauf fertig", "Pumpe nach Heizungs-Nachlauf ausgeschaltet.")
+
+        self.state["pending_job"] = None
+        self._save_state()
+
+    def _apply_scheduled_pulses(self) -> None:
+        if not self.state.get("master_enabled") or self.state.get("pump_mode") == "Aus":
+            return
+
+        current_time = time.strftime("%H:%M", time.localtime())
+        current_day = today_key()
+        done = self.state.setdefault("restart_pulses_done", {})
+
+        for pulse in self.restart_pulses():
+            if not pulse.get("enabled") or current_time < str(pulse.get("time")):
+                continue
+            key = f"{current_day}:{pulse['key']}"
+            if done.get(key):
+                continue
+            done[key] = True
+            self._start_restart_pulse(int(pulse.get("duration_s") or 5), f"Automatischer {pulse['key']}")
+            break
+
+    def _apply_control_rules(self) -> None:
+        if self.state.get("pending_job"):
+            return
+
+        master_enabled = bool(self.state.get("master_enabled"))
+        pump_mode = str(self.state.get("pump_mode") or "Aus")
+        heater_mode = str(self.state.get("heater_mode") or "Aus")
+
+        if not master_enabled:
+            self._turn_heater(False)
+            self._turn_pump(False)
+            return
+
+        if pump_mode == "Aus":
+            self._turn_heater(False)
+            if self._heater_needs_run_on():
+                self.state["pending_job"] = {"type": "pump_run_on", "until": now_ts() + RUN_ON_SECONDS}
+                self._turn_pump(True)
+                self.command("Pumpennachlauf gestartet", "Heizung war kuerzlich aktiv.")
+            else:
+                self._turn_pump(False)
+            self._save_state()
+            return
+
+        pump_should_run = self._pump_should_run(pump_mode)
+        self._turn_pump(pump_should_run)
+
+        if pump_mode == "Nachtbaden":
+            self._turn_heater(True)
+        elif heater_mode == "Aus" or not pump_should_run:
+            self._turn_heater(False)
+        elif heater_mode == "Ein":
+            self._turn_heater(True)
+        elif heater_mode in {"PV-Automatik", "Wetterautomatik"}:
+            self._apply_pv_heating(pump_should_run)
+
+        self._save_state()
+
+    def _pump_should_run(self, pump_mode: str) -> bool:
+        profile = self.profile()
+        current_time = time.strftime("%H:%M", time.localtime())
+        if pump_mode in {"Dauerbetrieb", "Nachtbaden"}:
+            return True
+        if pump_mode == "Badebetrieb":
+            return str(profile["pump_start"]) <= current_time < str(profile["pump_end"])
+        if pump_mode == "Schlechtwetter":
+            return str(profile["bad_weather_start"]) <= current_time < str(profile["bad_weather_end"])
+        return False
+
+    def _heater_needs_run_on(self) -> bool:
+        heater_off_since = self.state.get("heater_off_since")
+        return heater_off_since is None or now_ts() - float(heater_off_since) < RUN_ON_SECONDS
+
+    def _apply_pv_heating(self, pump_should_run: bool) -> None:
+        if not pump_should_run:
+            self._turn_heater(False)
+            return
+        available = self._pv_available_watts()
+        threshold = float(self.thresholds().get("pv_start_export_w") or 1500)
+        self._turn_heater(available is not None and available >= threshold)
+
+    def _pv_available_watts(self) -> float | None:
+        values = []
+        for key in ("pv_export", "grid_import", "house_consumption"):
+            state = self.ha_states.get(key)
+            if not state:
+                return None
+            try:
+                value = float(str(state.get("state")).replace(",", "."))
+            except (TypeError, ValueError):
+                return None
+            unit = str((state.get("attributes") or {}).get("unit_of_measurement") or "").lower()
+            values.append(value * 1000 if "kw" in unit else value)
+        return values[0] - values[1] - values[2]
+
+    def _turn_pump(self, enabled: bool) -> None:
+        entity_id = self.entities().get("pump_switch")
+        if not entity_id:
+            return
+        current_state = str((self.ha_states.get("pump_switch") or {}).get("state", "")).lower()
+        if current_state in {"on", "off"} and (current_state == "on") == enabled:
+            return
+        service = "turn_on" if enabled else "turn_off"
+        self.ha.service(entity_domain(entity_id), service, entity_id=entity_id)
+
+    def _turn_heater(self, enabled: bool) -> None:
+        entity_id = self.entities().get("heater_climate")
+        if not entity_id:
+            return
+        domain = entity_domain(entity_id)
+        current_state = str((self.ha_states.get("heater_climate") or {}).get("state", "")).lower()
+        if current_state not in {"", "unknown", "unavailable"}:
+            heater_on = current_state not in {"off", "idle"}
+            if heater_on == enabled:
+                return
+        if domain == "climate":
+            if enabled:
+                try:
+                    self.ha.service("climate", "set_hvac_mode", entity_id=entity_id, data={"hvac_mode": "heat"})
+                except RuntimeError:
+                    self.ha.service("climate", "turn_on", entity_id=entity_id)
+                try:
+                    self._set_heater_temperature()
+                except RuntimeError:
+                    pass
+            else:
+                self.ha.service("climate", "turn_off", entity_id=entity_id)
+        else:
+            self.ha.service(domain, "turn_on" if enabled else "turn_off", entity_id=entity_id)
+
+    def _set_heater_temperature(self) -> None:
+        entity_id = self.entities().get("heater_climate")
+        if entity_id and entity_domain(entity_id) == "climate":
+            self.ha.service("climate", "set_temperature", entity_id=entity_id, data={"temperature": self.state["heater_target_temp"]})
+
+    def _start_restart_pulse(self, duration_s: int, title: str) -> None:
+        self._turn_pump(False)
+        self.state["pending_job"] = {"type": "restart_pulse", "until": now_ts() + max(1, duration_s)}
+        self.command(title, f"Pumpe fuer {duration_s} Sekunden ausgeschaltet.")
+        self._save_state()
+
+
+HA = HomeAssistantClient()
+CONTROLLER = OpenPoolController(HA)
+
+
+class OpenPoolHandler(BaseHTTPRequestHandler):
+    server_version = "OpenPool/0.2.0"
+
+    def do_GET(self) -> None:
+        parsed = urlparse(self.path)
+
+        if parsed.path == "/healthz":
+            self._send_json({"ok": True})
+            return
+
+        if parsed.path == "/api/config":
+            self._send_json(public_options(read_options()))
+            return
+
+        if parsed.path == "/api/openpool/state":
+            self._send_json(CONTROLLER.snapshot())
+            return
+
+        if parsed.path.startswith("/api/ha/states/"):
+            entity_id = unquote(parsed.path.removeprefix("/api/ha/states/"))
+            self._proxy_ha("GET", f"/states/{quote(entity_id, safe='')}")
+            return
+
+        self._serve_static(parsed.path)
+
+    def do_POST(self) -> None:
+        parsed = urlparse(self.path)
+
+        if parsed.path == "/api/openpool/action":
+            try:
+                action = json.loads(self._read_body().decode("utf-8") or "{}")
+                self._send_json(CONTROLLER.handle_action(action))
+            except (ValueError, json.JSONDecodeError) as err:
+                self._send_json({"error": str(err)}, status=400)
+            except Exception as err:  # noqa: BLE001
+                self._send_json({"error": str(err)}, status=502)
+            return
+
+        if parsed.path.startswith("/api/ha/services/"):
+            service_path = parsed.path.removeprefix("/api/ha/services/")
+            self._proxy_ha("POST", f"/services/{service_path}", raw_body=self._read_body())
+            return
+
+        self._send_json({"error": "Not found"}, status=404)
+
+    def _read_body(self) -> bytes:
+        if self.headers.get("Transfer-Encoding", "").lower() == "chunked":
+            return self._read_chunked_body()
+
+        length = int(self.headers.get("content-length", "0"))
+        return self.rfile.read(length) if length else b"{}"
+
+    def _read_chunked_body(self) -> bytes:
+        chunks: list[bytes] = []
+        while True:
+            line = self.rfile.readline().strip()
+            if not line:
+                break
+            size = int(line.split(b";", 1)[0], 16)
+            if size == 0:
+                self.rfile.readline()
+                break
+            chunks.append(self.rfile.read(size))
+            self.rfile.read(2)
+        return b"".join(chunks) or b"{}"
+
+    def _proxy_ha(self, method: str, path: str, raw_body: bytes | None = None) -> None:
+        status, content_type, payload = HA.request(method, path, raw_body=raw_body)
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
 
     def _serve_static(self, request_path: str) -> None:
         relative = request_path.lstrip("/") or "index.html"
@@ -175,28 +704,11 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    CONTROLLER.start()
     server = ThreadingHTTPServer(("0.0.0.0", PORT), OpenPoolHandler)
     print(f"[openpool] listening on 0.0.0.0:{PORT}", flush=True)
-    print(f"[openpool] Home Assistant auth: {_startup_auth_status()}", flush=True)
+    print(f"[openpool] Home Assistant auth: {HA.auth_status()}", flush=True)
     server.serve_forever()
-
-
-def _startup_auth_status() -> str:
-    if SUPERVISOR_TOKEN:
-        return "Supervisor token available"
-
-    options = {}
-    if OPTIONS_PATH.exists():
-        try:
-            options = json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            options = {}
-
-    connection = options.get("connection") or {}
-    if str(connection.get("access_token") or "").strip():
-        return "using configured fallback token"
-
-    return "missing token"
 
 
 if __name__ == "__main__":

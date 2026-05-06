@@ -1187,7 +1187,11 @@
 
     @media (max-width: 1180px) {
       .dashboard .grid {
-        grid-template-columns: minmax(300px, 1fr) minmax(230px, .82fr) minmax(250px, .9fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .dashboard .hero,
+      .dashboard .sensor-list-card {
+        grid-column: 1 / -1;
       }
       .forecast-grid,
       .forecast-grid.daily-forecast {
@@ -1205,9 +1209,11 @@
       .dashboard .grid {
         grid-template-columns: minmax(0, 1fr) minmax(300px, .9fr);
       }
-      .dashboard .hero,
       .dashboard .weather-card {
         grid-column: auto;
+      }
+      .dashboard .hero {
+        grid-column: 1 / -1;
       }
       .dashboard .sensor-list-card {
         grid-column: 1 / -1;
@@ -1791,6 +1797,7 @@
     let pumpRunOnTimer = null;
     let refreshTimer = null;
     let liveStateAvailable = false;
+    let latestSnapshot = null;
 
     // Safety rule: pump run-on is only required while the heat pump is running
     // or less than five minutes after it stopped.
@@ -1890,11 +1897,7 @@
     }
 
     function readStoredSettings() {
-      try {
-        return JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) || '{}');
-      } catch {
-        return {};
-      }
+      return {};
     }
 
     function applySettings(settings) {
@@ -1941,7 +1944,8 @@
 
     async function loadSettings() {
       try {
-        applyAddonOptions(await apiJson('/api/config'));
+        const snapshot = await apiJson('/api/openpool/state');
+        applySnapshot(snapshot);
       } catch {
         // The UI can still work with defaults or locally saved values.
       }
@@ -1950,71 +1954,16 @@
     }
 
     function saveSettings() {
-      const settings = {
-        thresholds: {
-          pvStartExportW: getNumberInput('pv-start-export-w', 1500),
-          heaterTempMin: getNumberInput('heater-temp-min', 18),
-          heaterTempMax: getNumberInput('heater-temp-max', 32)
-        }
-      };
-
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-      pushCommand('Konfiguration gespeichert', 'Grenzwerte lokal im Browser gespeichert.');
+      pushCommand('Konfiguration', 'Entitäten und Automatikwerte bitte in den Add-on-Optionen ändern.');
     }
 
-    async function getHaState(inputId) {
-      const entityId = getEntityId(inputId);
-      if (!entityId) throw new Error(`Keine Entität für ${inputId}`);
-      return apiJson(`/api/ha/states/${encodeURIComponent(entityId)}`);
-    }
-
-    async function callHaService(domain, service, data) {
-      return apiJson(`/api/ha/services/${domain}/${service}`, {
+    async function sendOpenPoolAction(action) {
+      const snapshot = await apiJson('/api/openpool/action', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(action)
       });
-    }
-
-    function getEntityDomain(entityId) {
-      return String(entityId).split('.')[0] || 'homeassistant';
-    }
-
-    async function turnEntity(inputId, enabled) {
-      const entityId = getEntityId(inputId);
-      const domain = getEntityDomain(entityId);
-      const service = enabled ? 'turn_on' : 'turn_off';
-
-      try {
-        return await callHaService(domain, service, { entity_id: entityId });
-      } catch (error) {
-        if (domain === 'homeassistant') throw error;
-        return callHaService('homeassistant', service, { entity_id: entityId });
-      }
-    }
-
-    async function switchPump(enabled) {
-      return turnEntity('entity-pump-switch', enabled);
-    }
-
-    async function setClimateHvacMode(mode) {
-      const entityId = getEntityId('entity-heater-climate');
-      if (getEntityDomain(entityId) !== 'climate') {
-        return turnEntity('entity-heater-climate', mode !== 'off');
-      }
-
-      try {
-        return await callHaService('climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: mode });
-      } catch (error) {
-        return turnEntity('entity-heater-climate', mode !== 'off');
-      }
-    }
-
-    async function setClimateTemperature() {
-      if (getEntityDomain(getEntityId('entity-heater-climate')) !== 'climate') return null;
-      return callHaService('climate', 'set_temperature', {
-        entity_id: getEntityId('entity-heater-climate'),
-        temperature: heaterTargetTemp
-      });
+      applySnapshot(snapshot);
+      return snapshot;
     }
 
     function isUnavailableState(entityState) {
@@ -2088,6 +2037,13 @@
       const value = parseEntityNumber(entityState);
       setText(valueId, formatSensorValue(entityState, fallbackUnit, digits));
       updateBar(barId, value === null ? 0 : (Math.abs(value) / maxValue) * 100);
+    }
+
+    function formatDuration(seconds) {
+      const value = Math.max(0, Math.floor(Number(seconds) || 0));
+      const hours = Math.floor(value / 3600);
+      const minutes = Math.floor((value % 3600) / 60);
+      return `${hours}h ${String(minutes).padStart(2, '0')}m`;
     }
 
     function updatePvAvailability(states) {
@@ -2194,36 +2150,56 @@
       updateGenericFlow('heater-water-out-value', 'heater-water-out-bar', states['entity-heater-water-out'], 40, '°C', 1);
     }
 
-    async function refreshHomeAssistantState() {
-      const inputIds = Object.keys(entityInputDefaults);
-      const results = await Promise.allSettled(inputIds.map(inputId => getHaState(inputId)));
-      const states = {};
-      let successCount = 0;
-
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          states[inputIds[index]] = result.value;
-          successCount += 1;
-        }
+    function setActiveMode(cardSelector, dataName, value) {
+      document.querySelectorAll(`${cardSelector} .mode`).forEach(mode => {
+        mode.classList.toggle('active', mode.dataset[dataName] === value);
       });
+    }
 
-      const criticalOk = !isUnavailableState(states['entity-pump-switch'])
-        && !isUnavailableState(states['entity-heater-climate']);
+    function applySnapshot(snapshot) {
+      latestSnapshot = snapshot;
+      const controller = snapshot.controller || {};
+      const states = snapshot.ha_states || {};
 
-      if (criticalOk) {
-        liveStateAvailable = true;
-        setConnectionStatus(true, 'Home Assistant verbunden');
-      } else if (successCount > 0) {
-        setConnectionStatus(false, 'Konfiguration prüfen');
-      } else {
-        setConnectionStatus(false, 'Home Assistant getrennt');
+      applyAddonOptions(snapshot.options || {});
+      liveStateAvailable = Boolean(snapshot.connected);
+      setConnectionStatus(liveStateAvailable, liveStateAvailable ? 'Home Assistant verbunden' : 'Home Assistant getrennt');
+
+      const masterSwitch = document.querySelector('.master .switch');
+      masterSwitch?.classList.toggle('on', controller.master_enabled !== false);
+      setText('master-state-label', controller.master_enabled !== false ? 'Poolsystem EIN' : 'Poolsystem AUS');
+
+      setActiveMode('#pump-control-card', 'pumpMode', controller.pump_mode || 'Aus');
+      setActiveMode('#heater-control-card', 'heaterMode', controller.heater_mode || 'Aus');
+      updateHeaterLock();
+      document.getElementById('pump-control-card').classList.toggle('disabled', controller.master_enabled === false);
+
+      if (Number.isFinite(Number(controller.heater_target_temp))) {
+        heaterTargetTemp = Number(controller.heater_target_temp);
+        updateTemperatureRange();
       }
 
-      if (successCount > 0) {
-        updateHomeAssistantValues(states);
+      if (Array.isArray(controller.command_log)) {
+        commandLog.splice(0, commandLog.length, ...controller.command_log);
+        renderCommandLog();
+      }
+
+      const job = controller.pending_job;
+      setShutdownSequenceVisible(Boolean(job && job.type === 'pump_run_on'));
+      updateHomeAssistantValues(states);
+
+      if (snapshot.runtime?.pump_runtime_today_s !== undefined) {
+        const runtimeText = `Laufzeit heute ${formatDuration(snapshot.runtime.pump_runtime_today_s)}`;
+        const currentHint = document.getElementById('pump-hint')?.textContent || '';
+        if (!currentHint.includes('Pulse')) setText('pump-hint', runtimeText);
       }
 
       return states;
+    }
+
+    async function refreshHomeAssistantState() {
+      const snapshot = await apiJson('/api/openpool/state');
+      return applySnapshot(snapshot);
     }
 
     function handleHaError(context, error) {
@@ -2316,55 +2292,11 @@
       pumpRunOnTimer = null;
     }
 
-    async function schedulePumpStopAfterRunOn() {
-      clearPumpRunOnTimer();
-      const elapsed = heaterOffSince === null ? 0 : Date.now() - heaterOffSince;
-      const remaining = Math.max(0, heaterRunOnMs - elapsed);
-
-      if (remaining <= 0) {
-        await switchPump(false);
-        shutdownActive = false;
-        setShutdownSequenceVisible(false);
-        pushCommand('Pumpe direkt aus', 'Heizung ist seit mehr als 5 Minuten aus, kein Nachlauf nötig.');
-        return;
-      }
-
-      await switchPump(true);
-      pushCommand('Pumpennachlauf gestartet', 'Pumpe bleibt für den Heizungs-Nachlauf eingeschaltet.');
-      pumpRunOnTimer = window.setTimeout(async () => {
-        try {
-          await switchPump(false);
-          shutdownActive = false;
-          setShutdownSequenceVisible(false);
-          pushCommand('Pumpennachlauf fertig', 'Pumpe wurde nach dem Heizungs-Nachlauf ausgeschaltet.');
-          refreshHomeAssistantState();
-        } catch (error) {
-          handleHaError('Pumpennachlauf', error);
-        }
-      }, remaining);
-    }
-
     async function applyMasterStateToHomeAssistant(enabled) {
       clearPumpRunOnTimer();
 
       try {
-        if (!enabled) {
-          const results = await Promise.allSettled([
-            setClimateHvacMode('off'),
-            switchPump(false)
-          ]);
-          const failed = results.find(result => result.status === 'rejected');
-          if (failed) throw failed.reason;
-          pushCommand('Hauptfreigabe AUS', 'Pumpe und Wärmepumpe wurden über Home Assistant ausgeschaltet.');
-        } else if (getPumpMode() !== 'Aus') {
-          await switchPump(true);
-          if (getPumpMode() === 'Nachtbaden') {
-            await setClimateHvacMode('heat');
-          }
-          pushCommand('Hauptfreigabe EIN', 'Home Assistant Schalter wurde passend zum aktiven Modus gesetzt.');
-        }
-
-        refreshHomeAssistantState();
+        await sendOpenPoolAction({ type: 'master', enabled });
       } catch (error) {
         handleHaError('Hauptfreigabe', error);
       }
@@ -2374,28 +2306,7 @@
       if (!isMasterEnabled()) return;
 
       try {
-        if (pumpMode === 'Aus') {
-          try {
-            await setClimateHvacMode('off');
-          } catch (error) {
-            handleHaError('Heizung ausschalten', error);
-          }
-
-          if (needsPumpRunOnForHeater()) {
-            await schedulePumpStopAfterRunOn();
-          } else {
-            clearPumpRunOnTimer();
-            await switchPump(false);
-          }
-        } else {
-          clearPumpRunOnTimer();
-          await switchPump(true);
-          if (pumpMode === 'Nachtbaden') {
-            await setClimateHvacMode('heat');
-          }
-        }
-
-        refreshHomeAssistantState();
+        await sendOpenPoolAction({ type: 'pump_mode', mode: pumpMode });
       } catch (error) {
         handleHaError('Pumpenmodus', error);
       }
@@ -2405,24 +2316,7 @@
       if (!isMasterEnabled() || getPumpMode() === 'Aus') return;
 
       try {
-        if (heaterMode === 'Aus') {
-          await setClimateHvacMode('off');
-          pushCommand('Heizung AUS', 'Wärmepumpe wurde über Home Assistant ausgeschaltet.');
-        } else if (heaterMode === 'Ein') {
-          await switchPump(true);
-          await setClimateHvacMode('heat');
-          try {
-            await setClimateTemperature();
-          } catch {
-            // Some climate integrations accept the HVAC mode but not target
-            // temperature in the same state. The slider can still retry it.
-          }
-          pushCommand('Heizung EIN', 'Wärmepumpe wurde über Home Assistant eingeschaltet.');
-        } else {
-          pushCommand(heaterMode + ' gewählt', 'Automatikmodus aktiv, manuelle Schaltung bleibt unverändert.');
-        }
-
-        refreshHomeAssistantState();
+        await sendOpenPoolAction({ type: 'heater_mode', mode: heaterMode });
       } catch (error) {
         handleHaError('Heizungsmodus', error);
       }
@@ -2443,18 +2337,7 @@
       pushCommand('Chlorsystem neu starten', 'Restart-Pulse aktiv, Modus bleibt unverändert.');
 
       try {
-        await switchPump(false);
-        window.setTimeout(async () => {
-          try {
-            await switchPump(true);
-            restartPulseActive = false;
-            pushCommand('Chlorsystem neu gestartet', 'Restart-Pulse abgeschlossen, Pumpe wieder EIN.');
-            refreshHomeAssistantState();
-          } catch (error) {
-            restartPulseActive = false;
-            handleHaError('Restart-Pulse', error);
-          }
-        }, RESTART_PULSE_MS);
+        await sendOpenPoolAction({ type: 'restart_pulse' });
       } catch (error) {
         restartPulseActive = false;
         handleHaError('Restart-Pulse', error);
@@ -2704,9 +2587,7 @@
 
     document.getElementById('heater-target-slider')?.addEventListener('change', async () => {
       try {
-        await setClimateTemperature();
-        pushCommand('Zieltemperatur gesetzt', `${formatDecimal(heaterTargetTemp, 1)}° an Home Assistant gesendet.`);
-        refreshHomeAssistantState();
+        await sendOpenPoolAction({ type: 'target_temp', value: heaterTargetTemp });
       } catch (error) {
         handleHaError('Zieltemperatur', error);
       }

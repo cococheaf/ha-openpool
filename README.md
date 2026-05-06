@@ -7,8 +7,8 @@ surplus based heating logic from one compact tablet-friendly interface.
 ## Current State
 
 - `openpool/` contains the Home Assistant add-on and bundled UI.
-- The add-on serves the UI through Home Assistant Ingress and includes a small
-  API proxy for Home Assistant state reads and service calls.
+- The add-on serves the UI through Home Assistant Ingress, owns the OpenPool
+  controller state and executes pump, restart-pulse and heating automation.
 
 ## Install As Home Assistant Add-on
 
@@ -21,7 +21,3 @@ surplus based heating logic from one compact tablet-friendly interface.
 
 For the add-on build, Home Assistant uses `openpool/config.yaml` and
 `openpool/Dockerfile`. The bundled frontend lives in `openpool/www/index.html`.
-
-The add-on is modeled after the repository-based installation flow used by
-projects such as evcc, where Home Assistant users add a GitHub add-on
-repository to the Add-on Store.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- Move OpenPool control state and automation jobs into the add-on server.
+- Persist controller state, pump runtimes, pending jobs and command history under `/data`.
+- Add shared `/api/openpool/state` and `/api/openpool/action` endpoints for all browsers.
+- Start the add-on through `with-contenv` so `SUPERVISOR_TOKEN` is available without a long-lived token.
+- Add automatic pump profiles, restart pulses, pump run-on and PV heating decisions in the server controller.
+
 ## 0.1.5
 
 - Remove Home Assistant entity and API forms from the web settings view.

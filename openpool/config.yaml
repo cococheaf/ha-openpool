@@ -1,5 +1,5 @@
 name: OpenPool
-version: "0.1.5"
+version: "0.2.0"
 slug: openpool
 description: OpenSource Pool System Controller for pump, chlorinator, heat pump and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool
@@ -58,6 +58,29 @@ options:
     pv_start_export_w: 1500
     heater_temp_min: 18
     heater_temp_max: 32
+  profiles:
+    pump_start: "07:30"
+    pump_end: "22:00"
+    bad_weather_start: "13:00"
+    bad_weather_end: "16:15"
+    night_swim_max_minutes: 600
+  restart_pulses:
+    pulse_1:
+      enabled: true
+      time: "11:59"
+      duration_s: 5
+    pulse_2:
+      enabled: true
+      time: "16:59"
+      duration_s: 5
+    pulse_3:
+      enabled: true
+      time: "23:59"
+      duration_s: 5
+    pulse_4:
+      enabled: false
+      time: "00:00"
+      duration_s: 5
 schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   connection:
@@ -85,3 +108,26 @@ schema:
     pv_start_export_w: int
     heater_temp_min: float
     heater_temp_max: float
+  profiles:
+    pump_start: str
+    pump_end: str
+    bad_weather_start: str
+    bad_weather_end: str
+    night_swim_max_minutes: int
+  restart_pulses:
+    pulse_1:
+      enabled: bool
+      time: str
+      duration_s: int
+    pulse_2:
+      enabled: bool
+      time: str
+      duration_s: int
+    pulse_3:
+      enabled: bool
+      time: str
+      duration_s: int
+    pulse_4:
+      enabled: bool
+      time: str
+      duration_s: int

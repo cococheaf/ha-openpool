@@ -16,6 +16,16 @@ If the Supervisor token is not available in the add-on container, OpenPool can
 fall back to the configured `connection.homeassistant_url` and
 `connection.access_token` add-on options.
 
+## Controller State
+
+OpenPool keeps its runtime state in the add-on server, not in the browser. The
+state is persisted in `/data/openpool_state.json` and contains the active modes,
+pump runtime counters, pending jobs and command history.
+
+The frontend reads shared state from `GET /api/openpool/state` and sends user
+actions to `POST /api/openpool/action`. This keeps multiple browser sessions in
+sync and allows automation jobs to continue when the UI is closed.
+
 ## Configuration
 
 The add-on options contain the default Home Assistant entity IDs and control

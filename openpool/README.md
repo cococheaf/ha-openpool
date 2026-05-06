@@ -2,8 +2,9 @@
 
 OpenPool is an OpenSource Pool System Controller for Home Assistant.
 
-This add-on serves the OpenPool web UI through Home Assistant Ingress and
-provides a small internal proxy for Home Assistant Core API calls.
+This add-on serves the OpenPool web UI through Home Assistant Ingress and runs
+the OpenPool controller for pump profiles, restart pulses, pump run-on and PV
+based heat pump decisions.
 
 ## Installation
 
@@ -13,6 +14,5 @@ provides a small internal proxy for Home Assistant Core API calls.
 
 ## Status
 
-The UI reads the configured Home Assistant entities through the add-on proxy and
-sends manual pump, restart-pulse, heat pump mode and target-temperature commands
-back to Home Assistant services.
+The add-on keeps shared controller state in `/data/openpool_state.json`, so
+multiple browsers stay in sync and runtime counters survive add-on restarts.
