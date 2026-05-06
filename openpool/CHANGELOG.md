@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4
+
+- Calculate PV heat-pump availability from grid export minus grid import instead of subtracting a net-load sensor again.
+- Keep `sensor.nettobezug` as an informational energy value and use it as the default net-load sensor.
+- Add current heat-pump power back into PV availability while the heat pump is running, avoiding self-canceling PV release decisions.
+
 ## 0.2.3
 
 - Enforce the configured maximum duration for Nachtbaden and shut down with the heater pump run-on sequence.

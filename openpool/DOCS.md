@@ -27,6 +27,14 @@ The frontend listens to `GET /api/openpool/events` for live state updates, uses
 `POST /api/openpool/action`. This keeps multiple browser sessions in sync and
 allows automation jobs to continue when the UI is closed.
 
+## PV Release
+
+The heat-pump PV release is calculated from the grid meter values:
+`pv_export - grid_import`. A derived net-load sensor such as
+`sensor.nettobezug` is displayed for information only and is not subtracted
+again. When the heat pump is already running, its current power sensor is added
+back to estimate the surplus that would exist without the heat pump load.
+
 ## Configuration
 
 The add-on options contain the Home Assistant entity IDs, profile times, restart

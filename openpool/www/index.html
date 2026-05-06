@@ -1340,7 +1340,7 @@
                 <div class="sensor-list">
                   <div><span>PV Export</span><strong id="pv-export-value">--</strong></div>
                   <div><span>Netzimport</span><strong id="grid-import-value">--</strong></div>
-                  <div><span>Hausverbrauch</span><strong id="house-consumption-value">--</strong></div>
+                  <div><span>Nettobezug</span><strong id="house-consumption-value">--</strong></div>
                   <div><span>PV frei für WP</span><strong id="pv-free-list-value">--</strong></div>
                 </div>
               </div>
@@ -1585,28 +1585,36 @@
     function updatePvAvailability(states) {
       const pvExport = entityPowerWatts(states['entity-pv-export']);
       const gridImport = entityPowerWatts(states['entity-grid-import']);
-      const houseConsumption = entityPowerWatts(states['entity-house-consumption']);
+      const netConsumption = entityPowerWatts(states['entity-house-consumption']);
+      const heaterPower = entityPowerWatts(states['entity-heater-power']);
+      const heaterActive = isHeaterActive(states['entity-heater-climate']);
       const threshold = optionNumber(controlConfig.pvStartExportW, 1500);
       const thresholdText = formatPower(threshold);
 
       setText('pv-export-value', formatPower(pvExport));
       setText('grid-import-value', formatPower(gridImport));
-      setText('house-consumption-value', formatPower(houseConsumption));
+      setText('house-consumption-value', formatPower(netConsumption));
       setText('pv-ready-threshold', thresholdText);
       setText('pv-surplus-hint', `Bereit ab ${thresholdText}`);
 
-      if ([pvExport, gridImport, houseConsumption].some(value => value === null)) {
+      if ([pvExport, gridImport].some(value => value === null)) {
         setText('pv-free-value', '--');
         setText('pv-free-list-value', '--');
         setText('pv-surplus-metric', '--');
         return;
       }
 
-      const available = pvExport - gridImport - houseConsumption;
+      const available = pvExport - gridImport + (heaterActive ? Math.abs(heaterPower || 0) : 0);
       const text = formatPower(available);
       setText('pv-free-value', text);
       setText('pv-free-list-value', text);
       setText('pv-surplus-metric', text);
+    }
+
+    function isHeaterActive(entityState) {
+      if (isUnavailableState(entityState)) return false;
+      const state = String(entityState.state).toLowerCase();
+      return !['off', 'idle'].includes(state);
     }
 
     function updateWeather(states) {
@@ -1641,8 +1649,7 @@
       }
 
       if (!isUnavailableState(heater)) {
-        const heaterState = String(heater.state).toLowerCase();
-        heaterRunning = !['off', 'idle'].includes(heaterState);
+        heaterRunning = isHeaterActive(heater);
         if (heaterRunning) {
           heaterOffSince = null;
         } else if (heaterOffSince === null) {

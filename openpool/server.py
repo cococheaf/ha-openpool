@@ -38,7 +38,7 @@ DEFAULT_ENTITIES = {
     "weather": "weather.openweathermap",
     "pv_export": "sensor.stromzahler_active_power_minus",
     "grid_import": "sensor.stromzahler_active_power_plus",
-    "house_consumption": "sensor.hausverbrauch",
+    "house_consumption": "sensor.nettobezug",
     "pump_power": "sensor.poolpumpe_leistung",
     "pump_current": "sensor.poolpumpe_current",
     "pump_voltage": "sensor.poolpumpe_spannung",
@@ -587,18 +587,34 @@ class OpenPoolController:
         self._turn_heater(available is not None and available >= threshold)
 
     def _pv_available_watts(self) -> float | None:
-        values = []
-        for key in ("pv_export", "grid_import", "house_consumption"):
-            state = self.ha_states.get(key)
-            if not state:
-                return None
-            try:
-                value = float(str(state.get("state")).replace(",", "."))
-            except (TypeError, ValueError):
-                return None
-            unit = str((state.get("attributes") or {}).get("unit_of_measurement") or "").lower()
-            values.append(value * 1000 if "kw" in unit else value)
-        return values[0] - values[1] - values[2]
+        pv_export = self._entity_power_watts("pv_export")
+        grid_import = self._entity_power_watts("grid_import")
+        if pv_export is None or grid_import is None:
+            return None
+
+        # Grid export/import already contains house, pump and heater loads. Do
+        # not subtract a derived net-load sensor again, otherwise the same load
+        # would be counted twice. When the heat pump is already running, add its
+        # current draw back to estimate the surplus that would exist without it.
+        available = pv_export - grid_import
+        if self._heater_is_active():
+            available += abs(self._entity_power_watts("heater_power") or 0)
+        return available
+
+    def _entity_power_watts(self, key: str) -> float | None:
+        state = self.ha_states.get(key)
+        if not state:
+            return None
+        try:
+            value = float(str(state.get("state")).replace(",", "."))
+        except (TypeError, ValueError):
+            return None
+        unit = str((state.get("attributes") or {}).get("unit_of_measurement") or "").lower()
+        return value * 1000 if "kw" in unit else value
+
+    def _heater_is_active(self) -> bool:
+        heater_state = str((self.ha_states.get("heater_climate") or {}).get("state", "")).lower()
+        return heater_state not in {"", "off", "idle", "unavailable", "unknown"}
 
     def _turn_pump(self, enabled: bool) -> None:
         entity_id = self.entities().get("pump_switch")
@@ -652,7 +668,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.3"
+    server_version = "OpenPool/0.2.4"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

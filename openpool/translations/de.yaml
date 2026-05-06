@@ -27,7 +27,7 @@ configuration:
       grid_import:
         name: Netzimport Sensor
       house_consumption:
-        name: Hausverbrauch Sensor
+        name: Nettobezug Sensor
       pump_power:
         name: Pumpe Leistung Sensor
       pump_current:
