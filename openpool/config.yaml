@@ -1,5 +1,5 @@
 name: OpenPool
-version: "0.2.14"
+version: "0.2.15"
 slug: openpool
 description: OpenSource Pool System Controller currently designed for Intex 26680 based pump/chlorinator systems, heat pumps and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool
@@ -35,6 +35,7 @@ options:
   log_level: info
   poll_interval_s: 1
   connection:
+    auth_mode: supervisor
     homeassistant_url: http://homeassistant:8123
     access_token: ""
   entities:
@@ -89,6 +90,7 @@ schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   poll_interval_s: int
   connection:
+    auth_mode: list(supervisor|openpool_user_token)
     homeassistant_url: str
     access_token: password
   entities:

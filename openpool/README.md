@@ -66,6 +66,24 @@ Wenn diese Entitäten nicht korrekt sind, kann OpenPool keine zuverlässigen
 Entscheidungen treffen oder Befehle an die falschen beziehungsweise an keine
 Geräte senden.
 
+## Home-Assistant-Verlauf
+
+Standardmäßig nutzt das Add-on den Home-Assistant-`SUPERVISOR_TOKEN`. Damit ist
+keine zusätzliche Anmeldung nötig, der Home-Assistant-Verlauf zeigt
+Service-Calls aber als vom Supervisor ausgelöst.
+
+Soll der Verlauf `wurde ausgelöst durch OpenPool` anzeigen, lege in Home
+Assistant einen Benutzer namens `OpenPool` an, erstelle in dessen Profil einen
+Long-Lived Access Token und setze in der Add-on-Konfiguration:
+
+```yaml
+connection:
+  auth_mode: openpool_user_token
+  access_token: "TOKEN_DES_OPENPOOL_BENUTZERS"
+```
+
+OpenPool nutzt dann diesen Benutzer-Token für Home-Assistant-Service-Calls.
+
 ## Installation
 
 1. In Home Assistant **Einstellungen -> Add-ons -> Add-on Store** öffnen.

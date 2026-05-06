@@ -120,6 +120,25 @@ Check especially:
 If these entities are wrong, OpenPool may start, but it cannot make reliable
 decisions or send commands to the correct devices.
 
+## Home Assistant Logbook Attribution
+
+By default, OpenPool uses the `SUPERVISOR_TOKEN` provided by Home Assistant.
+This works without any additional token, but Home Assistant will attribute
+service calls in the logbook to the Supervisor.
+
+If the Home Assistant logbook should show actions as triggered by `OpenPool`,
+create a dedicated Home Assistant user named `OpenPool`, create a long-lived
+access token in that user's profile and configure the add-on like this:
+
+```yaml
+connection:
+  auth_mode: openpool_user_token
+  access_token: "TOKEN_OF_THE_OPENPOOL_USER"
+```
+
+Only this mode can cleanly attribute logbook entries to `OpenPool`, because Home
+Assistant attributes API calls to the authenticated user behind the token.
+
 ## Installation As Home Assistant Add-on
 
 1. In Home Assistant, open **Settings -> Add-ons -> Add-on Store**.

@@ -165,30 +165,49 @@ class HomeAssistantClient:
         self._last_auth_source = "missing"
 
     def credentials(self) -> tuple[str, str, str] | None:
+        connection = read_options().get("connection") or {}
+        auth_mode = str(connection.get("auth_mode") or "supervisor").strip()
+        access_token = str(connection.get("access_token") or "").strip()
+        homeassistant_url = str(connection.get("homeassistant_url") or DEFAULT_HA_URL).rstrip("/")
+
+        if auth_mode == "openpool_user_token":
+            if access_token:
+                return f"{homeassistant_url}/api", access_token, "openpool_user_token"
+            return None
+
         token = supervisor_token()
         if token:
             return SUPERVISOR_HA_API_BASE, token, "supervisor"
 
-        connection = read_options().get("connection") or {}
-        access_token = str(connection.get("access_token") or "").strip()
-        if not access_token:
-            return None
+        if access_token:
+            return f"{homeassistant_url}/api", access_token, "configured_token"
 
-        homeassistant_url = str(connection.get("homeassistant_url") or DEFAULT_HA_URL).rstrip("/")
-        return f"{homeassistant_url}/api", access_token, "configured_token"
+        return None
 
     def auth_status(self) -> str:
         credentials = self.credentials()
         if not credentials:
             return "missing token"
-        return "Supervisor token available" if credentials[2] == "supervisor" else "using configured fallback token"
+        labels = {
+            "supervisor": "Supervisor token available",
+            "openpool_user_token": "using configured OpenPool user token",
+            "configured_token": "using configured fallback token",
+        }
+        return labels.get(credentials[2], "using configured token")
+
+    def auth_error_detail(self) -> str:
+        connection = read_options().get("connection") or {}
+        auth_mode = str(connection.get("auth_mode") or "supervisor").strip()
+        if auth_mode == "openpool_user_token":
+            return "connection.auth_mode is openpool_user_token but connection.access_token is empty."
+        return "SUPERVISOR_TOKEN is missing and no fallback access token is configured."
 
     def request(self, method: str, path: str, data: dict | None = None, raw_body: bytes | None = None) -> tuple[int, str, bytes]:
         credentials = self.credentials()
         if not credentials:
             payload = {
                 "error": "Home Assistant authentication is not configured",
-                "detail": "SUPERVISOR_TOKEN is missing and no fallback access token is configured.",
+                "detail": self.auth_error_detail(),
             }
             return 503, "application/json", json.dumps(payload).encode("utf-8")
 

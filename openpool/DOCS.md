@@ -16,6 +16,14 @@ If the Supervisor token is not available in the add-on container, OpenPool can
 fall back to the configured `connection.homeassistant_url` and
 `connection.access_token` add-on options.
 
+`connection.auth_mode` controls which token source is preferred:
+
+- `supervisor`: use `SUPERVISOR_TOKEN` first and only fall back to
+  `connection.access_token` if the Supervisor token is unavailable.
+- `openpool_user_token`: always use `connection.access_token`. Use this with a
+  dedicated Home Assistant user named `OpenPool` when logbook entries should be
+  attributed to OpenPool instead of Supervisor.
+
 ## Controller State
 
 OpenPool keeps its runtime state in the add-on server, not in the browser. The

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.15
+
+- Add `connection.auth_mode` so installations can keep the Supervisor token or
+  deliberately use a dedicated OpenPool Home Assistant user token for logbook
+  attribution.
+
 ## 0.2.14
 
 - Make the task history scrollable and keep up to 15 entries.
