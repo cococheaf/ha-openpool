@@ -7,6 +7,12 @@ controls pump, chlorinator, heat pump and PV surplus heating through one compact
 interface, especially suited for tablet dashboards such as an iPad in Home
 Assistant.
 
+OpenPool is currently designed around setups based on the Intex 26680 sand
+filter and saltwater chlorinator system. Other systems may work, but they are
+not the primary development target at the moment.
+
+![OpenPool Dashboard Demo](../OpenPool_DemoImage.png)
+
 ## Why This Add-on Exists
 
 OpenPool comes from a very practical family problem: a clean pool in the garden

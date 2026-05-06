@@ -7,6 +7,12 @@ Projekt steuert Pumpe, Chlorsystem, Wärmepumpe und PV-Überschussheizung aus
 einer kompakten, tabletfreundlichen Oberfläche und übernimmt die eigentliche
 Automatik serverseitig im Home Assistant Add-on.
 
+Aktuell ist OpenPool gezielt für ein Setup rund um das Intex 26680
+Sandfilter-/Salzwasserelektrolyse-System ausgelegt. Andere Systeme können
+funktionieren, sind derzeit aber nicht der primäre Entwicklungsfokus.
+
+![OpenPool Dashboard Demo](OpenPool_DemoImage.png)
+
 ## Warum es OpenPool gibt
 
 Der Auslöser war ziemlich bodenständig: Wir wollten im Sommer einen sauberen

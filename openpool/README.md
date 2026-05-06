@@ -7,6 +7,12 @@ Add-on steuert Pumpe, Chlorsystem, Wärmepumpe und PV-Überschussheizung über
 eine kompakte Oberfläche, die besonders für Tablet-Dashboards wie ein iPad in
 Home Assistant gedacht ist.
 
+Aktuell ist OpenPool gezielt für ein Setup rund um das Intex 26680
+Sandfilter-/Salzwasserelektrolyse-System ausgelegt. Andere Systeme können
+funktionieren, sind derzeit aber nicht der primäre Entwicklungsfokus.
+
+![OpenPool Dashboard Demo](../OpenPool_DemoImage.png)
+
 ## Warum dieses Add-on entstanden ist
 
 OpenPool kommt aus einem ganz praktischen Familienproblem: Ein sauberer Pool im

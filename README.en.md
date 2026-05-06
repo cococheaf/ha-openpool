@@ -7,6 +7,12 @@ the pool pump, chlorinator, heat pump and PV surplus heating from one compact,
 tablet-friendly interface, while the actual automation runs server-side inside
 the Home Assistant add-on.
 
+OpenPool is currently designed around setups based on the Intex 26680 sand
+filter and saltwater chlorinator system. Other systems may work, but they are
+not the primary development target at the moment.
+
+![OpenPool Dashboard Demo](OpenPool_DemoImage.png)
+
 ## Why OpenPool Exists
 
 The reason for this project was very down to earth: we wanted a clean pool in
