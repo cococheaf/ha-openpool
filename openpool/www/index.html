@@ -1592,6 +1592,29 @@
       return { title: 'Aktiven Task abschließen', at: job.until };
     }
 
+    function nextPvReleaseTask(snapshot, controller) {
+      if (controller.master_enabled === false || (controller.pump_mode || 'Aus') === 'Aus') return null;
+      if (!['PV-Automatik', 'Wetterautomatik'].includes(controller.heater_mode || 'Aus')) return null;
+
+      const states = snapshot?.ha_states || {};
+      if (isHeaterActive(states['entity-heater-climate'])) return null;
+
+      const aboveSince = Number(controller.pv_above_since);
+      if (!Number.isFinite(aboveSince)) return null;
+
+      const stableMinutes = optionNumber(
+        snapshot?.thresholds?.pv_start_stable_minutes,
+        controlConfig.pvStartStableMinutes
+      );
+      const at = aboveSince + Math.max(0, stableMinutes) * 60;
+      const now = snapshotNowSeconds(snapshot);
+
+      return {
+        title: at <= now ? 'PV-Freigabe bereit' : 'PV-Freigabe stabil',
+        at: Math.max(now, at)
+      };
+    }
+
     function updateUpcomingTask(snapshot) {
       const node = document.getElementById('upcoming-task');
       if (!node) return;
@@ -1600,6 +1623,7 @@
       const nowDate = new Date(snapshotNowSeconds(snapshot) * 1000);
       const candidates = [
         pendingJobTask(controller.pending_job),
+        nextPvReleaseTask(snapshot, controller),
         nextRestartPulseTask(snapshot, controller, nowDate),
         nextScheduledPumpTask(snapshot, controller, nowDate)
       ].filter(Boolean).sort((left, right) => Number(left.at || Infinity) - Number(right.at || Infinity));

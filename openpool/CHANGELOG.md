@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.12
+
+- Show the PV start stability countdown as an Upcoming task while PV or weather heating automation is waiting for stable surplus.
+
 ## 0.2.11
 
 - Correct house consumption calculation to include grid import.
