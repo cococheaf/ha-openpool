@@ -30,6 +30,7 @@ DEFAULT_POLL_INTERVAL_SECONDS = 1
 PULSE_TRIGGER_WINDOW_SECONDS = 90
 RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
+COMMAND_LOG_LIMIT = 15
 
 DEFAULT_ENTITIES = {
     "pump_switch": "switch.poolpumpe",
@@ -295,6 +296,7 @@ class OpenPoolController:
         state.update(loaded)
         if not state.get("pump_mode_started_at"):
             state["pump_mode_started_at"] = now_ts()
+        state["command_log"] = list(state.get("command_log") or [])[:COMMAND_LOG_LIMIT]
         return state
 
     def _save_state(self) -> None:
@@ -399,7 +401,7 @@ class OpenPoolController:
         if log and f"{log[0].get('title')}|{log[0].get('detail')}" == signature:
             return
         log.insert(0, {"time": time.strftime("%H:%M", time.localtime()), "title": title, "detail": detail})
-        del log[3:]
+        del log[COMMAND_LOG_LIMIT:]
 
     def handle_action(self, action: dict) -> dict:
         action_type = action.get("type")
@@ -798,6 +800,7 @@ class OpenPoolController:
             return
         service = "turn_on" if enabled else "turn_off"
         self.ha.service(entity_domain(entity_id), service, entity_id=entity_id)
+        self.command("Pumpe EIN" if enabled else "Pumpe AUS", "Schaltbefehl an Home Assistant gesendet.")
 
     def _turn_heater(self, enabled: bool) -> None:
         entity_id = self.entities().get("heater_climate")
@@ -823,6 +826,7 @@ class OpenPoolController:
                 self.ha.service("climate", "turn_off", entity_id=entity_id)
         else:
             self.ha.service(domain, "turn_on" if enabled else "turn_off", entity_id=entity_id)
+        self.command("Heizung EIN" if enabled else "Heizung AUS", "Schaltbefehl an Home Assistant gesendet.")
 
     def _set_heater_temperature(self) -> None:
         entity_id = self.entities().get("heater_climate")

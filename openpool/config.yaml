@@ -1,5 +1,5 @@
 name: OpenPool
-version: "0.2.13"
+version: "0.2.14"
 slug: openpool
 description: OpenSource Pool System Controller currently designed for Intex 26680 based pump/chlorinator systems, heat pumps and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool

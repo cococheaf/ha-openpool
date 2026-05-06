@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.14
+
+- Make the task history scrollable and keep up to 15 entries.
+- Add pump and heat-pump Home Assistant switch actions to the task history.
+
 ## 0.2.13
 
 - Rename the surplus stability Upcoming task to `Wärmepumpe startet`.

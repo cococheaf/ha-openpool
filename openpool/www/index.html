@@ -507,6 +507,11 @@
 
     .command-log {
       margin-top: 0;
+      max-height: 190px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 4px;
+      scrollbar-width: thin;
     }
 
     .upcoming-task {
@@ -1422,6 +1427,7 @@
     // Safety rule: pump run-on is only required while the heat pump is running
     // or less than five minutes after it stopped.
     const heaterRunOnMs = 5 * 60 * 1000;
+    const COMMAND_LOG_LIMIT = 15;
     let heaterOffSince = Date.now() - heaterRunOnMs - 1000;
     let lastCommandSignature = '';
     const commandLog = [
@@ -1445,7 +1451,7 @@
     function renderCommandLog() {
       const log = document.getElementById('command-log');
       if (!log) return;
-      log.innerHTML = commandLog.slice(0, 3).map(command => `
+      log.innerHTML = commandLog.slice(0, COMMAND_LOG_LIMIT).map(command => `
         <div class="event">
           <time>${escapeHTML(command.time)}</time>
           <div>${escapeHTML(command.title)}<small>${escapeHTML(command.detail)}</small></div>
@@ -1631,13 +1637,13 @@
     }
 
     function pushCommand(title, detail) {
-      // Keep only the last three meaningful commands and avoid writing the same
+      // Keep only the latest meaningful commands and avoid writing the same
       // state on every UI refresh.
       const signature = `${title}|${detail}`;
       if (signature === lastCommandSignature) return;
       lastCommandSignature = signature;
       commandLog.unshift({ time: getCommandTime(), title, detail });
-      commandLog.splice(3);
+      commandLog.splice(COMMAND_LOG_LIMIT);
       renderCommandLog();
     }
 
