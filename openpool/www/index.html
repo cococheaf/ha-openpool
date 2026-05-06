@@ -1808,24 +1808,49 @@
       return Number.isFinite(parsed) ? parsed : fallback;
     }
 
-    function heatSourceForMode(masterEnabled, pumpMode, heaterMode) {
-      if (!masterEnabled || pumpMode === 'Aus' || heaterMode === 'Aus') {
-        return { value: 'AUS', hint: 'Wärmepumpe ist nicht freigegeben.' };
-      }
-
-      if (pumpMode === 'Nachtbaden' || heaterMode === 'Ein') {
-        return { value: 'NETZ', hint: 'Manuelles Heizen, PV-Automatik wird ignoriert.' };
-      }
-
-      if (['PV-Automatik', 'Wetterautomatik'].includes(heaterMode)) {
-        return { value: 'PV', hint: 'Heizen nur bei stabiler Wärmepumpenfreigabe.' };
-      }
-
-      return { value: '--', hint: 'warte auf Steuerzustand' };
+    function clampNumber(value, min, max) {
+      return Math.min(max, Math.max(min, value));
     }
 
-    function updateHeatSourceMetric(masterEnabled = isMasterEnabled(), pumpMode = getPumpMode(), heaterMode = getHeaterMode()) {
-      const source = heatSourceForMode(masterEnabled, pumpMode, heaterMode);
+    function heatSourceFromLivePower(states) {
+      if (!isHeaterActive(states['entity-heater-climate'])) {
+        return { value: 'KEINE', hint: 'Wärmepumpe ist aus.' };
+      }
+
+      const pvGeneration = entityPowerWatts(states['entity-pv-generation']);
+      const pvExport = entityPowerWatts(states['entity-pv-export']);
+      const gridImport = entityPowerWatts(states['entity-grid-import']);
+      const heaterPower = entityPowerWatts(states['entity-heater-power']);
+      const heaterLoad = heaterPower === null ? null : Math.abs(heaterPower);
+      const tolerance = 50;
+
+      if ([pvGeneration, pvExport, gridImport, heaterLoad].some(value => value === null) || heaterLoad <= tolerance) {
+        if ((pvGeneration || 0) > tolerance && (gridImport || 0) > tolerance) {
+          return { value: 'PV/NETZ', hint: 'Wärmepumpe läuft, Leistungsanteile noch unklar.' };
+        }
+        if ((pvGeneration || 0) > tolerance && (gridImport || 0) <= tolerance) {
+          return { value: 'PV', hint: 'Wärmepumpe läuft ohne sichtbaren Netzbezug.' };
+        }
+        return { value: 'NETZ', hint: 'Wärmepumpe läuft, PV-Anteil nicht sichtbar.' };
+      }
+
+      const houseConsumption = pvGeneration - pvExport + gridImport;
+      const pvSelfConsumption = Math.max(0, pvGeneration - pvExport);
+      const nonHeaterConsumption = Math.max(0, houseConsumption - heaterLoad);
+      const pvForHeater = clampNumber(pvSelfConsumption - nonHeaterConsumption, 0, heaterLoad);
+      const gridForHeater = Math.max(0, heaterLoad - pvForHeater);
+
+      if (gridForHeater <= tolerance) {
+        return { value: 'PV', hint: `WP ${formatPower(heaterLoad)} vollständig aus PV.` };
+      }
+      if (pvForHeater <= tolerance) {
+        return { value: 'NETZ', hint: `WP ${formatPower(heaterLoad)} aus Netzbezug.` };
+      }
+      return { value: 'PV/NETZ', hint: `PV ${formatPower(pvForHeater)} · Netz ${formatPower(gridForHeater)}.` };
+    }
+
+    function updateHeatSourceMetric(states = latestSnapshot?.ha_states || {}) {
+      const source = heatSourceFromLivePower(states);
       setText('heat-source-metric', source.value);
       setText('heat-source-hint', source.hint);
     }
@@ -1845,7 +1870,7 @@
       setText('pv-export-value', formatPower(pvExport));
       setText('grid-import-value', formatPower(gridImport));
       setText('pv-ready-threshold', readyText);
-      updateHeatSourceMetric();
+      updateHeatSourceMetric(states);
 
       if ([pvGeneration, pvExport, gridImport].some(value => value === null)) {
         setText('house-consumption-value', '--');
@@ -2205,7 +2230,7 @@
 
       pumpCard.classList.toggle('disabled', !masterEnabled);
       updateHeaterLock();
-      updateHeatSourceMetric(masterEnabled, pumpMode, heaterMode);
+      updateHeatSourceMetric();
 
       document.getElementById('master-state-label').textContent = masterEnabled ? 'Poolsystem EIN' : 'Poolsystem AUS';
 

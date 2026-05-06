@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.19
+
+- Derive the dashboard heat energy source from live power values instead of the
+  selected operating mode, showing KEINE, PV, PV/NETZ or NETZ.
+
 ## 0.2.18
 
 - Only show and log the planned heat-pump pre-stop task when Home Assistant
