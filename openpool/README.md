@@ -38,6 +38,8 @@ Entscheidungen.
 - Pumpenprofile für Badebetrieb, Schlechtwetter, Dauerbetrieb, Nachtbaden und
   Aus.
 - Automatische Restart-Pulse für das Chlorsystem.
+- Chlorinator-Anzeige aus der Pumpenleistung mit konfigurierbaren
+  Leistungsschwellen.
 - Sicherer Pumpennachlauf nach Heizbetrieb.
 - Wärmepumpensteuerung mit Zieltemperatur.
 - Wärmepumpenfreigabe mit Start-/Stoppgrenzen und Stabilzeiten.

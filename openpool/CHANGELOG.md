@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.20
+
+- Add configurable pump power thresholds for chlorinator detection.
+- Derive the dashboard chlorinator tile from the pump power sensor, showing EIN
+  from the configured chlorinator threshold and AUS below it.
+
 ## 0.2.19
 
 - Derive the dashboard heat energy source from live power values instead of the

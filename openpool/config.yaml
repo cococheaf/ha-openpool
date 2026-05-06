@@ -1,5 +1,5 @@
 name: OpenPool
-version: "0.2.19"
+version: "0.2.20"
 slug: openpool
 description: OpenSource Pool System Controller currently designed for Intex 26680 based pump/chlorinator systems, heat pumps and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool
@@ -63,6 +63,8 @@ options:
     pv_stop_stable_minutes: 1
     heater_temp_min: 18
     heater_temp_max: 32
+    pump_power_without_chlorinator_w: 450
+    pump_power_with_chlorinator_w: 500
   profiles:
     pump_start: "07:30"
     pump_end: "22:00"
@@ -118,6 +120,8 @@ schema:
     pv_stop_stable_minutes: float
     heater_temp_min: float
     heater_temp_max: float
+    pump_power_without_chlorinator_w: int
+    pump_power_with_chlorinator_w: int
   profiles:
     pump_start: str
     pump_end: str

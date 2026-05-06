@@ -65,6 +65,8 @@ sehen, was gerade passiert.
 - Automatische Pumpenprofile mit konfigurierbaren Start- und Endzeiten fahren.
 - Restart-Pulse für das Chlorsystem ausführen, damit der Chlorinator über
   gezielte Ausschaltimpulse neu startet.
+- Chlorinator-Status über die Pumpenleistung ableiten, mit konfigurierbaren
+  Leistungswerten für Pumpe ohne und mit Chlorinator.
 - Wärmepumpe nur mit bestätigtem Pumpenflow freigeben.
 - Nachlauf der Pumpe nach Heizbetrieb sicherstellen.
 - PV-Überschuss für die Wärmepumpe berechnen und erst nach stabiler

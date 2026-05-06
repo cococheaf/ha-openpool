@@ -1413,7 +1413,9 @@
       pvStartStableMinutes: 5,
       pvStopStableMinutes: 1,
       heaterTempMin: 18,
-      heaterTempMax: 32
+      heaterTempMax: 32,
+      pumpPowerWithoutChlorinatorW: 450,
+      pumpPowerWithChlorinatorW: 500
     };
     let shutdownActive = false;
     let restartPulseActive = false;
@@ -1706,6 +1708,8 @@
       controlConfig.pvStopStableMinutes = optionNumber(thresholds.pv_stop_stable_minutes, controlConfig.pvStopStableMinutes);
       controlConfig.heaterTempMin = optionNumber(thresholds.heater_temp_min, controlConfig.heaterTempMin);
       controlConfig.heaterTempMax = optionNumber(thresholds.heater_temp_max, controlConfig.heaterTempMax);
+      controlConfig.pumpPowerWithoutChlorinatorW = optionNumber(thresholds.pump_power_without_chlorinator_w, controlConfig.pumpPowerWithoutChlorinatorW);
+      controlConfig.pumpPowerWithChlorinatorW = optionNumber(thresholds.pump_power_with_chlorinator_w, controlConfig.pumpPowerWithChlorinatorW);
     }
 
     async function loadInitialState() {
@@ -1787,6 +1791,39 @@
 
     function updateSensorValue(valueId, entityState, fallbackUnit, digits = 1) {
       setText(valueId, formatSensorValue(entityState, fallbackUnit, digits));
+    }
+
+    function chlorinatorStateFromPower(states) {
+      const pump = states['entity-pump-switch'];
+      const pumpPower = entityPowerWatts(states['entity-pump-power']);
+      const withoutThreshold = Math.max(0, optionNumber(controlConfig.pumpPowerWithoutChlorinatorW, 450));
+      const withThreshold = Math.max(withoutThreshold, optionNumber(controlConfig.pumpPowerWithChlorinatorW, 500));
+      const pumpOffTolerance = 50;
+
+      if (pumpPower === null) {
+        if (!isUnavailableState(pump) && String(pump.state).toLowerCase() !== 'on') {
+          return { value: 'AUS', hint: 'Pumpe ist aus.' };
+        }
+        return { value: '--', hint: 'Pumpenleistung fehlt.' };
+      }
+
+      if (pumpPower <= pumpOffTolerance) {
+        return { value: 'AUS', hint: 'Pumpe ist aus.' };
+      }
+
+      if (pumpPower >= withThreshold) {
+        return { value: 'EIN', hint: `Pumpe ${formatPower(pumpPower)} · Chlor ab ${formatPower(withThreshold)}.` };
+      }
+
+      const reference = formatPower(withoutThreshold);
+      return { value: 'AUS', hint: `Pumpe ${formatPower(pumpPower)} · Referenz ohne Chlor ${reference}.` };
+    }
+
+    function updateChlorinatorStatus(states) {
+      if (restartPulseActive) return;
+      const chlorinator = chlorinatorStateFromPower(states);
+      setText('chlor-status', chlorinator.value);
+      setText('chlor-hint', chlorinator.hint);
     }
 
     function formatDuration(seconds) {
@@ -1921,9 +1958,8 @@
         pumpOn = String(pump.state).toLowerCase() === 'on';
         setText('pump-status', pumpOn ? 'EIN' : 'AUS');
         setText('pump-hint', pumpOn ? 'Home Assistant Schalter EIN' : 'Home Assistant Schalter AUS');
-        setText('chlor-status', pumpOn ? 'aktiv' : 'AUS');
-        setText('chlor-hint', pumpOn ? 'läuft mit der Pumpe' : 'gemeinsam mit Pumpe aus');
       }
+      updateChlorinatorStatus(states);
 
       if (!isUnavailableState(heater)) {
         heaterRunning = isHeaterActive(heater);
@@ -2270,8 +2306,8 @@
           subtitle: 'Die Pumpe läuft dauerhaft. Alle 12 Stunden erfolgt ein kurzer Restart, damit das Intex-System nicht in den Ruhezustand geht.',
           pump: 'EIN',
           pumpHint: '12h-Restart aktiv',
-          chlor: 'aktiv',
-          chlorHint: 'nach Intex-Intervall',
+          chlor: '--',
+          chlorHint: 'wird aus Pumpenleistung berechnet',
           reason: '<strong>Dauerbetrieb.</strong> Pumpe läuft dauerhaft, Restart alle 12h.'
         },
         'Badebetrieb': {
@@ -2279,8 +2315,8 @@
           subtitle: 'Die Pumpe läuft nach Badezeitplan mit kurzen Restart-Pulsen für den Chlorinator.',
           pump: 'EIN',
           pumpHint: 'Badebetrieb bis 22:00',
-          chlor: 'aktiv',
-          chlorHint: 'Restart-Pulse geplant',
+          chlor: '--',
+          chlorHint: 'wird aus Pumpenleistung berechnet',
           reason: '<strong>Badebetrieb.</strong> Pumpe läuft im Zeitfenster, Restart-Pulse starten den Chlorinator neu. Wetter: Badebetrieb empfohlen.'
         },
         'Schlechtwetter': {
@@ -2288,8 +2324,8 @@
           subtitle: 'Reduzierte Chlorung für Regen, wenig UV oder keinen Badebetrieb.',
           pump: 'EIN',
           pumpHint: '13:00–16:15',
-          chlor: 'reduziert',
-          chlorHint: 'weniger UV/Badende',
+          chlor: '--',
+          chlorHint: 'wird aus Pumpenleistung berechnet',
           reason: '<strong>Schlechtwetter.</strong> Reduzierte Chlorung bei wenig UV oder keinem Badebetrieb. Wetter: Regenrisiko/Temperatur sprechen dagegen.'
         },
         'Nachtbaden': {
@@ -2297,8 +2333,8 @@
           subtitle: 'Pumpe und Heizung laufen unabhängig von der PV-Leistung. Der Modus endet automatisch nach maximal 10 Stunden.',
           pump: 'EIN',
           pumpHint: 'max. 10h',
-          chlor: 'aktiv',
-          chlorHint: 'Pumpe läuft dauerhaft',
+          chlor: '--',
+          chlorHint: 'wird aus Pumpenleistung berechnet',
           reason: '<strong>Nachtbaden.</strong> Pumpe + Heizung EIN, PV wird ignoriert, max. 10h.'
         }
       };
@@ -2324,6 +2360,7 @@
       document.getElementById('pump-hint').textContent = selected.pumpHint;
       document.getElementById('chlor-status').textContent = selected.chlor;
       document.getElementById('chlor-hint').textContent = selected.chlorHint;
+      if (latestSnapshot?.ha_states) updateChlorinatorStatus(latestSnapshot.ha_states);
 
       if (pumpMode === 'Aus') {
         trackHeaterOffState(pumpMode, heaterMode);

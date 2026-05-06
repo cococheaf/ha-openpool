@@ -64,6 +64,8 @@ entities, enable the control logic, open the dashboard and see what is happening
 - Run automatic pump profiles with configurable start and end times.
 - Execute restart pulses for the chlorinator, using short power-off pulses to
   restart chlorine production.
+- Derive the chlorinator status from pump power, using configurable pump power
+  values without and with the chlorinator.
 - Release the heat pump only after confirmed pump flow.
 - Keep the pump running after heat pump operation for a safe run-on period.
 - Calculate PV surplus for the heat pump and start heating only after a stable

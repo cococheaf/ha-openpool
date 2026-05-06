@@ -73,6 +73,11 @@ adapted to the local Home Assistant installation. The defaults are examples from
 the original OpenPool setup; wrong entities can prevent control actions or send
 them to the wrong device.
 
+The dashboard derives the chlorinator status from the configured pump power
+sensor. `pump_power_without_chlorinator_w` is the expected pump-only reference
+load, while `pump_power_with_chlorinator_w` is the threshold from which the
+chlorinator tile shows `EIN`.
+
 ## Files
 
 - `/app/www`: bundled frontend

@@ -343,6 +343,8 @@ class OpenPoolController:
             "pv_stop_stable_minutes": 1,
             "heater_temp_min": 18,
             "heater_temp_max": 32,
+            "pump_power_without_chlorinator_w": 450,
+            "pump_power_with_chlorinator_w": 500,
         }
         values.update((self.options().get("thresholds") or {}))
         return values

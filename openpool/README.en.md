@@ -35,6 +35,8 @@ switches and sensors; OpenPool makes the decisions.
 - Pump profiles for swim mode, bad weather mode, continuous operation, night
   swimming and off.
 - Automatic restart pulses for the chlorinator.
+- Chlorinator display derived from pump power with configurable power
+  thresholds.
 - Safe pump run-on after heat pump operation.
 - Heat pump control with target temperature.
 - Heat-pump release with start/stop thresholds and stability times.
