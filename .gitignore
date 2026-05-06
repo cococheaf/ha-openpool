@@ -1,5 +1,9 @@
 # Apple specific files
 .DS_Store
 
+# Python cache files
+__pycache__/
+*.pyc
+
 # Local prototype/workspace files. The Home Assistant add-on uses openpool/www.
 /OpenPool.code-workspace
