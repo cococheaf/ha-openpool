@@ -1579,20 +1579,16 @@
         .filter(task => !done[`${dayKey(task.date)}:${task.pulse.key}`])
         .filter(task => pumpRunsAtTaskTime(snapshot, controller.pump_mode || 'Aus', task.date))
         .sort((left, right) => left.date - right.date)
-        .map(task => pumpStopTaskWithHeatProtection(
-          `${pulseLabel(task.pulse)} ausführen`,
-          task.date.getTime() / 1000,
-          `Heizung vor ${pulseLabel(task.pulse)} ausschalten`,
-          controller,
-          controller.pump_mode || 'Aus',
-          nowDate
-        ))[0] || null;
+        .map(task => ({
+          title: `${pulseLabel(task.pulse)} ausführen`,
+          at: task.date.getTime() / 1000
+        }))[0] || null;
     }
 
     function pendingJobTask(job) {
       if (!job) return null;
       if (job.type === 'pump_run_on') return { title: 'Pumpe nach Nachlauf ausschalten', at: job.until };
-      if (job.type === 'restart_pulse_run_on') return { title: 'Restart-Pulse nach Nachlauf starten', at: job.until };
+      if (job.type === 'restart_pulse_run_on') return { title: 'Restart-Pulse starten', at: snapshotNowSeconds(latestSnapshot) };
       if (job.type === 'restart_pulse') return { title: 'Restart-Pulse beenden', at: job.until };
       return { title: 'Aktiven Task abschließen', at: job.until };
     }

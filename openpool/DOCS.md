@@ -30,12 +30,12 @@ allows automation jobs to continue when the UI is closed.
 ## Heat Pump Run-on
 
 Any planned pump stop is protected by the heat pump run-on rule. Before a pump
-profile ends, before Nachtbaden reaches its maximum duration and before a
-restart pulse stops the pump, OpenPool switches the heat pump off five minutes
-early and keeps the pump running for flow. If a manual pump-off action happens
-while the heat pump is running or has stopped less than five minutes ago, the
-pump remains on until the remaining run-on time has completed. Restart pulses
-are delayed until that run-on time is safe.
+profile ends and before Nachtbaden reaches its maximum duration, OpenPool
+switches the heat pump off five minutes early and keeps the pump running for
+flow. If a manual pump-off action happens while the heat pump is running or has
+stopped less than five minutes ago, the pump remains on until the remaining
+run-on time has completed. Restart pulses are intentionally exempt from this
+rule because they only stop the pump for a few seconds.
 
 ## PV Release
 

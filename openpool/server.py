@@ -161,10 +161,6 @@ def clock_to_day_ts(value: object, reference_ts: float) -> float | None:
     )
 
 
-def clock_to_today_ts(value: object) -> float | None:
-    return clock_to_day_ts(value, now_ts())
-
-
 class HomeAssistantClient:
     def __init__(self) -> None:
         self._last_auth_source = "missing"
@@ -430,7 +426,7 @@ class OpenPoolController:
                 self._save_state()
                 self._set_heater_temperature()
             elif action_type == "restart_pulse":
-                self._queue_restart_pulse(RESTART_PULSE_SECONDS, "Manueller Restart-Pulse")
+                self._start_restart_pulse(RESTART_PULSE_SECONDS, "Manueller Restart-Pulse")
             else:
                 raise ValueError(f"Unknown action type: {action_type}")
 
@@ -501,6 +497,16 @@ class OpenPoolController:
             return
 
         current_ts = now_ts()
+        if job.get("type") == "restart_pulse_run_on":
+            # Migration path for states written by 0.2.9: restart pulses no
+            # longer wait for heat-pump run-on because the pulse is only a few
+            # seconds long.
+            duration_s = int(job.get("duration_s") or RESTART_PULSE_SECONDS)
+            title = str(job.get("title") or "Restart-Pulse")
+            self.state["pending_job"] = None
+            self._start_restart_pulse(duration_s, title)
+            return
+
         if current_ts < float(job.get("until") or 0):
             return
 
@@ -509,19 +515,6 @@ class OpenPoolController:
             self.command("Restart-Pulse fertig", "Pumpenprofil wird wieder angewendet.")
             self._save_state()
             self._apply_control_rules()
-            return
-        elif job.get("type") == "restart_pulse_run_on":
-            if self._heater_needs_run_on():
-                job["until"] = self._heater_run_on_until(current_ts)
-                self._turn_heater(False)
-                self._turn_pump(True)
-                self._save_state()
-                return
-
-            duration_s = int(job.get("duration_s") or RESTART_PULSE_SECONDS)
-            title = str(job.get("title") or "Restart-Pulse")
-            self.state["pending_job"] = None
-            self._start_restart_pulse(duration_s, title)
             return
         elif job.get("type") == "pump_run_on":
             if self._heater_needs_run_on():
@@ -550,7 +543,7 @@ class OpenPoolController:
                 not pulse.get("enabled")
                 or scheduled_ts is None
                 or current_ts < scheduled_ts
-                or current_ts > scheduled_ts + RUN_ON_SECONDS + PULSE_TRIGGER_WINDOW_SECONDS
+                or current_ts > scheduled_ts + PULSE_TRIGGER_WINDOW_SECONDS
                 or not self._pump_should_run_at(pump_mode, scheduled_ts)
             ):
                 continue
@@ -558,7 +551,7 @@ class OpenPoolController:
             if done.get(key):
                 continue
             done[key] = True
-            self._queue_restart_pulse(int(pulse.get("duration_s") or 5), f"Automatischer {pulse['key']}")
+            self._start_restart_pulse(int(pulse.get("duration_s") or 5), f"Automatischer {pulse['key']}")
             break
 
     def _apply_control_rules(self) -> None:
@@ -673,7 +666,6 @@ class OpenPoolController:
     def _next_planned_pump_stop_ts(self, pump_mode: str, current_ts: float) -> float | None:
         candidates = [
             self._profile_end_ts(pump_mode, current_ts),
-            self._next_restart_pulse_ts(pump_mode, current_ts),
         ]
         candidates = [value for value in candidates if value is not None]
         return min(candidates) if candidates else None
@@ -690,29 +682,6 @@ class OpenPoolController:
             end_ts = started_at + max(1, max_minutes) * 60
             return end_ts if end_ts > current_ts else None
         return None
-
-    def _next_restart_pulse_ts(self, pump_mode: str, current_ts: float) -> float | None:
-        if pump_mode == "Aus":
-            return None
-
-        done = self.state.setdefault("restart_pulses_done", {})
-        candidates = []
-        for day_offset in (0, 1):
-            reference_ts = current_ts + day_offset * 24 * 60 * 60
-            for pulse in self.restart_pulses():
-                if not pulse.get("enabled"):
-                    continue
-                scheduled_ts = clock_to_day_ts(pulse.get("time"), reference_ts)
-                if scheduled_ts is None:
-                    continue
-                key = f"{day_key_for_ts(scheduled_ts)}:{pulse['key']}"
-                if done.get(key) or not self._pump_should_run_at(pump_mode, scheduled_ts):
-                    continue
-                if scheduled_ts < current_ts and current_ts > scheduled_ts + RUN_ON_SECONDS + PULSE_TRIGGER_WINDOW_SECONDS:
-                    continue
-                candidates.append(scheduled_ts)
-
-        return min(candidates) if candidates else None
 
     def _apply_pv_heating(self, pump_should_run: bool) -> None:
         if not pump_should_run:
@@ -858,23 +827,6 @@ class OpenPoolController:
         entity_id = self.entities().get("heater_climate")
         if entity_id and entity_domain(entity_id) == "climate":
             self.ha.service("climate", "set_temperature", entity_id=entity_id, data={"temperature": self.state["heater_target_temp"]})
-
-    def _queue_restart_pulse(self, duration_s: int, title: str) -> None:
-        self._reset_pv_tracking()
-        if self._heater_is_active() or self._heater_needs_run_on():
-            self._turn_heater(False)
-            self._turn_pump(True)
-            self.state["pending_job"] = {
-                "type": "restart_pulse_run_on",
-                "until": self._heater_run_on_until(),
-                "duration_s": max(1, duration_s),
-                "title": title,
-            }
-            self.command("Restart-Pulse wartet", "Heizung aus, Pumpe laeuft vor dem Pulse im Schutz-Nachlauf.")
-            self._save_state()
-            return
-
-        self._start_restart_pulse(duration_s, title)
 
     def _start_restart_pulse(self, duration_s: int, title: str) -> None:
         self._turn_pump(False)

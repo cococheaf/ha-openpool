@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.10
+
+- Restore immediate restart pulses without switching the heat pump off first.
+- Keep the heat-pump run-on protection for profile endings, Nachtbaden expiry and manual pump-off actions.
+
 ## 0.2.9
 
 - Switch the heat pump off five minutes before planned pump stops from profile endings or restart pulses.
