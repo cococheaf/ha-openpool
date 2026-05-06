@@ -1516,6 +1516,19 @@
       return Boolean(start && end && start <= taskDate && taskDate < end);
     }
 
+    function heatPumpMayRunForTask(controller, pumpMode) {
+      if (pumpMode === 'Nachtbaden') return true;
+      return (controller.heater_mode || 'Aus') !== 'Aus';
+    }
+
+    function pumpStopTaskWithHeatProtection(title, at, preStopTitle, controller, pumpMode, nowDate) {
+      const preStopAt = at - heaterRunOnMs / 1000;
+      if (heatPumpMayRunForTask(controller, pumpMode) && preStopAt > nowDate.getTime() / 1000) {
+        return { title: preStopTitle, at: preStopAt };
+      }
+      return { title, at };
+    }
+
     function nextScheduledPumpTask(snapshot, controller, nowDate) {
       if (controller.master_enabled === false) return null;
 
@@ -1529,7 +1542,7 @@
 
         const at = startedAt + Math.max(1, maxMinutes) * 60;
         return at * 1000 > nowDate.getTime()
-          ? { title: 'Nachtbaden beenden', at }
+          ? pumpStopTaskWithHeatProtection('Nachtbaden beenden', at, 'Heizung vor Nachtbaden-Ende ausschalten', controller, pumpMode, nowDate)
           : null;
       }
 
@@ -1541,7 +1554,9 @@
       if (!start || !end) return null;
 
       if (nowDate < start) return { title: 'Pumpenstart', at: start.getTime() / 1000 };
-      if (nowDate < end) return { title: 'Pumpenende', at: end.getTime() / 1000 };
+      if (nowDate < end) {
+        return pumpStopTaskWithHeatProtection('Pumpenende', end.getTime() / 1000, 'Heizung vor Pumpenende ausschalten', controller, pumpMode, nowDate);
+      }
 
       const tomorrowStart = new Date(start);
       tomorrowStart.setDate(tomorrowStart.getDate() + 1);
@@ -1564,15 +1579,20 @@
         .filter(task => !done[`${dayKey(task.date)}:${task.pulse.key}`])
         .filter(task => pumpRunsAtTaskTime(snapshot, controller.pump_mode || 'Aus', task.date))
         .sort((left, right) => left.date - right.date)
-        .map(task => ({
-          title: `${pulseLabel(task.pulse)} ausführen`,
-          at: task.date.getTime() / 1000
-        }))[0] || null;
+        .map(task => pumpStopTaskWithHeatProtection(
+          `${pulseLabel(task.pulse)} ausführen`,
+          task.date.getTime() / 1000,
+          `Heizung vor ${pulseLabel(task.pulse)} ausschalten`,
+          controller,
+          controller.pump_mode || 'Aus',
+          nowDate
+        ))[0] || null;
     }
 
     function pendingJobTask(job) {
       if (!job) return null;
       if (job.type === 'pump_run_on') return { title: 'Pumpe nach Nachlauf ausschalten', at: job.until };
+      if (job.type === 'restart_pulse_run_on') return { title: 'Restart-Pulse nach Nachlauf starten', at: job.until };
       if (job.type === 'restart_pulse') return { title: 'Restart-Pulse beenden', at: job.until };
       return { title: 'Aktiven Task abschließen', at: job.until };
     }

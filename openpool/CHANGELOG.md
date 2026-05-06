@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.9
+
+- Switch the heat pump off five minutes before planned pump stops from profile endings or restart pulses.
+- Keep the pump running for the remaining heat-pump run-on time when a profile ends or the pump is manually switched off.
+- Delay manual and automatic restart pulses until the heat pump run-on time has completed.
+
 ## 0.2.8
 
 - Add configurable PV start/stop thresholds and stability times for heat-pump release.

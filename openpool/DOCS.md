@@ -27,6 +27,16 @@ The frontend listens to `GET /api/openpool/events` for live state updates, uses
 `POST /api/openpool/action`. This keeps multiple browser sessions in sync and
 allows automation jobs to continue when the UI is closed.
 
+## Heat Pump Run-on
+
+Any planned pump stop is protected by the heat pump run-on rule. Before a pump
+profile ends, before Nachtbaden reaches its maximum duration and before a
+restart pulse stops the pump, OpenPool switches the heat pump off five minutes
+early and keeps the pump running for flow. If a manual pump-off action happens
+while the heat pump is running or has stopped less than five minutes ago, the
+pump remains on until the remaining run-on time has completed. Restart pulses
+are delayed until that run-on time is safe.
+
 ## PV Release
 
 OpenPool derives the current house consumption from PV production and grid
