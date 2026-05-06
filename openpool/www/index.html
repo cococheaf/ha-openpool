@@ -1521,14 +1521,13 @@
       return Boolean(start && end && start <= taskDate && taskDate < end);
     }
 
-    function heatPumpMayRunForTask(controller, pumpMode) {
-      if (pumpMode === 'Nachtbaden') return true;
-      return (controller.heater_mode || 'Aus') !== 'Aus';
+    function heatPumpIsActiveForTask(snapshot) {
+      return isHeaterActive(snapshot?.ha_states?.['entity-heater-climate']);
     }
 
-    function pumpStopTaskWithHeatProtection(title, at, preStopTitle, controller, pumpMode, nowDate) {
+    function pumpStopTaskWithHeatProtection(title, at, preStopTitle, snapshot, nowDate) {
       const preStopAt = at - heaterRunOnMs / 1000;
-      if (heatPumpMayRunForTask(controller, pumpMode) && preStopAt > nowDate.getTime() / 1000) {
+      if (heatPumpIsActiveForTask(snapshot) && preStopAt > nowDate.getTime() / 1000) {
         return { title: preStopTitle, at: preStopAt };
       }
       return { title, at };
@@ -1547,7 +1546,7 @@
 
         const at = startedAt + Math.max(1, maxMinutes) * 60;
         return at * 1000 > nowDate.getTime()
-          ? pumpStopTaskWithHeatProtection('Nachtbaden beenden', at, 'Heizung vor Nachtbaden-Ende ausschalten', controller, pumpMode, nowDate)
+          ? pumpStopTaskWithHeatProtection('Nachtbaden beenden', at, 'Heizung vor Nachtbaden-Ende ausschalten', snapshot, nowDate)
           : null;
       }
 
@@ -1560,7 +1559,7 @@
 
       if (nowDate < start) return { title: 'Pumpenstart', at: start.getTime() / 1000 };
       if (nowDate < end) {
-        return pumpStopTaskWithHeatProtection('Pumpenende', end.getTime() / 1000, 'Heizung vor Pumpenende ausschalten', controller, pumpMode, nowDate);
+        return pumpStopTaskWithHeatProtection('Pumpenende', end.getTime() / 1000, 'Heizung vor Pumpenende ausschalten', snapshot, nowDate);
       }
 
       const tomorrowStart = new Date(start);

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.18
+
+- Only show and log the planned heat-pump pre-stop task when Home Assistant
+  currently reports the heat pump as active.
+
 ## 0.2.17
 
 - Clear stale PV stability timers after heat-pump start/stop actions.

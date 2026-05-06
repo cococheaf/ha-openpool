@@ -627,8 +627,9 @@ class OpenPoolController:
 
         if self._pump_stop_run_on_active(pump_mode):
             self._reset_pv_tracking()
-            self._turn_heater(False)
-            self.command("Heizung vor Pumpenstopp AUS", "Pumpe bleibt fuer den Schutz-Nachlauf aktiv.")
+            if self._heater_is_active():
+                self._turn_heater(False)
+                self.command("Heizung vor Pumpenstopp AUS", "Pumpe bleibt fuer den Schutz-Nachlauf aktiv.")
             self._save_state()
             return
 
