@@ -1340,12 +1340,12 @@
             </div>
             <div class="energy-flow">
               <div class="section-title">
-                <h3>PV-Freigabe</h3>
+                <h3>Wärmepumpenfreigabe</h3>
               </div>
               <div class="energy-line">
-                <div class="energy-tile">PV frei für WP<strong id="pv-free-value">--</strong></div>
+                <div class="energy-tile">Verfügbar für WP<strong id="pv-free-value">--</strong></div>
                 <div class="arrow"></div>
-                <div class="energy-tile">Bereit ab<strong id="pv-ready-threshold">1,50 kW</strong></div>
+                <div class="energy-tile">Start ab<strong id="pv-ready-threshold">1,50 kW</strong></div>
               </div>
             </div>
           </div>
@@ -1364,7 +1364,7 @@
                   <div><span>Netzeinspeisung</span><strong id="pv-export-value">--</strong></div>
                   <div><span>Netzbezug</span><strong id="grid-import-value">--</strong></div>
                   <div><span>Hausverbrauch</span><strong id="house-consumption-value">--</strong></div>
-                  <div><span>PV frei für WP</span><strong id="pv-free-list-value">--</strong></div>
+                  <div><span>Verfügbar für WP</span><strong id="pv-free-list-value">--</strong></div>
                 </div>
               </div>
               <div class="sensor-category pump">
@@ -1609,10 +1609,7 @@
       const at = aboveSince + Math.max(0, stableMinutes) * 60;
       const now = snapshotNowSeconds(snapshot);
 
-      return {
-        title: at <= now ? 'PV-Freigabe bereit' : 'PV-Freigabe stabil',
-        at: Math.max(now, at)
-      };
+      return { title: 'Wärmepumpe startet', at: Math.max(now, at) };
     }
 
     function updateUpcomingTask(snapshot) {
@@ -1813,7 +1810,7 @@
       setText('pv-export-value', formatPower(pvExport));
       setText('grid-import-value', formatPower(gridImport));
       setText('pv-ready-threshold', readyText);
-      setText('pv-surplus-hint', `Bereit ab ${readyText}`);
+      setText('pv-surplus-hint', `Start ab ${readyText}`);
 
       if ([pvGeneration, pvExport, gridImport].some(value => value === null)) {
         setText('house-consumption-value', '--');
@@ -2305,8 +2302,8 @@
         },
         'PV-Automatik': {
           status: 'Auto',
-          hint: 'Warte auf PV-Freigabe',
-          reason: '<strong>PV-Automatik.</strong> Start bei stabiler PV-Freigabe.'
+          hint: 'Warte auf Wärmepumpenfreigabe',
+          reason: '<strong>PV-Automatik.</strong> Start bei stabiler Wärmepumpenfreigabe.'
         },
         'Wetterautomatik': {
           status: 'Wetter',

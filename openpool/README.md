@@ -40,7 +40,7 @@ Entscheidungen.
 - Automatische Restart-Pulse für das Chlorsystem.
 - Sicherer Pumpennachlauf nach Heizbetrieb.
 - Wärmepumpensteuerung mit Zieltemperatur.
-- PV-Freigabe für die Wärmepumpe mit Start-/Stoppgrenzen und Stabilzeiten.
+- Wärmepumpenfreigabe mit Start-/Stoppgrenzen und Stabilzeiten.
 - Live-Synchronisation zwischen mehreren geöffneten UI-Sitzungen.
 - Persistenter Controller-State in `/data/openpool_state.json`, damit Laufzeit,
   Jobs und Aufgabenverlauf nach einem Neustart erhalten bleiben.

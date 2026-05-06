@@ -1,8 +1,13 @@
 # Changelog
 
+## 0.2.13
+
+- Rename the surplus stability Upcoming task to `Wärmepumpe startet`.
+- Use clearer heat-pump release wording across the dashboard and documentation.
+
 ## 0.2.12
 
-- Show the PV start stability countdown as an Upcoming task while PV or weather heating automation is waiting for stable surplus.
+- Show the heat-pump start countdown as an Upcoming task while PV or weather heating automation is waiting for stable surplus.
 
 ## 0.2.11
 

@@ -67,8 +67,8 @@ entities, enable the control logic, open the dashboard and see what is happening
 - Release the heat pump only after confirmed pump flow.
 - Keep the pump running after heat pump operation for a safe run-on period.
 - Calculate PV surplus for the heat pump and start heating only after a stable
-  PV release condition.
-- Configure PV start and stop thresholds as well as stability times.
+  heat-pump release condition.
+- Configure heat-pump start and stop thresholds as well as stability times.
 - Set the heat pump target temperature from the UI.
 - Store runtimes, upcoming tasks and command history server-side.
 - Keep multiple open interfaces synchronized, for example iPad, smartphone and
@@ -88,12 +88,12 @@ The controller regularly reads the configured Home Assistant entities,
 calculates the OpenPool state from them and sends service calls back to Home
 Assistant when needed. The update rate can be configured with `poll_interval_s`.
 
-For PV release, house consumption is derived from PV production, balancing grid
+For heat-pump release, house consumption is derived from PV production, balancing grid
 export and grid import:
 
 ```text
 house consumption = PV production - grid export + grid import
-PV available for heat pump = PV production - house consumption
+available for heat pump = PV production - house consumption
 ```
 
 When the heat pump is already running, its current power is added back. This

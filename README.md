@@ -67,9 +67,10 @@ sehen, was gerade passiert.
   gezielte Ausschaltimpulse neu startet.
 - Wärmepumpe nur mit bestätigtem Pumpenflow freigeben.
 - Nachlauf der Pumpe nach Heizbetrieb sicherstellen.
-- PV-Überschuss für die Wärmepumpe berechnen und erst nach stabiler Freigabe
-  einschalten.
-- Start- und Stoppgrenzen sowie Stabilzeiten für die PV-Freigabe konfigurieren.
+- PV-Überschuss für die Wärmepumpe berechnen und erst nach stabiler
+  Wärmepumpenfreigabe einschalten.
+- Start- und Stoppgrenzen sowie Stabilzeiten für die Wärmepumpenfreigabe
+  konfigurieren.
 - Zieltemperatur der Wärmepumpe über die UI setzen.
 - Laufzeiten, anstehende Aufgaben und letzte Kommandos serverseitig speichern.
 - Mehrere offene Oberflächen synchron halten, zum Beispiel iPad, Smartphone und
@@ -90,12 +91,12 @@ berechnet daraus den OpenPool-Zustand und sendet bei Bedarf Service-Calls an
 Home Assistant. Die Aktualisierungsrate ist über `poll_interval_s`
 konfigurierbar.
 
-Für die PV-Freigabe wird der Hausverbrauch aus PV-Erzeugung, saldierender
+Für die Wärmepumpenfreigabe wird der Hausverbrauch aus PV-Erzeugung, saldierender
 Netzeinspeisung und Netzbezug abgeleitet:
 
 ```text
 Hausverbrauch = PV-Erzeugungsleistung - Netzeinspeisung + Netzbezug
-PV frei für WP = PV-Erzeugungsleistung - Hausverbrauch
+Verfügbar für WP = PV-Erzeugungsleistung - Hausverbrauch
 ```
 
 Wenn die Wärmepumpe bereits läuft, wird ihre aktuelle Leistung wieder

@@ -37,7 +37,7 @@ switches and sensors; OpenPool makes the decisions.
 - Automatic restart pulses for the chlorinator.
 - Safe pump run-on after heat pump operation.
 - Heat pump control with target temperature.
-- PV release for the heat pump with start/stop thresholds and stability times.
+- Heat-pump release with start/stop thresholds and stability times.
 - Live synchronization between multiple open UI sessions.
 - Persistent controller state in `/data/openpool_state.json`, so runtime, jobs
   and task history survive restarts.
