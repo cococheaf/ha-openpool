@@ -1,5 +1,7 @@
 # OpenPool
 
+[English version](README.en.md)
+
 OpenPool ist ein OpenSource Pool System Controller für Home Assistant. Das
 Projekt steuert Pumpe, Chlorsystem, Wärmepumpe und PV-Überschussheizung aus
 einer kompakten, tabletfreundlichen Oberfläche und übernimmt die eigentliche
