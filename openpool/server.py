@@ -28,6 +28,7 @@ SUPERVISOR_HA_API_BASE = "http://supervisor/core/api"
 DEFAULT_HA_URL = "http://homeassistant:8123"
 POLL_INTERVAL_SECONDS = 10
 STATE_STREAM_INTERVAL_SECONDS = 2
+PULSE_TRIGGER_WINDOW_SECONDS = 90
 RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
 
@@ -131,6 +132,28 @@ def seconds_to_clock(value: float | None) -> str:
     if not value:
         return "--:--"
     return time.strftime("%H:%M", time.localtime(value))
+
+
+def clock_to_today_ts(value: object) -> float | None:
+    try:
+        parsed = time.strptime(str(value), "%H:%M")
+    except ValueError:
+        return None
+
+    current = time.localtime()
+    return time.mktime(
+        (
+            current.tm_year,
+            current.tm_mon,
+            current.tm_mday,
+            parsed.tm_hour,
+            parsed.tm_min,
+            0,
+            current.tm_wday,
+            current.tm_yday,
+            current.tm_isdst,
+        )
+    )
 
 
 class HomeAssistantClient:
@@ -238,6 +261,7 @@ class OpenPoolController:
             "version": 1,
             "master_enabled": True,
             "pump_mode": "Badebetrieb",
+            "pump_mode_started_at": now_ts(),
             "heater_mode": "PV-Automatik",
             "heater_target_temp": 28,
             "pump_running_since": None,
@@ -263,6 +287,8 @@ class OpenPoolController:
 
         state = self._default_state()
         state.update(loaded)
+        if not state.get("pump_mode_started_at"):
+            state["pump_mode_started_at"] = now_ts()
         return state
 
     def _save_state(self) -> None:
@@ -360,7 +386,10 @@ class OpenPoolController:
                 self.command("Hauptfreigabe EIN" if self.state["master_enabled"] else "Hauptfreigabe AUS", "Von der OpenPool UI gesetzt.")
                 self._save_state()
             elif action_type == "pump_mode":
-                self.state["pump_mode"] = str(action.get("mode") or "Aus")
+                mode = str(action.get("mode") or "Aus")
+                if mode != self.state.get("pump_mode"):
+                    self.state["pump_mode_started_at"] = now_ts()
+                self.state["pump_mode"] = mode
                 self.command("Pumpenmodus", self.state["pump_mode"])
                 self._save_state()
             elif action_type == "heater_mode":
@@ -448,8 +477,11 @@ class OpenPoolController:
             return
 
         if job.get("type") == "restart_pulse":
-            self._turn_pump(True)
-            self.command("Restart-Pulse fertig", "Pumpe wieder eingeschaltet.")
+            self.state["pending_job"] = None
+            self.command("Restart-Pulse fertig", "Pumpenprofil wird wieder angewendet.")
+            self._save_state()
+            self._apply_control_rules()
+            return
         elif job.get("type") == "pump_run_on":
             self._turn_pump(False)
             self.command("Pumpennachlauf fertig", "Pumpe nach Heizungs-Nachlauf ausgeschaltet.")
@@ -458,15 +490,22 @@ class OpenPoolController:
         self._save_state()
 
     def _apply_scheduled_pulses(self) -> None:
-        if not self.state.get("master_enabled") or self.state.get("pump_mode") == "Aus":
+        pump_mode = str(self.state.get("pump_mode") or "Aus")
+        if not self.state.get("master_enabled") or pump_mode == "Aus" or not self._pump_should_run(pump_mode):
             return
 
-        current_time = time.strftime("%H:%M", time.localtime())
+        current_ts = now_ts()
         current_day = today_key()
         done = self.state.setdefault("restart_pulses_done", {})
 
         for pulse in self.restart_pulses():
-            if not pulse.get("enabled") or current_time < str(pulse.get("time")):
+            scheduled_ts = clock_to_today_ts(pulse.get("time"))
+            if (
+                not pulse.get("enabled")
+                or scheduled_ts is None
+                or current_ts < scheduled_ts
+                or current_ts > scheduled_ts + PULSE_TRIGGER_WINDOW_SECONDS
+            ):
                 continue
             key = f"{current_day}:{pulse['key']}"
             if done.get(key):
@@ -487,6 +526,12 @@ class OpenPoolController:
             self._turn_heater(False)
             self._turn_pump(False)
             return
+
+        if pump_mode == "Nachtbaden" and self._night_swim_expired():
+            self.state["pump_mode"] = "Aus"
+            self.state["pump_mode_started_at"] = now_ts()
+            pump_mode = "Aus"
+            self.command("Nachtbaden beendet", "Maximale Laufzeit erreicht, Heizung wird mit Nachlauf ausgeschaltet.")
 
         if pump_mode == "Aus":
             self._turn_heater(False)
@@ -523,6 +568,11 @@ class OpenPoolController:
         if pump_mode == "Schlechtwetter":
             return str(profile["bad_weather_start"]) <= current_time < str(profile["bad_weather_end"])
         return False
+
+    def _night_swim_expired(self) -> bool:
+        max_minutes = int(self.profile().get("night_swim_max_minutes") or 600)
+        started_at = float(self.state.get("pump_mode_started_at") or now_ts())
+        return now_ts() - started_at >= max(1, max_minutes) * 60
 
     def _heater_needs_run_on(self) -> bool:
         heater_off_since = self.state.get("heater_off_since")
@@ -602,7 +652,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.2"
+    server_version = "OpenPool/0.2.3"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

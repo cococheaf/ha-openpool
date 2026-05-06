@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3
+
+- Enforce the configured maximum duration for Nachtbaden and shut down with the heater pump run-on sequence.
+- Run scheduled restart pulses only inside the configured time window and only while the active pump profile should run.
+- After a restart pulse, reapply the active pump profile instead of blindly switching the pump on.
+
 ## 0.2.2
 
 - Remove the web UI settings page and navigation; configuration now lives only in the Home Assistant add-on options.
