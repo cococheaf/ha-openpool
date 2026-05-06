@@ -51,6 +51,10 @@ the available PV power stays below `pv_stop_export_w` for
 The add-on options contain the Home Assistant entity IDs, profile times, restart
 pulses and control thresholds. The OpenPool UI is intentionally control-only;
 permanent configuration changes are made in the Home Assistant add-on options.
+Before the first live run, all entity IDs in the add-on configuration must be
+adapted to the local Home Assistant installation. The defaults are examples from
+the original OpenPool setup; wrong entities can prevent control actions or send
+them to the wrong device.
 
 ## Files
 
