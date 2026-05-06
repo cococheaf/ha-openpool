@@ -1338,9 +1338,11 @@
               <div class="sensor-category energy">
                 <div class="sensor-category-title">Energie</div>
                 <div class="sensor-list">
-                  <div><span>PV Export</span><strong id="pv-export-value">--</strong></div>
-                  <div><span>Netzimport</span><strong id="grid-import-value">--</strong></div>
-                  <div><span>Nettobezug</span><strong id="house-consumption-value">--</strong></div>
+                  <div><span>PV Erzeugung</span><strong id="pv-generation-value">--</strong></div>
+                  <div><span>Netzeinspeisung</span><strong id="pv-export-value">--</strong></div>
+                  <div><span>Netzbezug</span><strong id="grid-import-value">--</strong></div>
+                  <div><span>Hausverbrauch</span><strong id="house-consumption-value">--</strong></div>
+                  <div><span>Nettobezug</span><strong id="net-load-value">--</strong></div>
                   <div><span>PV frei für WP</span><strong id="pv-free-list-value">--</strong></div>
                 </div>
               </div>
@@ -1377,8 +1379,8 @@
   <script>
     // Runtime state for the touch UI. Home Assistant values are fetched through
     // the add-on proxy so the browser never needs to know a long-lived token.
-    const HA_POLL_INTERVAL_MS = 3000;
-    const LIVE_STREAM_STALE_MS = 4000;
+    const HA_POLL_INTERVAL_MS = 1000;
+    const LIVE_STREAM_STALE_MS = 2500;
     const controlConfig = {
       pvStartExportW: 1500,
       heaterTempMin: 18,
@@ -1583,6 +1585,7 @@
     }
 
     function updatePvAvailability(states) {
+      const pvGeneration = entityPowerWatts(states['entity-pv-generation']);
       const pvExport = entityPowerWatts(states['entity-pv-export']);
       const gridImport = entityPowerWatts(states['entity-grid-import']);
       const netConsumption = entityPowerWatts(states['entity-house-consumption']);
@@ -1591,20 +1594,25 @@
       const threshold = optionNumber(controlConfig.pvStartExportW, 1500);
       const thresholdText = formatPower(threshold);
 
+      setText('pv-generation-value', formatPower(pvGeneration));
       setText('pv-export-value', formatPower(pvExport));
       setText('grid-import-value', formatPower(gridImport));
-      setText('house-consumption-value', formatPower(netConsumption));
+      setText('net-load-value', formatPower(netConsumption));
       setText('pv-ready-threshold', thresholdText);
       setText('pv-surplus-hint', `Bereit ab ${thresholdText}`);
 
-      if ([pvExport, gridImport].some(value => value === null)) {
+      if ([pvGeneration, pvExport, gridImport].some(value => value === null)) {
+        setText('house-consumption-value', '--');
         setText('pv-free-value', '--');
         setText('pv-free-list-value', '--');
         setText('pv-surplus-metric', '--');
         return;
       }
 
-      const available = pvExport - gridImport + (heaterActive ? Math.abs(heaterPower || 0) : 0);
+      const houseConsumption = pvGeneration - pvExport;
+      const available = pvGeneration - houseConsumption - gridImport + (heaterActive ? Math.abs(heaterPower || 0) : 0);
+      setText('house-consumption-value', formatPower(houseConsumption));
+
       const text = formatPower(available);
       setText('pv-free-value', text);
       setText('pv-free-list-value', text);

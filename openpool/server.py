@@ -26,8 +26,7 @@ OPTIONS_PATH = Path(os.environ.get("OPENPOOL_OPTIONS", "/data/options.json"))
 STATE_PATH = Path(os.environ.get("OPENPOOL_STATE", "/data/openpool_state.json"))
 SUPERVISOR_HA_API_BASE = "http://supervisor/core/api"
 DEFAULT_HA_URL = "http://homeassistant:8123"
-POLL_INTERVAL_SECONDS = 10
-STATE_STREAM_INTERVAL_SECONDS = 2
+DEFAULT_POLL_INTERVAL_SECONDS = 1
 PULSE_TRIGGER_WINDOW_SECONDS = 90
 RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
@@ -36,6 +35,7 @@ DEFAULT_ENTITIES = {
     "pump_switch": "switch.poolpumpe",
     "heater_climate": "climate.poolheizung",
     "weather": "weather.openweathermap",
+    "pv_generation": "sensor.pv_erzeugungsleistung",
     "pv_export": "sensor.stromzahler_active_power_minus",
     "grid_import": "sensor.stromzahler_active_power_plus",
     "house_consumption": "sensor.nettobezug",
@@ -56,6 +56,7 @@ UI_ENTITY_KEYS = {
     "entity-pump-switch": "pump_switch",
     "entity-heater-climate": "heater_climate",
     "entity-weather": "weather",
+    "entity-pv-generation": "pv_generation",
     "entity-pv-export": "pv_export",
     "entity-grid-import": "grid_import",
     "entity-house-consumption": "house_consumption",
@@ -310,6 +311,13 @@ class OpenPoolController:
         values.update((self.options().get("thresholds") or {}))
         return values
 
+    def poll_interval_seconds(self) -> float:
+        try:
+            configured = float(self.options().get("poll_interval_s") or DEFAULT_POLL_INTERVAL_SECONDS)
+        except (TypeError, ValueError):
+            configured = DEFAULT_POLL_INTERVAL_SECONDS
+        return max(1.0, min(60.0, configured))
+
     def profile(self) -> dict:
         values = {
             "pump_start": "07:30",
@@ -419,7 +427,7 @@ class OpenPoolController:
             except Exception as err:  # noqa: BLE001 - controller must keep running
                 self.last_error = str(err)
                 print(f"[openpool] controller error: {err}", flush=True)
-            self._stop.wait(POLL_INTERVAL_SECONDS)
+            self._stop.wait(self.poll_interval_seconds())
 
     def poll_home_assistant(self) -> None:
         entities = self.entities()
@@ -592,19 +600,26 @@ class OpenPoolController:
         self._turn_heater(available is not None and available >= threshold)
 
     def _pv_available_watts(self) -> float | None:
-        pv_export = self._entity_power_watts("pv_export")
+        pv_generation = self._entity_power_watts("pv_generation")
+        house_consumption = self._calculated_house_consumption_watts()
         grid_import = self._entity_power_watts("grid_import")
-        if pv_export is None or grid_import is None:
+        if pv_generation is None or house_consumption is None or grid_import is None:
             return None
 
-        # Grid export/import already contains house, pump and heater loads. Do
-        # not subtract a derived net-load sensor again, otherwise the same load
-        # would be counted twice. When the heat pump is already running, add its
-        # current draw back to estimate the surplus that would exist without it.
-        available = pv_export - grid_import
+        # House consumption is derived from PV generation minus grid export.
+        # Subtracting grid import accounts for moments where the house already
+        # needs more power than the PV system currently produces.
+        available = pv_generation - house_consumption - grid_import
         if self._heater_is_active():
             available += abs(self._entity_power_watts("heater_power") or 0)
         return available
+
+    def _calculated_house_consumption_watts(self) -> float | None:
+        pv_generation = self._entity_power_watts("pv_generation")
+        pv_export = self._entity_power_watts("pv_export")
+        if pv_generation is None or pv_export is None:
+            return None
+        return pv_generation - pv_export
 
     def _entity_power_watts(self, key: str) -> float | None:
         state = self.ha_states.get(key)
@@ -676,7 +691,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.5"
+    server_version = "OpenPool/0.2.6"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:
@@ -795,7 +810,7 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
             except (BrokenPipeError, ConnectionResetError):
                 return
-            time.sleep(STATE_STREAM_INTERVAL_SECONDS)
+            time.sleep(CONTROLLER.poll_interval_seconds())
 
     def _send_no_cache_headers(self) -> None:
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")

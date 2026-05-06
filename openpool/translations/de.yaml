@@ -2,6 +2,9 @@ configuration:
   log_level:
     name: Log-Level
     description: Detailgrad der OpenPool Add-on Logs.
+  poll_interval_s:
+    name: Aktualisierungsrate
+    description: Sekunden zwischen Home Assistant Abfragen und UI Live-Updates.
   connection:
     name: Home Assistant Verbindung
     description: Fallback-Zugang für Systeme ohne Supervisor-Token.
@@ -22,10 +25,12 @@ configuration:
         name: Wärmepumpe Climate
       weather:
         name: Wetter Entity
+      pv_generation:
+        name: PV Erzeugung Sensor
       pv_export:
-        name: PV Export Sensor
+        name: Netzeinspeisung Sensor
       grid_import:
-        name: Netzimport Sensor
+        name: Netzbezug Sensor
       house_consumption:
         name: Nettobezug Sensor
       pump_power:

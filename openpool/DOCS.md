@@ -29,11 +29,13 @@ allows automation jobs to continue when the UI is closed.
 
 ## PV Release
 
-The heat-pump PV release is calculated from the grid meter values:
-`pv_export - grid_import`. A derived net-load sensor such as
-`sensor.nettobezug` is displayed for information only and is not subtracted
-again. When the heat pump is already running, its current power sensor is added
-back to estimate the surplus that would exist without the heat pump load.
+OpenPool derives the current house consumption from PV production and grid
+export: `pv_generation - pv_export`. The heat-pump PV release is then
+calculated as `pv_generation - house_consumption - grid_import`. A derived
+net-load sensor such as `sensor.nettobezug` is displayed for information only
+and is not used as house consumption. When the heat pump is already running, its
+current power sensor is added back to estimate the surplus that would exist
+without the heat pump load.
 OpenPool only enables the heat pump after the pump switch is confirmed on by
 Home Assistant, so the pump load is already represented at the grid meter.
 

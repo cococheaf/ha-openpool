@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.6
+
+- Add configurable `poll_interval_s`, defaulting to one-second Home Assistant polling and UI live updates.
+- Add a PV production sensor and derive house consumption as PV production minus grid export.
+- Base PV heat-pump release on PV production, calculated house consumption and grid import.
+
 ## 0.2.5
 
 - Only allow heat-pump control after the pump switch is confirmed on by Home Assistant, so pump load and flow are accounted for before PV heating starts.
