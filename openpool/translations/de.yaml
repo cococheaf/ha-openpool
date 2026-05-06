@@ -31,8 +31,6 @@ configuration:
         name: Netzeinspeisung Sensor
       grid_import:
         name: Netzbezug Sensor
-      house_consumption:
-        name: Nettobezug Sensor
       pump_power:
         name: Pumpe Leistung Sensor
       pump_current:

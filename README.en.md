@@ -88,12 +88,12 @@ The controller regularly reads the configured Home Assistant entities,
 calculates the OpenPool state from them and sends service calls back to Home
 Assistant when needed. The update rate can be configured with `poll_interval_s`.
 
-For PV release, house consumption is derived from PV production and the
-balancing grid export value:
+For PV release, house consumption is derived from PV production, balancing grid
+export and grid import:
 
 ```text
-house consumption = PV production - grid export
-PV available for heat pump = PV production - house consumption - grid import
+house consumption = PV production - grid export + grid import
+PV available for heat pump = PV production - house consumption
 ```
 
 When the heat pump is already running, its current power is added back. This

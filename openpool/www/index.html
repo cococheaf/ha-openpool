@@ -1364,7 +1364,6 @@
                   <div><span>Netzeinspeisung</span><strong id="pv-export-value">--</strong></div>
                   <div><span>Netzbezug</span><strong id="grid-import-value">--</strong></div>
                   <div><span>Hausverbrauch</span><strong id="house-consumption-value">--</strong></div>
-                  <div><span>Nettobezug</span><strong id="net-load-value">--</strong></div>
                   <div><span>PV frei für WP</span><strong id="pv-free-list-value">--</strong></div>
                 </div>
               </div>
@@ -1779,7 +1778,6 @@
       const pvGeneration = entityPowerWatts(states['entity-pv-generation']);
       const pvExport = entityPowerWatts(states['entity-pv-export']);
       const gridImport = entityPowerWatts(states['entity-grid-import']);
-      const netConsumption = entityPowerWatts(states['entity-house-consumption']);
       const heaterPower = entityPowerWatts(states['entity-heater-power']);
       const heaterActive = isHeaterActive(states['entity-heater-climate']);
       const threshold = optionNumber(controlConfig.pvStartExportW, 1500);
@@ -1790,7 +1788,6 @@
       setText('pv-generation-value', formatPower(pvGeneration));
       setText('pv-export-value', formatPower(pvExport));
       setText('grid-import-value', formatPower(gridImport));
-      setText('net-load-value', formatPower(netConsumption));
       setText('pv-ready-threshold', readyText);
       setText('pv-surplus-hint', `Bereit ab ${readyText}`);
 
@@ -1802,8 +1799,8 @@
         return;
       }
 
-      const houseConsumption = pvGeneration - pvExport;
-      const available = pvGeneration - houseConsumption - gridImport + (heaterActive ? Math.abs(heaterPower || 0) : 0);
+      const houseConsumption = pvGeneration - pvExport + gridImport;
+      const available = pvGeneration - houseConsumption + (heaterActive ? Math.abs(heaterPower || 0) : 0);
       setText('house-consumption-value', formatPower(houseConsumption));
 
       const text = formatPower(available);

@@ -38,7 +38,6 @@ DEFAULT_ENTITIES = {
     "pv_generation": "sensor.pv_erzeugungsleistung",
     "pv_export": "sensor.stromzahler_active_power_minus",
     "grid_import": "sensor.stromzahler_active_power_plus",
-    "house_consumption": "sensor.nettobezug",
     "pump_power": "sensor.poolpumpe_leistung",
     "pump_current": "sensor.poolpumpe_current",
     "pump_voltage": "sensor.poolpumpe_spannung",
@@ -59,7 +58,6 @@ UI_ENTITY_KEYS = {
     "entity-pv-generation": "pv_generation",
     "entity-pv-export": "pv_export",
     "entity-grid-import": "grid_import",
-    "entity-house-consumption": "house_consumption",
     "entity-pump-power": "pump_power",
     "entity-pump-current": "pump_current",
     "entity-pump-voltage": "pump_voltage",
@@ -310,7 +308,10 @@ class OpenPoolController:
 
     def entities(self) -> dict:
         entities = dict(DEFAULT_ENTITIES)
-        entities.update((self.options().get("entities") or {}))
+        configured = self.options().get("entities") or {}
+        for key in entities:
+            if configured.get(key) is not None:
+                entities[key] = configured[key]
         return entities
 
     def thresholds(self) -> dict:
@@ -751,14 +752,13 @@ class OpenPoolController:
     def _pv_available_watts(self) -> float | None:
         pv_generation = self._entity_power_watts("pv_generation")
         house_consumption = self._calculated_house_consumption_watts()
-        grid_import = self._entity_power_watts("grid_import")
-        if pv_generation is None or house_consumption is None or grid_import is None:
+        if pv_generation is None or house_consumption is None:
             return None
 
-        # House consumption is derived from PV generation minus grid export.
-        # Subtracting grid import accounts for moments where the house already
-        # needs more power than the PV system currently produces.
-        available = pv_generation - house_consumption - grid_import
+        # House consumption includes PV self-consumption and any grid import.
+        # Subtracting it from PV production yields the current export/import
+        # balance that can be used for the heat pump.
+        available = pv_generation - house_consumption
         if self._heater_is_active():
             available += abs(self._entity_power_watts("heater_power") or 0)
         return available
@@ -766,9 +766,10 @@ class OpenPoolController:
     def _calculated_house_consumption_watts(self) -> float | None:
         pv_generation = self._entity_power_watts("pv_generation")
         pv_export = self._entity_power_watts("pv_export")
-        if pv_generation is None or pv_export is None:
+        grid_import = self._entity_power_watts("grid_import")
+        if pv_generation is None or pv_export is None or grid_import is None:
             return None
-        return pv_generation - pv_export
+        return pv_generation - pv_export + grid_import
 
     def _entity_power_watts(self, key: str) -> float | None:
         state = self.ha_states.get(key)

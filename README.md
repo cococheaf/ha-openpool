@@ -90,12 +90,12 @@ berechnet daraus den OpenPool-Zustand und sendet bei Bedarf Service-Calls an
 Home Assistant. Die Aktualisierungsrate ist über `poll_interval_s`
 konfigurierbar.
 
-Für die PV-Freigabe wird der Hausverbrauch aus PV-Erzeugung und saldierender
-Netzeinspeisung abgeleitet:
+Für die PV-Freigabe wird der Hausverbrauch aus PV-Erzeugung, saldierender
+Netzeinspeisung und Netzbezug abgeleitet:
 
 ```text
-Hausverbrauch = PV-Erzeugungsleistung - Netzeinspeisung
-PV frei für WP = PV-Erzeugungsleistung - Hausverbrauch - Netzbezug
+Hausverbrauch = PV-Erzeugungsleistung - Netzeinspeisung + Netzbezug
+PV frei für WP = PV-Erzeugungsleistung - Hausverbrauch
 ```
 
 Wenn die Wärmepumpe bereits läuft, wird ihre aktuelle Leistung wieder

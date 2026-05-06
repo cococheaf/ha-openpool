@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.11
+
+- Correct house consumption calculation to include grid import.
+- Remove the net-load display from the dashboard energy values.
+- Stop using the legacy net-load sensor in OpenPool entity polling.
+
 ## 0.2.10
 
 - Restore immediate restart pulses without switching the heat pump off first.
