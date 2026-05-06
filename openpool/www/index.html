@@ -509,6 +509,27 @@
       margin-top: 0;
     }
 
+    .upcoming-task {
+      display: flex;
+      align-items: center;
+      min-height: 32px;
+      margin-bottom: 9px;
+      padding: 7px 9px;
+      border: 1px solid rgba(80,183,255,.22);
+      border-radius: 8px;
+      background: rgba(80,183,255,.08);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .upcoming-task span {
+      margin-right: 4px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
     .event {
       display: grid;
       grid-template-columns: 62px 1fr;
@@ -1223,8 +1244,9 @@
         <section class="card decision-card">
           <div class="card-inner">
             <div class="section-title">
-              <h3>Letztes Kommando</h3>
+              <h3>Aufgabenverlauf</h3>
             </div>
+            <div class="upcoming-task" id="upcoming-task"><span>Upcoming:</span> Live-Zustand wird geladen</div>
             <div class="timeline command-log" id="command-log">
               <div class="event"><time>--:--</time><div>Warte auf Home Assistant<small>Live-Zustand wird geladen.</small></div></div>
             </div>
@@ -1427,6 +1449,146 @@
           <div>${escapeHTML(command.title)}<small>${escapeHTML(command.detail)}</small></div>
         </div>
       `).join('');
+    }
+
+    function snapshotNowSeconds(snapshot) {
+      const snapshotTime = Number(snapshot?.now);
+      return Number.isFinite(snapshotTime) ? snapshotTime : Date.now() / 1000;
+    }
+
+    function formatUpcomingTime(atSeconds, snapshot) {
+      const at = Number(atSeconds);
+      if (!Number.isFinite(at)) return '';
+
+      const remaining = Math.max(0, Math.ceil(at - snapshotNowSeconds(snapshot)));
+      if (remaining < 60) return `in ${remaining}s`;
+
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      if (minutes < 60) return `in ${minutes}:${String(seconds).padStart(2, '0')} min`;
+
+      return `um ${new Date(at * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function clockToToday(clock, nowDate) {
+      const match = String(clock || '').match(/^(\d{1,2}):(\d{2})$/);
+      if (!match) return null;
+
+      const date = new Date(nowDate);
+      date.setHours(Number(match[1]), Number(match[2]), 0, 0);
+      return date;
+    }
+
+    function dayKey(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function pulseLabel(pulse) {
+      const match = String(pulse?.key || '').match(/pulse_(\d+)/);
+      return match ? `Pulse ${match[1]}` : 'Pulse';
+    }
+
+    function profileWindowForMode(snapshot, pumpMode) {
+      const profiles = snapshot?.profiles || {};
+      if (pumpMode === 'Badebetrieb') {
+        return { start: profiles.pump_start || '07:30', end: profiles.pump_end || '22:00' };
+      }
+      if (pumpMode === 'Schlechtwetter') {
+        return { start: profiles.bad_weather_start || '13:00', end: profiles.bad_weather_end || '16:15' };
+      }
+      return null;
+    }
+
+    function pumpRunsAtTaskTime(snapshot, pumpMode, taskDate) {
+      if (pumpMode === 'Dauerbetrieb' || pumpMode === 'Nachtbaden') return true;
+
+      const window = profileWindowForMode(snapshot, pumpMode);
+      if (!window) return false;
+
+      const start = clockToToday(window.start, taskDate);
+      const end = clockToToday(window.end, taskDate);
+      return Boolean(start && end && start <= taskDate && taskDate < end);
+    }
+
+    function nextScheduledPumpTask(snapshot, controller, nowDate) {
+      if (controller.master_enabled === false) return null;
+
+      const pumpMode = controller.pump_mode || 'Aus';
+      if (pumpMode === 'Aus' || pumpMode === 'Dauerbetrieb') return null;
+
+      if (pumpMode === 'Nachtbaden') {
+        const maxMinutes = optionNumber(snapshot?.profiles?.night_swim_max_minutes, 600);
+        const startedAt = Number(controller.pump_mode_started_at);
+        if (!Number.isFinite(startedAt)) return null;
+
+        const at = startedAt + Math.max(1, maxMinutes) * 60;
+        return at * 1000 > nowDate.getTime()
+          ? { title: 'Nachtbaden beenden', at }
+          : null;
+      }
+
+      const window = profileWindowForMode(snapshot, pumpMode);
+      if (!window) return null;
+
+      const start = clockToToday(window.start, nowDate);
+      const end = clockToToday(window.end, nowDate);
+      if (!start || !end) return null;
+
+      if (nowDate < start) return { title: 'Pumpenstart', at: start.getTime() / 1000 };
+      if (nowDate < end) return { title: 'Pumpenende', at: end.getTime() / 1000 };
+
+      const tomorrowStart = new Date(start);
+      tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+      return { title: 'Pumpenstart', at: tomorrowStart.getTime() / 1000 };
+    }
+
+    function nextRestartPulseTask(snapshot, controller, nowDate) {
+      if (controller.master_enabled === false || (controller.pump_mode || 'Aus') === 'Aus') return null;
+
+      const pulses = Array.isArray(snapshot?.restart_pulses) ? snapshot.restart_pulses : [];
+      const done = controller.restart_pulses_done || {};
+      const tomorrow = new Date(nowDate);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      return [nowDate, tomorrow]
+        .flatMap(day => pulses
+          .filter(pulse => pulse?.enabled)
+          .map(pulse => ({ pulse, date: clockToToday(pulse.time, day) })))
+        .filter(task => task.date && task.date >= nowDate)
+        .filter(task => !done[`${dayKey(task.date)}:${task.pulse.key}`])
+        .filter(task => pumpRunsAtTaskTime(snapshot, controller.pump_mode || 'Aus', task.date))
+        .sort((left, right) => left.date - right.date)
+        .map(task => ({
+          title: `${pulseLabel(task.pulse)} ausführen`,
+          at: task.date.getTime() / 1000
+        }))[0] || null;
+    }
+
+    function pendingJobTask(job) {
+      if (!job) return null;
+      if (job.type === 'pump_run_on') return { title: 'Pumpe nach Nachlauf ausschalten', at: job.until };
+      if (job.type === 'restart_pulse') return { title: 'Restart-Pulse beenden', at: job.until };
+      return { title: 'Aktiven Task abschließen', at: job.until };
+    }
+
+    function updateUpcomingTask(snapshot) {
+      const node = document.getElementById('upcoming-task');
+      if (!node) return;
+
+      const controller = snapshot?.controller || {};
+      const nowDate = new Date(snapshotNowSeconds(snapshot) * 1000);
+      const candidates = [
+        pendingJobTask(controller.pending_job),
+        nextRestartPulseTask(snapshot, controller, nowDate),
+        nextScheduledPumpTask(snapshot, controller, nowDate)
+      ].filter(Boolean).sort((left, right) => Number(left.at || Infinity) - Number(right.at || Infinity));
+
+      const task = candidates[0];
+      const label = task ? `${task.title} ${formatUpcomingTime(task.at, snapshot)}` : 'Keine Aufgabe geplant';
+      node.innerHTML = `<span>Upcoming:</span> ${escapeHTML(label)}`;
     }
 
     function pushCommand(title, detail) {
@@ -1736,6 +1898,7 @@
       }
 
       const job = controller.pending_job;
+      updateUpcomingTask(snapshot);
       setShutdownSequenceVisible(Boolean(job && job.type === 'pump_run_on'));
       updateHomeAssistantValues(states);
 

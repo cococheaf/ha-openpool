@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.7
+
+- Rename the command card to `Aufgabenverlauf`.
+- Show the next known OpenPool task as an `Upcoming:` line above the task history.
+
 ## 0.2.6
 
 - Add configurable `poll_interval_s`, defaulting to one-second Home Assistant polling and UI live updates.
