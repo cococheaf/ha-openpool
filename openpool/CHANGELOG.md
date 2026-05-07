@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.10
+
+- Center the three heater mode buttons as a fixed button group instead of using
+  auto-filled grid columns.
+
 ## 1.0.9
 
 - Center the heater mode buttons inside the card body below the heading.

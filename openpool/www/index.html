@@ -810,6 +810,7 @@
     #heater-control-card .mode-grid {
       flex: 0 0 auto;
       align-self: center;
+      grid-template-columns: repeat(3, minmax(var(--button-width), var(--button-width)));
       width: 100%;
       align-content: center;
       align-items: center;
@@ -1216,7 +1217,8 @@
       }
       .mode-grid,
       .mode-grid.pump-modes,
-      .weather-mode-grid {
+      .weather-mode-grid,
+      #heater-control-card .mode-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .section-title {
@@ -1261,7 +1263,8 @@
       .mode .icon { margin-bottom: 3px; }
       .mode-grid,
       .mode-grid.pump-modes,
-      .weather-mode-grid {
+      .weather-mode-grid,
+      #heater-control-card .mode-grid {
         grid-template-columns: minmax(0, 1fr);
       }
     }
