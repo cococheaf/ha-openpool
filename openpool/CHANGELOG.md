@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.30
+
+- Rework the dashboard control panel into uniform fixed-size buttons.
+- Rename Wetterprognose to Wettersteuerung and show Deaktiviert/Aktiviert for
+  weather automation while keeping the existing control behavior.
+- Remove visible weather forecast tiles and move the current weather
+  recommendation into the weather automation tooltip.
+- Split Aufgabenverlauf and Sensoren into two equal-width desktop columns.
+
 ## 0.2.29
 
 - Rebuild the dashboard order as Allgemein, Steuerelemente, Aufgabenverlauf and
