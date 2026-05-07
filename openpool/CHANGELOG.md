@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.8
+
+- Re-center the heater mode button row on desktop and iPad-width layouts.
+
 ## 1.0.7
 
 - Keep the sensor card locked to the same height as the activity card on

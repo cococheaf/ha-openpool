@@ -799,16 +799,27 @@
     }
 
     #heater-control-card .control-section-body {
-      height: 100%;
-      align-content: center;
+      display: flex;
       align-items: center;
-      justify-items: center;
+      justify-content: center;
+      align-content: center;
+      height: 100%;
+      min-height: 0;
     }
 
     #heater-control-card .mode-grid {
+      flex: 0 0 auto;
       align-self: center;
       width: 100%;
+      align-content: center;
+      align-items: center;
       justify-content: center;
+    }
+
+    @media (min-width: 761px) {
+      #heater-control-card .control-section-body {
+        transform: translateY(-12px);
+      }
     }
 
     .control-card {
