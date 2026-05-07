@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -1190,8 +1191,19 @@ HA = HomeAssistantClient()
 CONTROLLER = OpenPoolController(HA)
 
 
+class QuietThreadingHTTPServer(ThreadingHTTPServer):
+    """Threading HTTP server that keeps expected Ingress disconnects quiet."""
+
+    def handle_error(self, request: object, client_address: tuple[str, int]) -> None:
+        _exc_type, exc, _traceback = sys.exc_info()
+        if isinstance(exc, (BrokenPipeError, ConnectionResetError, TimeoutError)):
+            log("debug", f"{client_address[0]} disconnected before the request completed")
+            return
+        super().handle_error(request, client_address)
+
+
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.0.4"
+    server_version = "OpenPool/1.0.6"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:
@@ -1323,7 +1335,7 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
 
 def main() -> None:
     CONTROLLER.start()
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), OpenPoolHandler)
+    server = QuietThreadingHTTPServer(("0.0.0.0", PORT), OpenPoolHandler)
     log("info", f"listening on 0.0.0.0:{PORT}")
     log("info", f"Home Assistant auth: {HA.auth_status()}")
     server.serve_forever()

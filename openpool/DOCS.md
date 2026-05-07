@@ -1,5 +1,7 @@
 # OpenPool Add-on Documentation
 
+![OpenPool Dashboard Demo](../OpenPool_DemoImage.png)
+
 ## Home Assistant API
 
 The add-on is configured with `homeassistant_api: true`. At runtime, Home

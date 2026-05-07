@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.6
+
+- Add standard `line-clamp` CSS declarations next to the WebKit fallback.
+- Refine the master enable switch size and align its status text with the
+  neighboring dashboard status tiles.
+- Keep dashboard history and sensor cards content-sized on desktop and make the
+  sensor section more compact on wide screens.
+- Disable tile hover tooltips on iPhone, iPad and other touch-sized layouts.
+- Suppress expected Home Assistant Ingress client-disconnect tracebacks in the
+  add-on log.
+- Refresh the GitHub README dashboard screenshot.
+
 ## 1.0.5
 
 - Change master toggle design to fit text alignment
