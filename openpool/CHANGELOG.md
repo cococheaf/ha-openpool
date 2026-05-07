@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.31
+
+- Treat the heat pump as running when the heater power sensor reports active
+  load, even if the climate entity is still `idle`.
+- Hide the PV heat-pump start countdown once the heat pump is already running.
+- Put the control sections back into clean subcards inside the main control
+  panel.
+
 ## 0.2.30
 
 - Rework the dashboard control panel into uniform fixed-size buttons.

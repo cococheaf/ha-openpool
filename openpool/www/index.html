@@ -717,7 +717,7 @@
     }
 
     .controls-panel .card-inner {
-      gap: 0;
+      gap: 8px;
     }
 
     .control-section {
@@ -726,24 +726,19 @@
       grid-template-columns: minmax(0, 1fr);
       gap: 8px;
       align-items: start;
-      padding: 12px 0;
+      padding: 10px;
       min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--tile-radius);
+      background: rgba(15,23,42,.34);
     }
 
     .controls-panel .section-title {
-      margin-bottom: 0;
-    }
-
-    .controls-panel .section-title + .control-section {
-      padding-top: 8px;
-    }
-
-    .control-section:last-of-type {
-      padding-bottom: 0;
+      margin-bottom: 2px;
     }
 
     .control-section + .control-section {
-      border-top: 1px solid rgba(255,255,255,.09);
+      border-top-color: var(--line);
     }
 
     .control-section-header {
@@ -1496,7 +1491,7 @@
     }
 
     function heatPumpIsActiveForTask(snapshot) {
-      return isHeaterActive(snapshot?.ha_states?.['entity-heater-climate']);
+      return isHeatPumpRunning(snapshot?.ha_states || {});
     }
 
     function pumpStopTaskWithHeatProtection(title, at, preStopTitle, snapshot, nowDate) {
@@ -1577,7 +1572,7 @@
       if ((controller.heater_mode || 'Aus') !== 'PV-Automatik') return null;
 
       const states = snapshot?.ha_states || {};
-      if (isHeaterActive(states['entity-heater-climate'])) return null;
+      if (isHeatPumpRunning(states)) return null;
 
       const aboveSince = Number(controller.pv_above_since);
       if (!Number.isFinite(aboveSince)) return null;
@@ -1910,7 +1905,7 @@
       if (!controlConfig.heatPumpControl) {
         return { value: 'KEINE', hint: 'Wärmepumpensteuerung deaktiviert.' };
       }
-      if (!isHeaterActive(states['entity-heater-climate'])) {
+      if (!isHeatPumpRunning(states)) {
         return { value: 'KEINE', hint: 'Wärmepumpe ist aus.' };
       }
 
@@ -1957,7 +1952,7 @@
       const pvExport = entityPowerWatts(states['entity-pv-export']);
       const gridImport = entityPowerWatts(states['entity-grid-import']);
       const heaterPower = entityPowerWatts(states['entity-heater-power']);
-      const heaterActive = isHeaterActive(states['entity-heater-climate']);
+      const heaterActive = isHeatPumpRunning(states);
 
       setText('pv-generation-value', formatPower(pvGeneration));
       setText('pv-export-value', formatPower(pvExport));
@@ -1982,6 +1977,12 @@
       if (isUnavailableState(entityState)) return false;
       const state = String(entityState.state).toLowerCase();
       return !['off', 'idle'].includes(state);
+    }
+
+    function isHeatPumpRunning(states = {}) {
+      if (isHeaterActive(states['entity-heater-climate'])) return true;
+      const heaterPower = entityPowerWatts(states['entity-heater-power']);
+      return heaterPower !== null && Math.abs(heaterPower) >= 100;
     }
 
     function weatherConditionIcon(condition) {
@@ -2077,7 +2078,7 @@
       updateChlorinatorStatus(states);
 
       if (!isUnavailableState(heater)) {
-        heaterRunning = isHeaterActive(heater);
+        heaterRunning = isHeatPumpRunning(states);
         if (controlConfig.heatPumpControl) {
           if (heaterRunning) {
             heaterOffSince = null;

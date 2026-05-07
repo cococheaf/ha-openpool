@@ -33,6 +33,7 @@ RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
 COMMAND_LOG_LIMIT = 15
 WEATHER_FORECAST_REFRESH_SECONDS = 12 * 60 * 60
+HEATER_ACTIVE_POWER_W = 100
 DEFAULT_WEATHER_ENTITY = "weather.home"
 BAD_WEATHER_CONDITIONS = {
     "cloudy",
@@ -756,7 +757,10 @@ class OpenPoolController:
 
         pump_on = str((states.get("pump_switch") or {}).get("state", "")).lower() == "on"
         heater_state = str((states.get("heater_climate") or {}).get("state", "")).lower()
-        heater_on = heater_state not in {"", "off", "idle", "unavailable", "unknown"}
+        heater_on = (
+            heater_state not in {"", "off", "idle", "unavailable", "unknown"}
+            or self._heater_power_is_active(states)
+        )
 
         running_since = self.state.get("pump_running_since")
         if pump_on and not running_since:
@@ -1083,8 +1087,7 @@ class OpenPoolController:
             return None
         return pv_generation - pv_export + grid_import
 
-    def _entity_power_watts(self, key: str) -> float | None:
-        state = self.ha_states.get(key)
+    def _state_power_watts(self, state: dict | None) -> float | None:
         if not state:
             return None
         try:
@@ -1094,11 +1097,22 @@ class OpenPoolController:
         unit = str((state.get("attributes") or {}).get("unit_of_measurement") or "").lower()
         return value * 1000 if "kw" in unit else value
 
+    def _entity_power_watts(self, key: str) -> float | None:
+        return self._state_power_watts(self.ha_states.get(key))
+
+    def _heater_power_is_active(self, states: dict[str, dict] | None = None) -> bool:
+        source = states if states is not None else self.ha_states
+        power = self._state_power_watts((source or {}).get("heater_power"))
+        return power is not None and abs(power) >= HEATER_ACTIVE_POWER_W
+
     def _heater_is_active(self) -> bool:
         if not self.heat_pump_enabled():
             return False
         heater_state = str((self.ha_states.get("heater_climate") or {}).get("state", "")).lower()
-        return heater_state not in {"", "off", "idle", "unavailable", "unknown"}
+        return (
+            heater_state not in {"", "off", "idle", "unavailable", "unknown"}
+            or self._heater_power_is_active()
+        )
 
     def _pump_is_active(self) -> bool:
         return str((self.ha_states.get("pump_switch") or {}).get("state", "")).lower() == "on"
@@ -1123,7 +1137,7 @@ class OpenPoolController:
         domain = entity_domain(entity_id)
         current_state = str((self.ha_states.get("heater_climate") or {}).get("state", "")).lower()
         if current_state not in {"", "unknown", "unavailable"}:
-            heater_on = current_state not in {"off", "idle"}
+            heater_on = current_state not in {"off", "idle"} or self._heater_power_is_active()
             if heater_on == enabled:
                 return
         if domain == "climate":
@@ -1161,7 +1175,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.30"
+    server_version = "OpenPool/0.2.31"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:
