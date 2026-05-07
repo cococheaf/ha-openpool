@@ -210,7 +210,7 @@
 
     .card-inner { padding: var(--card-pad); }
 
-    /* Dashboard status card: operating state plus master enable switch. */
+    /* Dashboard status card: live system tiles plus master enable switch. */
     .hero {
       min-height: 0;
       position: relative;
@@ -224,44 +224,6 @@
       margin-bottom: 8px;
     }
 
-    .hero-top {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(180px, 230px);
-      gap: 8px;
-      align-items: stretch;
-      margin-bottom: 8px;
-    }
-
-    .hero h2 {
-      margin: 0;
-      font-size: 16px;
-      letter-spacing: 0;
-      line-height: 1.2;
-    }
-
-    .hero-copy {
-      min-width: 0;
-      padding: 9px;
-      border: 1px solid var(--line);
-      border-radius: var(--tile-radius);
-      background: rgba(15,23,42,.48);
-      min-height: var(--tile-height);
-      display: grid;
-      align-content: center;
-      justify-items: center;
-      text-align: center;
-    }
-
-    .hero .sub {
-      color: var(--muted);
-      margin-top: 6px;
-      font-size: 13px;
-      max-width: 520px;
-      overflow-wrap: anywhere;
-    }
-
-    .hero-copy .sub,
-    .master small,
     .metric .hint,
     .mode small {
       position: absolute !important;
@@ -275,7 +237,6 @@
       border: 0 !important;
     }
 
-    .hero-copy,
     .master,
     .metric,
     .mode,
@@ -339,27 +300,25 @@
     }
 
     .master {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: rgba(15,23,42,.62);
-      border: 1px solid var(--line);
-      border-radius: var(--tile-radius);
-      padding: 8px;
-      min-width: 0;
-      min-height: var(--tile-height);
-      height: var(--tile-height);
-      width: 100%;
-      grid-column: 4;
+      display: grid;
+      grid-template-rows: auto auto;
+      align-content: center;
+      justify-items: center;
+      gap: 6px;
       justify-content: center;
       text-align: center;
-      flex: 0 0 auto;
     }
 
-    .master strong {
-      display: block;
-      font-size: 13px;
-      line-height: 1.1;
+    .master-control {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .master .value {
+      font-size: 17px;
     }
 
     .switch {
@@ -541,12 +500,13 @@
       gap: 7px;
       margin-top: 0;
       margin-bottom: 0;
-      padding: 9px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: rgba(15,23,42,.34);
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
       min-width: 0;
       width: min(100%, 420px);
+      justify-self: center;
     }
 
     .temperature-control .section-title {
@@ -652,11 +612,7 @@
 
     .command-log {
       margin-top: 0;
-      max-height: 344px;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      padding-right: 4px;
-      scrollbar-width: thin;
+      overflow: visible;
     }
 
     .upcoming-task {
@@ -700,7 +656,16 @@
       font-size: 12px;
     }
 
-    .event small { display: block; color: var(--muted); margin-top: 1px; font-size: 10px; line-height: 1.2; }
+    .event small {
+      display: -webkit-box;
+      color: var(--muted);
+      margin-top: 1px;
+      font-size: 10px;
+      line-height: 1.2;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
 
     .decision-card .card-inner {
       padding: 10px;
@@ -728,14 +693,15 @@
       position: relative;
       display: grid;
       grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
       gap: 8px;
-      align-items: start;
+      align-items: stretch;
       padding: 10px;
       min-width: 0;
       border: 1px solid var(--line);
       border-radius: var(--tile-radius);
       background: rgba(15,23,42,.34);
-      align-content: start;
+      align-content: stretch;
     }
 
     .controls-panel .section-title {
@@ -762,6 +728,8 @@
       min-width: 0;
       display: grid;
       justify-items: center;
+      align-items: center;
+      align-content: center;
     }
 
     .weather-layout,
@@ -924,7 +892,7 @@
 
     .sensor-categories {
       display: grid;
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
       align-items: stretch;
     }
@@ -943,6 +911,7 @@
 
     .sensor-category.energy {
       border-color: rgba(55,212,166,.25);
+      grid-column: 1 / -1;
     }
 
     .sensor-category.pump {
@@ -1074,8 +1043,6 @@
         justify-content: center;
         font-size: 13px;
       }
-      .hero-top { grid-template-columns: 1fr; }
-      .hero-copy,
       .master {
         grid-column: auto;
       }
@@ -1146,20 +1113,6 @@
             <div class="section-title">
               <h3>Allgemein</h3>
             </div>
-            <div class="hero-top">
-              <div class="hero-copy">
-                <h2 id="hero-title">Warte auf Home Assistant</h2>
-                <p class="sub" id="hero-subtitle">Live-Zustand wird geladen. Die Kacheln werden aus den konfigurierten Home-Assistant-Entitäten befüllt.</p>
-              </div>
-              <div class="master">
-                <div class="switch on" onclick="toggleSwitch(this)"><div class="knob"></div></div>
-                <div>
-                  <strong>Hauptfreigabe</strong><br />
-                  <small id="master-state-label">Poolsystem EIN</small>
-                </div>
-              </div>
-            </div>
-
             <div class="metrics">
               <div class="metric">
                 <div class="label">Pumpe</div>
@@ -1170,6 +1123,14 @@
                 <div class="label">Chlorinator</div>
                 <div class="value" id="chlor-status">--</div>
                 <div class="hint" id="chlor-hint">warte auf Home Assistant</div>
+              </div>
+              <div class="metric master">
+                <div class="label">Hauptfreigabe</div>
+                <div class="master-control">
+                  <div class="switch on" onclick="toggleSwitch(this)" role="button" aria-label="Hauptfreigabe umschalten"><div class="knob"></div></div>
+                  <div class="value" id="master-state-label">EIN</div>
+                </div>
+                <div class="hint">Zentrale Freigabe für OpenPool.</div>
               </div>
               <div class="metric" id="heater-status-metric">
                 <div class="label">Heizung</div>
@@ -1282,16 +1243,6 @@
               <h3>Sensoren</h3>
             </div>
             <div class="sensor-categories">
-              <div class="sensor-category energy">
-                <div class="sensor-category-title">Energie</div>
-                <div class="sensor-list">
-                  <div><span>PV Erzeugung</span><strong id="pv-generation-value">--</strong></div>
-                  <div><span>Netzeinspeisung</span><strong id="pv-export-value">--</strong></div>
-                  <div><span>Netzbezug</span><strong id="grid-import-value">--</strong></div>
-                  <div><span>Hausverbrauch</span><strong id="house-consumption-value">--</strong></div>
-                  <div><span>Verfügbar für WP</span><strong id="pv-free-list-value">--</strong></div>
-                </div>
-              </div>
               <div class="sensor-category pump">
                 <div class="sensor-category-title">Pumpe</div>
                 <div class="sensor-list">
@@ -1311,6 +1262,16 @@
                   <div><span>Umgebungsluft</span><strong id="heater-ambient-value">--</strong></div>
                   <div><span>Wasser Eingang</span><strong id="heater-water-in-value">--</strong></div>
                   <div><span>Wasser Ausgang</span><strong id="heater-water-out-value">--</strong></div>
+                </div>
+              </div>
+              <div class="sensor-category energy">
+                <div class="sensor-category-title">Energie</div>
+                <div class="sensor-list">
+                  <div><span>PV Erzeugung</span><strong id="pv-generation-value">--</strong></div>
+                  <div><span>Netzeinspeisung</span><strong id="pv-export-value">--</strong></div>
+                  <div><span>Netzbezug</span><strong id="grid-import-value">--</strong></div>
+                  <div><span>Hausverbrauch</span><strong id="house-consumption-value">--</strong></div>
+                  <div><span>Verfügbar für WP</span><strong id="pv-free-list-value">--</strong></div>
                 </div>
               </div>
             </div>
@@ -1352,7 +1313,7 @@
     // Safety rule: pump run-on is only required while the heat pump is running
     // or less than five minutes after it stopped.
     const heaterRunOnMs = 5 * 60 * 1000;
-    const COMMAND_LOG_LIMIT = 15;
+    const COMMAND_LOG_LIMIT = 6;
     let heaterOffSince = Date.now() - heaterRunOnMs - 1000;
     let lastCommandSignature = '';
     const commandLog = [
@@ -1521,7 +1482,10 @@
       if (pumpMode === 'Aus' || pumpMode === 'Dauerbetrieb') return null;
 
       if (pumpMode === 'Nachtbaden') {
-        const maxMinutes = optionNumber(snapshot?.profiles?.night_swim_max_minutes, 600);
+        const maxMinutes = optionNumber(
+          snapshot?.profiles?.night_swim_duration_minutes ?? snapshot?.profiles?.night_swim_max_minutes,
+          600
+        );
         const startedAt = Number(controller.pump_mode_started_at);
         if (!Number.isFinite(startedAt)) return null;
 
@@ -1637,7 +1601,7 @@
     }
 
     function tooltipTileForNode(node) {
-      return node?.closest('.hero-copy, .master, .metric, .mode, .temperature-value');
+      return node?.closest('.master, .metric, .mode, .temperature-value');
     }
 
     function syncTileTooltip(tile) {
@@ -1661,7 +1625,7 @@
 
     function syncTileTooltips(scope = document) {
       const tiles = new Set();
-      scope.querySelectorAll('.hero-copy .sub, .master small, .metric .hint, .mode small')
+      scope.querySelectorAll('.metric .hint, .mode small')
         .forEach(node => {
           const tile = tooltipTileForNode(node);
           if (tile) tiles.add(tile);
@@ -1741,7 +1705,10 @@
       controlConfig.heaterTempMax = optionNumber(thresholds.heater_temp_max, controlConfig.heaterTempMax);
       controlConfig.pumpPowerWithoutChlorinatorW = optionNumber(thresholds.pump_power_without_chlorinator_w, controlConfig.pumpPowerWithoutChlorinatorW);
       controlConfig.pumpPowerWithChlorinatorW = optionNumber(thresholds.pump_power_with_chlorinator_w, controlConfig.pumpPowerWithChlorinatorW);
-      controlConfig.nightSwimMaxMinutes = optionNumber(profiles.night_swim_max_minutes, controlConfig.nightSwimMaxMinutes);
+      controlConfig.nightSwimMaxMinutes = optionNumber(
+        profiles.night_swim_duration_minutes ?? profiles.night_swim_max_minutes,
+        controlConfig.nightSwimMaxMinutes
+      );
       applyFeatureVisibility();
     }
 
@@ -2077,31 +2044,42 @@
       setText('weather-auto-hint', `Automatische Umschaltung aktiv. ${recommendation}`);
     }
 
+    function heaterStatusHint(heater, states, heaterRunning) {
+      const climateState = isUnavailableState(heater) ? '--' : String(heater.state);
+      const normalized = climateState.toLowerCase();
+      const heaterPower = entityPowerWatts(states['entity-heater-power']);
+      const powerText = heaterPower === null ? '' : ` · Leistung ${formatPower(heaterPower)}`;
+
+      if (heaterRunning && ['off', 'idle', '--'].includes(normalized)) {
+        return `Leistungssensor aktiv${powerText} · Climate ${climateState}`;
+      }
+      return `Climate ${climateState}${powerText}`;
+    }
+
     function updateHomeAssistantValues(states) {
       const pump = states['entity-pump-switch'];
       const heater = states['entity-heater-climate'];
-      let pumpOn = null;
       let heaterRunning = null;
 
       if (!isUnavailableState(pump) && !restartPulseActive) {
-        pumpOn = String(pump.state).toLowerCase() === 'on';
+        const pumpOn = String(pump.state).toLowerCase() === 'on';
         setText('pump-status', pumpOn ? 'EIN' : 'AUS');
         setText('pump-hint', pumpOn ? 'Home Assistant Schalter EIN' : 'Home Assistant Schalter AUS');
       }
       updateChlorinatorStatus(states);
 
-      if (!isUnavailableState(heater)) {
+      if (controlConfig.heatPumpControl) {
         heaterRunning = isHeatPumpRunning(states);
-        if (controlConfig.heatPumpControl) {
-          if (heaterRunning) {
-            heaterOffSince = null;
-          } else if (heaterOffSince === null) {
-            heaterOffSince = Date.now();
-          }
+        if (heaterRunning) {
+          heaterOffSince = null;
+        } else if (heaterOffSince === null) {
+          heaterOffSince = Date.now();
+        }
 
-          setText('heater-status', heaterRunning ? 'EIN' : 'AUS');
-          setText('heater-hint', `Home Assistant: ${heater.state}`);
+        setText('heater-status', heaterRunning ? 'EIN' : 'AUS');
+        setText('heater-hint', heaterStatusHint(heater, states, heaterRunning));
 
+        if (!isUnavailableState(heater)) {
           const currentTemp = Number(heater.attributes?.current_temperature);
           const targetTemp = Number(heater.attributes?.temperature);
           if (Number.isFinite(currentTemp)) {
@@ -2112,19 +2090,6 @@
             setTargetTemp(targetTemp);
           }
         }
-      }
-
-      if (!restartPulseActive && (pumpOn !== null || heaterRunning !== null)) {
-        const pumpText = pumpOn === true ? 'Pumpe läuft' : 'Pumpe ist aus';
-        const heaterText = heaterRunning === true ? 'Wärmepumpe läuft' : 'Wärmepumpe ist aus';
-        const active = pumpOn === true || (controlConfig.heatPumpControl && heaterRunning === true);
-        setText('hero-title', active ? 'Pool aktiv' : 'Pool inaktiv');
-        setText(
-          'hero-subtitle',
-          controlConfig.heatPumpControl
-            ? `${pumpText}. ${heaterText}. Status kommt live aus Home Assistant.`
-            : `${pumpText}. Wärmepumpensteuerung ist deaktiviert.`
-        );
       }
 
       updatePvAvailability(states);
@@ -2160,7 +2125,7 @@
 
       const masterSwitch = document.querySelector('.master .switch');
       masterSwitch?.classList.toggle('on', controller.master_enabled !== false);
-      setText('master-state-label', controller.master_enabled !== false ? 'Poolsystem EIN' : 'Poolsystem AUS');
+      setText('master-state-label', controller.master_enabled !== false ? 'EIN' : 'AUS');
 
       setActiveMode('#pump-control-card', 'pumpMode', controller.pump_mode || 'Aus');
       setActiveMode('#weather-mode-control', 'weatherMode', controller.weather_mode || 'Empfehlung');
@@ -2362,8 +2327,6 @@
       restartPulseActive = true;
       shutdownActive = false;
       setShutdownSequenceVisible(false);
-      setText('hero-title', 'Chlorsystem neu starten');
-      setText('hero-subtitle', 'Kurzer Restart-Pulse: Die Pumpe wird für wenige Sekunden ausgeschaltet und direkt wieder eingeschaltet. Der Betriebsmodus bleibt unverändert.');
       setText('pump-status', 'Pulse');
       setText('pump-hint', '5 Sekunden AUS/EIN');
       setText('chlor-status', 'Neustart');
@@ -2426,17 +2389,13 @@
       updateHeaterLock();
       updateHeatSourceMetric();
 
-      setText('master-state-label', masterEnabled ? 'Poolsystem EIN' : 'Poolsystem AUS');
+      setText('master-state-label', masterEnabled ? 'EIN' : 'AUS');
 
       if (!masterEnabled) {
         shutdownActive = false;
         restartPulseActive = false;
         trackHeaterOffState('Aus', 'Aus');
         setShutdownSequenceVisible(false);
-        setText('hero-title', 'Pool inaktiv');
-        setText('hero-subtitle', controlConfig.heatPumpControl
-          ? 'Hauptfreigabe ist ausgeschaltet. Pumpe, Chlorinator und Wärmepumpe sind gesperrt.'
-          : 'Hauptfreigabe ist ausgeschaltet. Pumpe und Chlorinator sind gesperrt.');
         setText('pump-status', 'AUS');
         setText('pump-hint', 'durch Hauptfreigabe gesperrt');
         setText('chlor-status', 'AUS');
@@ -2525,8 +2484,6 @@
         selected.subtitle = `Die Pumpe läuft unabhängig vom Tagesprofil. Der Modus endet automatisch nach ${formatMinutesCompact(controlConfig.nightSwimMaxMinutes)}.`;
       }
 
-      setText('hero-title', selected.title);
-      setText('hero-subtitle', selected.subtitle);
       setText('pump-status', selected.pump);
       setText('pump-hint', selected.pumpHint);
       setText('chlor-status', selected.chlor);

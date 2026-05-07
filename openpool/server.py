@@ -31,7 +31,7 @@ DEFAULT_LOG_LEVEL = "info"
 PULSE_TRIGGER_WINDOW_SECONDS = 90
 RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
-COMMAND_LOG_LIMIT = 15
+COMMAND_LOG_LIMIT = 6
 WEATHER_FORECAST_REFRESH_SECONDS = 12 * 60 * 60
 HEATER_ACTIVE_POWER_W = 100
 DEFAULT_WEATHER_ENTITY = "weather.home"
@@ -480,9 +480,13 @@ class OpenPoolController:
             "pump_end": "22:00",
             "bad_weather_start": "13:00",
             "bad_weather_end": "16:15",
-            "night_swim_max_minutes": 600,
+            "night_swim_duration_minutes": 600,
         }
-        values.update((self.options().get("profiles") or {}))
+        configured = dict(self.options().get("profiles") or {})
+        if "night_swim_duration_minutes" not in configured and "night_swim_max_minutes" in configured:
+            configured["night_swim_duration_minutes"] = configured["night_swim_max_minutes"]
+        values.update(configured)
+        values["night_swim_max_minutes"] = values["night_swim_duration_minutes"]
         return values
 
     def restart_pulses(self) -> list[dict]:
@@ -946,7 +950,7 @@ class OpenPoolController:
         return False
 
     def _night_swim_expired(self) -> bool:
-        max_minutes = int(self.profile().get("night_swim_max_minutes") or 600)
+        max_minutes = int(self.profile().get("night_swim_duration_minutes") or 600)
         started_at = float(self.state.get("pump_mode_started_at") or now_ts())
         return now_ts() - started_at >= max(1, max_minutes) * 60
 
@@ -988,7 +992,7 @@ class OpenPoolController:
         if pump_mode == "Schlechtwetter" and self._pump_should_run_at(pump_mode, current_ts):
             return clock_to_day_ts(profile.get("bad_weather_end"), current_ts)
         if pump_mode == "Nachtbaden":
-            max_minutes = int(profile.get("night_swim_max_minutes") or 600)
+            max_minutes = int(profile.get("night_swim_duration_minutes") or 600)
             started_at = float(self.state.get("pump_mode_started_at") or current_ts)
             end_ts = started_at + max(1, max_minutes) * 60
             return end_ts if end_ts > current_ts else None
@@ -1175,7 +1179,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.32"
+    server_version = "OpenPool/1.0.0"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

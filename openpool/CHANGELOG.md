@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.0
+
+- Mark OpenPool as stable by removing the Home Assistant add-on experimental
+  stage flag.
+- Remove the old dashboard pool-state tile and center the master enable switch
+  as a normal status tile.
+- Keep the heat-pump tooltip consistent when the climate entity reports `off`
+  but the heat-pump power sensor shows active load.
+- Limit task history to six previous entries and remove the history scrollbar.
+- Rename the Nachtbaden profile option to
+  `profiles.night_swim_duration_minutes`, with a fallback for existing
+  `profiles.night_swim_max_minutes` installations.
+- Reorder the sensor section with pump and heat pump side by side and energy
+  values underneath.
+- Polish add-on option labels and descriptions in German and English for the
+  first stable release.
+
 ## 0.2.32
 
 - Arrange the control panel as a clean two-column grid: Pumpenmodus next to
