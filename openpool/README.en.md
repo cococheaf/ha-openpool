@@ -35,7 +35,7 @@ switches and sensors; OpenPool makes the decisions.
 - Pump profiles for swim mode, bad weather mode, continuous operation, night
   swimming and off.
 - Configurable night swimming duration through
-  `profiles.night_swim_duration_minutes`.
+  `profiles.night_swim_duration_hours`.
 - Automatic restart pulses for the chlorinator.
 - Chlorinator display derived from pump power with configurable power
   thresholds.

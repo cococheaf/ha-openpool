@@ -106,9 +106,9 @@ configuration:
         name: Schlechtwetter-Start
       bad_weather_end:
         name: Schlechtwetter-Ende
-      night_swim_duration_minutes:
-        name: Nachtbadedauer in Minuten
-        description: Maximale Laufzeit des Nachtbaden-Profils, bevor OpenPool automatisch beendet.
+      night_swim_duration_hours:
+        name: Nachtbadedauer in Stunden
+        description: Maximale Laufzeit des Nachtbaden-Profils in Stunden, bevor OpenPool automatisch beendet.
   restart_pulses:
     name: Restart-Pulse
     description: Automatische kurze Ausschaltimpulse für das Chlorsystem.

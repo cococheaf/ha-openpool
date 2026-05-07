@@ -38,7 +38,7 @@ Entscheidungen.
 - Pumpenprofile für Badebetrieb, Schlechtwetter, Dauerbetrieb, Nachtbaden und
   Aus.
 - Konfigurierbare Nachtbadedauer über
-  `profiles.night_swim_duration_minutes`.
+  `profiles.night_swim_duration_hours`.
 - Automatische Restart-Pulse für das Chlorsystem.
 - Chlorinator-Anzeige aus der Pumpenleistung mit konfigurierbaren
   Leistungsschwellen.

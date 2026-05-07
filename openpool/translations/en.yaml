@@ -106,9 +106,9 @@ configuration:
         name: Bad weather start
       bad_weather_end:
         name: Bad weather end
-      night_swim_duration_minutes:
-        name: Night swimming duration in minutes
-        description: Maximum runtime of the night swimming profile before OpenPool ends it automatically.
+      night_swim_duration_hours:
+        name: Night swimming duration in hours
+        description: Maximum runtime of the night swimming profile in hours before OpenPool ends it automatically.
   restart_pulses:
     name: Restart pulses
     description: Automatic short power-off pulses for the chlorinator.

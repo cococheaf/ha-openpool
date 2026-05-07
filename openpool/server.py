@@ -480,12 +480,24 @@ class OpenPoolController:
             "pump_end": "22:00",
             "bad_weather_start": "13:00",
             "bad_weather_end": "16:15",
-            "night_swim_duration_minutes": 600,
+            "night_swim_duration_hours": 10,
         }
         configured = dict(self.options().get("profiles") or {})
-        if "night_swim_duration_minutes" not in configured and "night_swim_max_minutes" in configured:
-            configured["night_swim_duration_minutes"] = configured["night_swim_max_minutes"]
+        if "night_swim_duration_hours" not in configured:
+            legacy_minutes = configured.get("night_swim_duration_minutes", configured.get("night_swim_max_minutes"))
+            if legacy_minutes is not None:
+                try:
+                    configured["night_swim_duration_hours"] = float(legacy_minutes) / 60
+                except (TypeError, ValueError):
+                    pass
         values.update(configured)
+        try:
+            hours = float(values.get("night_swim_duration_hours") or 10)
+        except (TypeError, ValueError):
+            hours = 10
+        hours = max(0.1, hours)
+        values["night_swim_duration_hours"] = hours
+        values["night_swim_duration_minutes"] = int(round(hours * 60))
         values["night_swim_max_minutes"] = values["night_swim_duration_minutes"]
         return values
 
@@ -950,7 +962,7 @@ class OpenPoolController:
         return False
 
     def _night_swim_expired(self) -> bool:
-        max_minutes = int(self.profile().get("night_swim_duration_minutes") or 600)
+        max_minutes = float(self.profile().get("night_swim_duration_minutes") or 600)
         started_at = float(self.state.get("pump_mode_started_at") or now_ts())
         return now_ts() - started_at >= max(1, max_minutes) * 60
 
@@ -992,7 +1004,7 @@ class OpenPoolController:
         if pump_mode == "Schlechtwetter" and self._pump_should_run_at(pump_mode, current_ts):
             return clock_to_day_ts(profile.get("bad_weather_end"), current_ts)
         if pump_mode == "Nachtbaden":
-            max_minutes = int(profile.get("night_swim_duration_minutes") or 600)
+            max_minutes = float(profile.get("night_swim_duration_minutes") or 600)
             started_at = float(self.state.get("pump_mode_started_at") or current_ts)
             end_ts = started_at + max(1, max_minutes) * 60
             return end_ts if end_ts > current_ts else None
@@ -1179,7 +1191,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.0.0"
+    server_version = "OpenPool/1.0.1"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

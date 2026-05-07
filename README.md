@@ -63,7 +63,7 @@ sehen, was gerade passiert.
 - Pumpenmodus steuern: Aus, Dauerbetrieb, Badebetrieb, Schlechtwetter und
   Nachtbaden.
 - Automatische Pumpenprofile mit konfigurierbaren Start- und Endzeiten fahren.
-- Nachtbadedauer über `profiles.night_swim_duration_minutes` begrenzen.
+- Nachtbadedauer über `profiles.night_swim_duration_hours` begrenzen.
 - Restart-Pulse für das Chlorsystem ausführen, damit der Chlorinator über
   gezielte Ausschaltimpulse neu startet.
 - Chlorinator-Status über die Pumpenleistung ableiten, mit konfigurierbaren

@@ -62,7 +62,7 @@ entities, enable the control logic, open the dashboard and see what is happening
 - Control pump modes: Off, continuous operation, swim mode, bad weather mode and
   night swimming.
 - Run automatic pump profiles with configurable start and end times.
-- Limit night swimming duration with `profiles.night_swim_duration_minutes`.
+- Limit night swimming duration with `profiles.night_swim_duration_hours`.
 - Execute restart pulses for the chlorinator, using short power-off pulses to
   restart chlorine production.
 - Derive the chlorinator status from pump power, using configurable pump power

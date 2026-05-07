@@ -1482,10 +1482,7 @@
       if (pumpMode === 'Aus' || pumpMode === 'Dauerbetrieb') return null;
 
       if (pumpMode === 'Nachtbaden') {
-        const maxMinutes = optionNumber(
-          snapshot?.profiles?.night_swim_duration_minutes ?? snapshot?.profiles?.night_swim_max_minutes,
-          600
-        );
+        const maxMinutes = nightSwimDurationMinutes(snapshot?.profiles, 600);
         const startedAt = Number(controller.pump_mode_started_at);
         if (!Number.isFinite(startedAt)) return null;
 
@@ -1705,10 +1702,7 @@
       controlConfig.heaterTempMax = optionNumber(thresholds.heater_temp_max, controlConfig.heaterTempMax);
       controlConfig.pumpPowerWithoutChlorinatorW = optionNumber(thresholds.pump_power_without_chlorinator_w, controlConfig.pumpPowerWithoutChlorinatorW);
       controlConfig.pumpPowerWithChlorinatorW = optionNumber(thresholds.pump_power_with_chlorinator_w, controlConfig.pumpPowerWithChlorinatorW);
-      controlConfig.nightSwimMaxMinutes = optionNumber(
-        profiles.night_swim_duration_minutes ?? profiles.night_swim_max_minutes,
-        controlConfig.nightSwimMaxMinutes
-      );
+      controlConfig.nightSwimMaxMinutes = nightSwimDurationMinutes(profiles, controlConfig.nightSwimMaxMinutes);
       applyFeatureVisibility();
     }
 
@@ -1859,6 +1853,14 @@
       if (hours && rest) return `${hours}h ${rest}m`;
       if (hours) return `${hours}h`;
       return `${value}min`;
+    }
+
+    function nightSwimDurationMinutes(profiles, fallback = 600) {
+      const hours = Number(profiles?.night_swim_duration_hours);
+      if (Number.isFinite(hours)) return Math.max(0.1, hours) * 60;
+
+      const minutes = Number(profiles?.night_swim_duration_minutes ?? profiles?.night_swim_max_minutes);
+      return Number.isFinite(minutes) ? minutes : fallback;
     }
 
     function nightSwimLimitText() {

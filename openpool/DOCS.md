@@ -71,10 +71,11 @@ the available PV power stays below `pv_stop_export_w` for
 ## Pump Profiles
 
 Profile times are configured in the add-on `profiles` section. Nachtbaden uses
-`profiles.night_swim_duration_minutes` as its maximum runtime. Older
-installations that still have `profiles.night_swim_max_minutes` are migrated as
-a fallback. The dashboard labels, the upcoming task and the automatic
-Nachtbaden shutdown all use this same add-on option.
+`profiles.night_swim_duration_hours` as its maximum runtime. Older
+installations that still have `profiles.night_swim_duration_minutes` or
+`profiles.night_swim_max_minutes` are migrated as a fallback. The dashboard
+labels, the upcoming task and the automatic Nachtbaden shutdown all use this
+same add-on option.
 
 ## Weather Recommendation
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.1
+
+- Add the visible add-on option `profiles.night_swim_duration_hours` for
+  configuring the Nachtbaden duration in hours.
+- Keep backward compatibility with existing
+  `profiles.night_swim_duration_minutes` and `profiles.night_swim_max_minutes`
+  settings.
+- Bump the add-on and server version to `1.0.1`.
+
 ## 1.0.0
 
 - Mark OpenPool as stable by removing the Home Assistant add-on experimental
