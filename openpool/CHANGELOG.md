@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.25
+
+- Respect the configured add-on `log_level` for OpenPool server logs.
+- Move normal Home Assistant `GET` state polling and HTTP access logs to
+  `debug`.
+- Keep Home Assistant service calls and OpenPool startup information visible at
+  `info`.
+- Keep Home Assistant API failures and controller errors visible at
+  `warning`/`error`.
+
 ## 0.2.24
 
 - Move weather automation from heat-pump control to pump-profile control.

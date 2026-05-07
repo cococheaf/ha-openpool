@@ -27,6 +27,7 @@ STATE_PATH = Path(os.environ.get("OPENPOOL_STATE", "/data/openpool_state.json"))
 SUPERVISOR_HA_API_BASE = "http://supervisor/core/api"
 DEFAULT_HA_URL = "http://homeassistant:8123"
 DEFAULT_POLL_INTERVAL_SECONDS = 1
+DEFAULT_LOG_LEVEL = "info"
 PULSE_TRIGGER_WINDOW_SECONDS = 90
 RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
@@ -100,6 +101,16 @@ HEATER_ENTITY_KEYS = {
     "heater_water_out",
 }
 
+LOG_LEVELS = {
+    "trace": 10,
+    "debug": 20,
+    "info": 30,
+    "notice": 35,
+    "warning": 40,
+    "error": 50,
+    "fatal": 60,
+}
+
 
 def read_options() -> dict:
     if not OPTIONS_PATH.exists():
@@ -109,6 +120,22 @@ def read_options() -> dict:
         return json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
+
+
+def configured_log_level() -> str:
+    level = str(read_options().get("log_level") or DEFAULT_LOG_LEVEL).lower()
+    return level if level in LOG_LEVELS else DEFAULT_LOG_LEVEL
+
+
+def should_log(level: str) -> bool:
+    configured = LOG_LEVELS.get(configured_log_level(), LOG_LEVELS[DEFAULT_LOG_LEVEL])
+    requested = LOG_LEVELS.get(level, LOG_LEVELS[DEFAULT_LOG_LEVEL])
+    return requested >= configured
+
+
+def log(level: str, message: str) -> None:
+    if should_log(level):
+        print(f"[openpool] {message}", flush=True)
 
 
 def public_options(options: dict) -> dict:
@@ -243,7 +270,8 @@ class HomeAssistantClient:
         self._last_auth_source = auth_source
         body = json.dumps(data).encode("utf-8") if data is not None else raw_body
         target_url = f"{api_base}{path}"
-        print(f"[openpool] HA {method} {path} via {auth_source}", flush=True)
+        request_log_level = "debug" if method == "GET" else "info"
+        log(request_log_level, f"HA {method} {path} via {auth_source}")
 
         request = Request(
             target_url,
@@ -258,17 +286,17 @@ class HomeAssistantClient:
         try:
             with urlopen(request, timeout=10) as response:
                 payload = response.read()
-                print(f"[openpool] HA {method} {path} -> {response.status}", flush=True)
+                log(request_log_level, f"HA {method} {path} -> {response.status}")
                 return response.status, response.headers.get("Content-Type", "application/json"), payload
         except HTTPError as err:
             payload = err.read()
             detail = payload.decode("utf-8", "replace")[:220] if payload else err.reason
-            print(f"[openpool] HA {method} {path} -> {err.code}: {detail}", flush=True)
+            log("warning", f"HA {method} {path} -> {err.code}: {detail}")
             if not payload:
                 payload = json.dumps({"error": err.reason}).encode("utf-8")
             return err.code, err.headers.get("Content-Type", "application/json"), payload
         except URLError as err:
-            print(f"[openpool] HA {method} {path} -> 502: {err.reason}", flush=True)
+            log("warning", f"HA {method} {path} -> 502: {err.reason}")
             return 502, "application/json", json.dumps({"error": str(err.reason)}).encode("utf-8")
 
     def json_request(self, method: str, path: str, data: dict | None = None) -> dict | list | None:
@@ -650,7 +678,7 @@ class OpenPoolController:
                     self._apply_control_rules()
             except Exception as err:  # noqa: BLE001 - controller must keep running
                 self.last_error = str(err)
-                print(f"[openpool] controller error: {err}", flush=True)
+                log("error", f"controller error: {err}")
             self._stop.wait(self.poll_interval_seconds())
 
     def poll_home_assistant(self) -> None:
@@ -1133,7 +1161,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.24"
+    server_version = "OpenPool/0.2.25"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:
@@ -1260,14 +1288,14 @@ class OpenPoolHandler(BaseHTTPRequestHandler):
         self.send_header("Expires", "0")
 
     def log_message(self, fmt: str, *args: object) -> None:
-        print(f"[openpool] {self.address_string()} - {fmt % args}", flush=True)
+        log("debug", f"{self.address_string()} - {fmt % args}")
 
 
 def main() -> None:
     CONTROLLER.start()
     server = ThreadingHTTPServer(("0.0.0.0", PORT), OpenPoolHandler)
-    print(f"[openpool] listening on 0.0.0.0:{PORT}", flush=True)
-    print(f"[openpool] Home Assistant auth: {HA.auth_status()}", flush=True)
+    log("info", f"listening on 0.0.0.0:{PORT}")
+    log("info", f"Home Assistant auth: {HA.auth_status()}")
     server.serve_forever()
 
 
