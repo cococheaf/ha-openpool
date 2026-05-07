@@ -73,8 +73,8 @@ sehen, was gerade passiert.
   Wärmepumpenfreigabe einschalten.
 - Start- und Stoppgrenzen sowie Stabilzeiten für die Wärmepumpenfreigabe
   konfigurieren.
-- Tagesvorhersage der konfigurierten Home-Assistant-Wetterentität auswerten
-  und daraus Badebetrieb oder Schlechtwetter empfehlen.
+- Tagesvorhersage der konfigurierten Home-Assistant-Wetterentität zweimal
+  täglich auswerten und daraus Badewetter oder Schlechtwetter ableiten.
 - Zieltemperatur der Wärmepumpe über die UI setzen.
 - Laufzeiten, anstehende Aufgaben und letzte Kommandos serverseitig speichern.
 - Mehrere offene Oberflächen synchron halten, zum Beispiel iPad, Smartphone und
@@ -96,6 +96,13 @@ Der Controller liest die konfigurierten Home-Assistant-Entitäten regelmäßig a
 berechnet daraus den OpenPool-Zustand und sendet bei Bedarf Service-Calls an
 Home Assistant. Die Aktualisierungsrate ist über `poll_interval_s`
 konfigurierbar.
+
+Die Wettervorhersage wird bewusst ruhig behandelt: OpenPool fragt die
+konfigurierte Weather-Entität nur zweimal täglich per Tagesvorhersage ab. Es
+werden keine stündlichen Wetterwerte im Sekundentakt gepollt. Für die
+Wettersteuerung zählt nur die grobe Tagesklasse: `Badewetter` bei überwiegend
+sonnig oder wolkenlos, sonst `Schlechtwetter` bei stark bewölktem Himmel oder
+Regen.
 
 Für die Wärmepumpenfreigabe wird der Hausverbrauch aus PV-Erzeugung, saldierender
 Netzeinspeisung und Netzbezug abgeleitet:

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.23
+
+- Fetch Home Assistant daily weather forecasts at most twice per day and persist
+  the cached forecast across add-on restarts.
+- Remove weather from the one-second live entity polling loop.
+- Simplify weather evaluation to `Badewetter` versus `Schlechtwetter`.
+- In weather automation, allow PV heat-pump control only when the cached daily
+  recommendation is `Badewetter`.
+- Remove obsolete weather rain/temperature threshold options.
+
 ## 0.2.22
 
 - Add add-on feature switches for heat pump control and weather control.

@@ -43,7 +43,8 @@ Entscheidungen.
 - Sicherer Pumpennachlauf nach Heizbetrieb.
 - Wärmepumpensteuerung mit Zieltemperatur.
 - Wärmepumpenfreigabe mit Start-/Stoppgrenzen und Stabilzeiten.
-- Wetterempfehlung aus der täglichen Home-Assistant-Vorhersage.
+- Ruhige Wetterempfehlung aus der Home-Assistant-Tagesvorhersage mit zwei
+  Abrufen pro Tag.
 - Live-Synchronisation zwischen mehreren geöffneten UI-Sitzungen.
 - Persistenter Controller-State in `/data/openpool_state.json`, damit Laufzeit,
   Jobs und Aufgabenverlauf nach einem Neustart erhalten bleiben.
@@ -72,7 +73,9 @@ Geräte senden.
 
 Die Wetter-Entität ist nicht an einen festen Anbieter gebunden. Trage in
 `entities.weather` einfach die Weather-Entität deiner bevorzugten
-Home-Assistant-Integration ein.
+Home-Assistant-Integration ein. OpenPool nutzt daraus nur die grobe Tagesklasse:
+`Badewetter` bei überwiegend sonnig oder wolkenlos, sonst `Schlechtwetter` bei
+stark bewölktem Himmel oder Regen.
 
 ## Home-Assistant-Verlauf
 

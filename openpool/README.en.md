@@ -40,7 +40,8 @@ switches and sensors; OpenPool makes the decisions.
 - Safe pump run-on after heat pump operation.
 - Heat pump control with target temperature.
 - Heat-pump release with start/stop thresholds and stability times.
-- Weather recommendation from the daily Home Assistant forecast.
+- Calm weather recommendation from the Home Assistant daily forecast with two
+  refreshes per day.
 - Live synchronization between multiple open UI sessions.
 - Persistent controller state in `/data/openpool_state.json`, so runtime, jobs
   and task history survive restarts.
@@ -67,7 +68,9 @@ If these entities are not correct, OpenPool cannot make reliable decisions or
 may send commands to the wrong devices, or to no device at all.
 
 The weather entity is not tied to a fixed provider. Put the Weather entity of
-your preferred Home Assistant integration into `entities.weather`.
+your preferred Home Assistant integration into `entities.weather`. OpenPool only
+uses the broad daily class: bathing weather for mostly sunny or clear days, bad
+weather for strong cloud cover or rain.
 
 ## Home Assistant Logbook Attribution
 

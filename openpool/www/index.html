@@ -1274,24 +1274,24 @@
               <div class="forecast-tile good weather-summary">
                 <div class="time">Empfehlung</div>
                 <div class="icon">☀️</div>
-                <div class="temp" id="weather-recommendation">Badebetrieb</div>
-                <small id="weather-reason">Heute warm und überwiegend trocken.</small>
+                <div class="temp" id="weather-recommendation">Badewetter</div>
+                <small id="weather-reason">Überwiegend sonnig oder wolkenlos.</small>
                 <div class="weather-badge" id="weather-badge">☀️ Heute: Badebetrieb empfohlen</div>
               </div>
 
               <div class="forecast-tile rain">
                 <div class="time">Morgen</div>
                 <div class="icon">🌧️</div>
-                <div class="temp">21°</div>
-                <small>wechselhaft · 70% Regen</small>
+                <div class="temp">Schlechtwetter</div>
+                <small>Stark bewölkt oder Regen erwartet.</small>
                 <div class="recommendation">Schlechtwetter</div>
               </div>
 
               <div class="forecast-tile rain">
                 <div class="time">Übermorgen</div>
-                <div class="icon">🌦️</div>
-                <div class="temp">22°</div>
-                <small>bewölkt · 55% Regen</small>
+                <div class="icon">🌧️</div>
+                <div class="temp">Schlechtwetter</div>
+                <small>Stark bewölkt oder Regen erwartet.</small>
                 <div class="recommendation">Schlechtwetter</div>
               </div>
             </div>
@@ -1325,7 +1325,7 @@
               <div class="mode" data-heater-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Wärmepumpe bleibt aus.</small></div>
               <div class="mode" data-heater-mode="Ein"><div class="icon">🔥</div><strong>Ein</strong><small>Heizen erzwingen, aber nur mit Pumpenflow.</small></div>
               <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach PV-Leistung und Stabilzeit.</small></div>
-              <div class="mode" data-heater-mode="Wetterautomatik" id="weather-heater-mode"><div class="icon">🌤️</div><strong>Wetterautomatik</strong><small>Optional: Modus nach Wetterempfehlung setzen.</small></div>
+              <div class="mode" data-heater-mode="Wetterautomatik" id="weather-heater-mode"><div class="icon">🌤️</div><strong>Wetterautomatik</strong><small>Heizt nur bei Badewetter und PV-Freigabe.</small></div>
             </div>
             <div class="temperature-control">
               <div class="section-title">
@@ -1418,9 +1418,6 @@
       heaterTempMax: 32,
       pumpPowerWithoutChlorinatorW: 450,
       pumpPowerWithChlorinatorW: 500,
-      weatherBadPrecipProbabilityPercent: 50,
-      weatherBadPrecipitationMm: 1,
-      weatherMinBathingTemperatureC: 20,
       heatPumpControl: true,
       weatherControl: true
     };
@@ -1777,9 +1774,6 @@
       controlConfig.heaterTempMax = optionNumber(thresholds.heater_temp_max, controlConfig.heaterTempMax);
       controlConfig.pumpPowerWithoutChlorinatorW = optionNumber(thresholds.pump_power_without_chlorinator_w, controlConfig.pumpPowerWithoutChlorinatorW);
       controlConfig.pumpPowerWithChlorinatorW = optionNumber(thresholds.pump_power_with_chlorinator_w, controlConfig.pumpPowerWithChlorinatorW);
-      controlConfig.weatherBadPrecipProbabilityPercent = optionNumber(thresholds.weather_bad_precip_probability_percent, controlConfig.weatherBadPrecipProbabilityPercent);
-      controlConfig.weatherBadPrecipitationMm = optionNumber(thresholds.weather_bad_precipitation_mm, controlConfig.weatherBadPrecipitationMm);
-      controlConfig.weatherMinBathingTemperatureC = optionNumber(thresholds.weather_min_bathing_temperature_c, controlConfig.weatherMinBathingTemperatureC);
       applyFeatureVisibility();
     }
 
@@ -2026,25 +2020,10 @@
 
     function weatherConditionIcon(condition) {
       const state = String(condition || '').toLowerCase();
-      if (['rainy', 'pouring', 'snowy-rainy'].includes(state)) return '🌧️';
-      if (state === 'lightning-rainy') return '⛈️';
-      if (state === 'lightning') return '🌩️';
-      if (state === 'snowy') return '🌨️';
-      if (state === 'hail') return '🌨️';
-      if (state === 'cloudy') return '☁️';
+      if (['sunny', 'clear-night', 'partlycloudy'].includes(state)) return '☀️';
+      if (['rainy', 'pouring', 'lightning-rainy', 'snowy-rainy'].includes(state)) return '🌧️';
       if (state === 'partlycloudy') return '🌤️';
-      if (state === 'clear-night') return '🌙';
-      return '☀️';
-    }
-
-    function forecastNumber(item, key) {
-      if (item?.[key] === null || item?.[key] === undefined || item?.[key] === '') return null;
-      const value = Number(item?.[key]);
-      return Number.isFinite(value) ? value : null;
-    }
-
-    function forecastTemperature(item, weather) {
-      return forecastNumber(item, 'temperature') ?? forecastNumber(item, 'templow') ?? Number(weather?.attributes?.temperature);
+      return '☁️';
     }
 
     function forecastDayLabel(item, index) {
@@ -2056,51 +2035,69 @@
       return /^\d{2}\.\d{2}$/.test(label) ? label : label;
     }
 
-    function evaluateWeatherDay(item, weather) {
-      const condition = String(item?.condition || weather?.state || '').toLowerCase();
-      const precipitationProbability = forecastNumber(item, 'precipitation_probability');
-      const precipitation = forecastNumber(item, 'precipitation');
-      const temperature = forecastTemperature(item, weather);
-      const badConditions = new Set(['rainy', 'pouring', 'lightning-rainy', 'snowy-rainy', 'snowy', 'hail', 'lightning', 'exceptional']);
-      const reasons = [];
-
-      if (badConditions.has(condition)) reasons.push('Regen/Wetterwarnung');
-      if (precipitationProbability !== null && precipitationProbability >= controlConfig.weatherBadPrecipProbabilityPercent) {
-        reasons.push(`${Math.round(precipitationProbability)}% Regen`);
-      }
-      if (precipitation !== null && precipitation >= controlConfig.weatherBadPrecipitationMm) {
-        reasons.push(`${formatDecimal(precipitation, precipitation % 1 === 0 ? 0 : 1)} mm Regen`);
-      }
-      if (Number.isFinite(temperature) && temperature < controlConfig.weatherMinBathingTemperatureC) {
-        reasons.push(`${formatDecimal(temperature, 1)}° unter Grenzwert`);
+    function evaluateWeatherDay(item, serverRecommendation = null) {
+      if (serverRecommendation && item?.summary) {
+        return {
+          condition: '',
+          icon: serverRecommendation.icon || '☁️',
+          label: serverRecommendation.label || 'Wetter offen',
+          recommendation: serverRecommendation.pump_mode || 'Schlechtwetter',
+          reason: serverRecommendation.reason || 'Tagesvorhersage noch nicht bewertet.',
+          className: serverRecommendation.category === 'bathing' ? 'good' : 'rain'
+        };
       }
 
-      const recommendation = reasons.length ? 'Schlechtwetter' : 'Badebetrieb';
-      const tempText = Number.isFinite(temperature) ? `${formatDecimal(temperature, 1)}°` : 'Wetter';
-      const rainText = precipitationProbability !== null
-        ? `${Math.round(precipitationProbability)}% Regen`
-        : (precipitation !== null ? `${formatDecimal(precipitation, precipitation % 1 === 0 ? 0 : 1)} mm Regen` : 'trocken');
-      const reason = reasons.length ? reasons.join(' · ') : `${tempText} · ${rainText}`;
-      const rainyByAmount = (
-        precipitationProbability !== null && precipitationProbability >= controlConfig.weatherBadPrecipProbabilityPercent
-      ) || (
-        precipitation !== null && precipitation >= controlConfig.weatherBadPrecipitationMm
-      );
-      const icon = rainyByAmount && !badConditions.has(condition) ? '🌧️' : weatherConditionIcon(condition);
+      const condition = String(item?.condition || '').toLowerCase();
+      const bathingConditions = new Set(['sunny', 'clear-night', 'partlycloudy']);
+      const badConditions = new Set([
+        'cloudy',
+        'fog',
+        'hail',
+        'lightning',
+        'lightning-rainy',
+        'pouring',
+        'rainy',
+        'snowy',
+        'snowy-rainy',
+        'windy',
+        'windy-variant',
+        'exceptional'
+      ]);
+
+      if (bathingConditions.has(condition)) {
+        return {
+          condition,
+          icon: weatherConditionIcon(condition),
+          label: 'Badewetter',
+          recommendation: 'Badebetrieb',
+          reason: 'Überwiegend sonnig oder wolkenlos.',
+          className: 'good'
+        };
+      }
+
+      if (badConditions.has(condition)) {
+        return {
+          condition,
+          icon: weatherConditionIcon(condition),
+          label: 'Schlechtwetter',
+          recommendation: 'Schlechtwetter',
+          reason: 'Stark bewölkt oder Regen erwartet.',
+          className: 'rain'
+        };
+      }
 
       return {
         condition,
-        icon,
-        recommendation,
-        reason,
-        className: reasons.length ? 'rain' : 'good',
-        tempText,
-        rainText
+        icon: '☁️',
+        label: 'Wetter offen',
+        recommendation: 'Schlechtwetter',
+        reason: 'Tagesvorhersage noch nicht bewertet.',
+        className: 'rain'
       };
     }
 
-    function forecastTileMarkup(item, weather, index, summary = false) {
-      const evaluation = evaluateWeatherDay(item, weather);
+    function forecastTileMarkup(item, index, summary = false, serverRecommendation = null) {
+      const evaluation = evaluateWeatherDay(item, serverRecommendation);
       const label = summary ? 'Empfehlung' : forecastDayLabel(item, index);
       const badge = summary
         ? `<div class="weather-badge">${evaluation.icon} Heute: ${evaluation.recommendation} empfohlen</div>`
@@ -2109,7 +2106,7 @@
         <div class="forecast-tile ${evaluation.className}${summary ? ' weather-summary' : ''}">
           <div class="time">${escapeHTML(label)}</div>
           <div class="icon">${evaluation.icon}</div>
-          <div class="temp">${escapeHTML(summary ? evaluation.recommendation : evaluation.tempText)}</div>
+          <div class="temp">${escapeHTML(evaluation.label)}</div>
           <small>${escapeHTML(evaluation.reason)}</small>
           ${badge}
         </div>
@@ -2118,19 +2115,14 @@
 
     function updateWeather(states, snapshot = latestSnapshot) {
       if (!controlConfig.weatherControl) return;
-      const weather = states['entity-weather'];
-      if (isUnavailableState(weather)) return;
-
       const forecast = Array.isArray(snapshot?.weather_forecast) ? snapshot.weather_forecast : [];
-      const days = forecast.length
-        ? forecast.slice(0, 3)
-        : [{ condition: weather.state, temperature: Number(weather.attributes?.temperature), datetime: new Date().toISOString() }];
+      const days = forecast.length ? forecast.slice(0, 3) : [{ summary: true }];
       const grid = document.getElementById('weather-forecast-grid');
       if (!grid) return;
 
       const tiles = [
-        forecastTileMarkup(days[0], weather, 0, true),
-        ...days.slice(1, 3).map((item, index) => forecastTileMarkup(item, weather, index + 1))
+        forecastTileMarkup({ ...(days[0] || {}), summary: true }, 0, true, snapshot?.weather_recommendation),
+        ...days.slice(1, 3).map((item, index) => forecastTileMarkup(item, index + 1))
       ];
       grid.innerHTML = tiles.join('');
     }
@@ -2525,16 +2517,16 @@
           pumpHint: 'Badebetrieb bis 22:00',
           chlor: '--',
           chlorHint: 'wird aus Pumpenleistung berechnet',
-          reason: '<strong>Badebetrieb.</strong> Pumpe läuft im Zeitfenster, Restart-Pulse starten den Chlorinator neu. Wetter: Badebetrieb empfohlen.'
+          reason: '<strong>Badebetrieb.</strong> Pumpe läuft im Zeitfenster, Restart-Pulse starten den Chlorinator neu. Wetter: Badewetter.'
         },
         'Schlechtwetter': {
           title: 'Schlechtwetter',
-          subtitle: 'Reduzierte Chlorung für Regen, wenig UV oder keinen Badebetrieb.',
+          subtitle: 'Reduzierte Chlorung bei stark bewölktem Himmel oder Regen.',
           pump: 'EIN',
           pumpHint: '13:00–16:15',
           chlor: '--',
           chlorHint: 'wird aus Pumpenleistung berechnet',
-          reason: '<strong>Schlechtwetter.</strong> Reduzierte Chlorung bei wenig UV oder keinem Badebetrieb. Wetter: Regenrisiko/Temperatur sprechen dagegen.'
+          reason: '<strong>Schlechtwetter.</strong> Reduzierte Chlorung bei stark bewölktem Himmel oder Regen.'
         },
         'Nachtbaden': {
           title: 'Nachtbaden',
@@ -2621,12 +2613,17 @@
         },
         'Wetterautomatik': {
           status: 'Wetter',
-          hint: 'nach Prognose',
-          reason: '<strong>Wetterautomatik.</strong> Heizen nach Prognose, Temperatur, Regenrisiko und PV.'
+          hint: 'nach Tageswetter',
+          reason: '<strong>Wetterautomatik.</strong> Heizen nur bei Badewetter und stabiler Wärmepumpenfreigabe.'
         }
       };
 
-      const heater = heaterTexts[heaterMode] || heaterTexts['Aus'];
+      const heater = { ...(heaterTexts[heaterMode] || heaterTexts['Aus']) };
+      const weatherRecommendation = latestSnapshot?.weather_recommendation || {};
+      if (heaterMode === 'Wetterautomatik' && weatherRecommendation.category && weatherRecommendation.category !== 'bathing') {
+        heater.status = 'Pause';
+        heater.hint = `${weatherRecommendation.label || 'Schlechtwetter'} blockiert`;
+      }
       trackHeaterOffState(pumpMode, heaterMode);
       document.getElementById('heater-status').textContent = heater.status;
       document.getElementById('heater-hint').textContent = heater.hint;

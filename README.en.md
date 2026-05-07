@@ -72,7 +72,7 @@ entities, enable the control logic, open the dashboard and see what is happening
   heat-pump release condition.
 - Configure heat-pump start and stop thresholds as well as stability times.
 - Evaluate the daily forecast of the configured Home Assistant weather entity
-  and recommend swim mode or bad weather mode.
+  twice per day and derive bathing weather or bad weather.
 - Set the heat pump target temperature from the UI.
 - Store runtimes, upcoming tasks and command history server-side.
 - Keep multiple open interfaces synchronized, for example iPad, smartphone and
@@ -93,6 +93,12 @@ all open sessions on the same state.
 The controller regularly reads the configured Home Assistant entities,
 calculates the OpenPool state from them and sends service calls back to Home
 Assistant when needed. The update rate can be configured with `poll_interval_s`.
+
+Weather is intentionally handled calmly: OpenPool asks the configured weather
+entity for a daily forecast only twice per day. It does not poll hourly weather
+details in the one-second live loop. Weather control only cares about the broad
+daily class: bathing weather for mostly sunny or clear days, bad weather for
+strong cloud cover or rain.
 
 For heat-pump release, house consumption is derived from PV production, balancing grid
 export and grid import:

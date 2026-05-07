@@ -31,12 +31,27 @@ PULSE_TRIGGER_WINDOW_SECONDS = 90
 RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
 COMMAND_LOG_LIMIT = 15
-DEFAULT_WEATHER_FORECAST_REFRESH_MINUTES = 15
+WEATHER_FORECAST_REFRESH_SECONDS = 12 * 60 * 60
+DEFAULT_WEATHER_ENTITY = "weather.home"
+BAD_WEATHER_CONDITIONS = {
+    "cloudy",
+    "fog",
+    "hail",
+    "lightning",
+    "lightning-rainy",
+    "pouring",
+    "rainy",
+    "snowy",
+    "snowy-rainy",
+    "windy",
+    "windy-variant",
+    "exceptional",
+}
+BATHING_WEATHER_CONDITIONS = {"sunny", "clear-night", "partlycloudy"}
 
 DEFAULT_ENTITIES = {
     "pump_switch": "switch.poolpumpe",
     "heater_climate": "climate.poolheizung",
-    "weather": "weather.home",
     "pv_generation": "sensor.pv_erzeugungsleistung",
     "pv_export": "sensor.stromzahler_active_power_minus",
     "grid_import": "sensor.stromzahler_active_power_plus",
@@ -56,7 +71,6 @@ DEFAULT_ENTITIES = {
 UI_ENTITY_KEYS = {
     "entity-pump-switch": "pump_switch",
     "entity-heater-climate": "heater_climate",
-    "entity-weather": "weather",
     "entity-pv-generation": "pv_generation",
     "entity-pv-export": "pv_export",
     "entity-grid-import": "grid_import",
@@ -294,9 +308,13 @@ class OpenPoolController:
         self.lock = threading.RLock()
         self.state = self._load_state()
         self.ha_states: dict[str, dict] = {}
-        self.weather_forecast: list[dict] = []
-        self.weather_forecast_updated_at = 0.0
-        self.weather_forecast_error = ""
+        forecast = self.state.get("weather_forecast")
+        self.weather_forecast: list[dict] = forecast if isinstance(forecast, list) else []
+        try:
+            self.weather_forecast_updated_at = float(self.state.get("weather_forecast_updated_at") or 0)
+        except (TypeError, ValueError):
+            self.weather_forecast_updated_at = 0.0
+        self.weather_forecast_error = str(self.state.get("weather_forecast_error") or "")
         self.connected = False
         self.last_error = ""
         self._stop = threading.Event()
@@ -324,6 +342,9 @@ class OpenPoolController:
             "pv_last_available_w": None,
             "pending_job": None,
             "restart_pulses_done": {},
+            "weather_forecast": [],
+            "weather_forecast_updated_at": 0,
+            "weather_forecast_error": "",
             "command_log": [
                 {
                     "time": time.strftime("%H:%M", time.localtime(current_ts)),
@@ -374,6 +395,11 @@ class OpenPoolController:
     def weather_control_enabled(self) -> bool:
         return bool(self.features().get("weather_control", True))
 
+    def weather_entity(self) -> str:
+        configured = (self.options().get("entities") or {}).get("weather")
+        entity_id = str(configured or DEFAULT_WEATHER_ENTITY).strip()
+        return entity_id or DEFAULT_WEATHER_ENTITY
+
     def entities(self) -> dict:
         entities = dict(DEFAULT_ENTITIES)
         configured = self.options().get("entities") or {}
@@ -383,8 +409,6 @@ class OpenPoolController:
         if not self.heat_pump_enabled():
             for key in HEATER_ENTITY_KEYS:
                 entities.pop(key, None)
-        if not self.weather_control_enabled():
-            entities.pop("weather", None)
         return entities
 
     def thresholds(self) -> dict:
@@ -397,10 +421,6 @@ class OpenPoolController:
             "heater_temp_max": 32,
             "pump_power_without_chlorinator_w": 450,
             "pump_power_with_chlorinator_w": 500,
-            "weather_bad_precip_probability_percent": 50,
-            "weather_bad_precipitation_mm": 1,
-            "weather_min_bathing_temperature_c": 20,
-            "weather_forecast_refresh_minutes": DEFAULT_WEATHER_FORECAST_REFRESH_MINUTES,
         }
         values.update((self.options().get("thresholds") or {}))
         return values
@@ -436,6 +456,44 @@ class OpenPoolController:
             pulse.update({key: options[key] for key in pulse.keys() & options.keys()})
         return defaults
 
+    def weather_recommendation(self) -> dict:
+        if not self.weather_control_enabled():
+            return {
+                "category": "disabled",
+                "label": "Deaktiviert",
+                "pump_mode": "Badebetrieb",
+                "icon": "☀️",
+                "reason": "Wettersteuerung ist deaktiviert.",
+            }
+
+        day = self.weather_forecast[0] if self.weather_forecast else {}
+        condition = str((day or {}).get("condition") or "").lower()
+        if condition in BATHING_WEATHER_CONDITIONS:
+            return {
+                "category": "bathing",
+                "label": "Badewetter",
+                "pump_mode": "Badebetrieb",
+                "icon": "☀️",
+                "reason": "Überwiegend sonnig oder wolkenlos.",
+            }
+
+        if condition in BAD_WEATHER_CONDITIONS:
+            return {
+                "category": "bad",
+                "label": "Schlechtwetter",
+                "pump_mode": "Schlechtwetter",
+                "icon": "🌧️",
+                "reason": "Stark bewölkt oder Regen erwartet.",
+            }
+
+        return {
+            "category": "unknown",
+            "label": "Wetter offen",
+            "pump_mode": "Schlechtwetter",
+            "icon": "☁️",
+            "reason": "Tagesvorhersage noch nicht bewertet.",
+        }
+
     def snapshot(self) -> dict:
         with self.lock:
             runtime = self._runtime_snapshot(now_ts())
@@ -449,6 +507,7 @@ class OpenPoolController:
                 "weather_forecast": list(self.weather_forecast),
                 "weather_forecast_updated_at": self.weather_forecast_updated_at,
                 "weather_forecast_error": self.weather_forecast_error,
+                "weather_recommendation": self.weather_recommendation(),
                 "features": self.features(),
                 "options": public_options(self.options()),
                 "entities": self.entities(),
@@ -558,7 +617,7 @@ class OpenPoolController:
             except Exception as err:  # noqa: BLE001
                 self.last_error = str(err)
 
-        self._refresh_weather_forecast_if_needed(entities)
+        self._refresh_weather_forecast_if_needed()
 
         with self.lock:
             self.connected = success >= 2
@@ -567,25 +626,26 @@ class OpenPoolController:
             self.state["updated_at"] = now_ts()
             self._save_state()
 
-    def _refresh_weather_forecast_if_needed(self, entities: dict) -> None:
+    def _store_weather_forecast(self, forecast: list[dict], updated_at: float, error: str = "") -> None:
+        self.weather_forecast = forecast
+        self.weather_forecast_updated_at = updated_at
+        self.weather_forecast_error = error
+        self.state["weather_forecast"] = forecast
+        self.state["weather_forecast_updated_at"] = updated_at
+        self.state["weather_forecast_error"] = error
+
+    def _refresh_weather_forecast_if_needed(self) -> None:
         if not self.weather_control_enabled():
-            self.weather_forecast = []
-            self.weather_forecast_error = ""
+            if self.weather_forecast or self.weather_forecast_error:
+                self._store_weather_forecast([], 0, "")
             return
 
-        entity_id = entities.get("weather")
+        entity_id = self.weather_entity()
         if not entity_id:
             return
 
-        thresholds = self.thresholds()
-        refresh_minutes = self._threshold_float(
-            thresholds,
-            "weather_forecast_refresh_minutes",
-            DEFAULT_WEATHER_FORECAST_REFRESH_MINUTES,
-        )
-        refresh_seconds = max(60.0, refresh_minutes * 60)
         current_ts = now_ts()
-        if self.weather_forecast and current_ts - self.weather_forecast_updated_at < refresh_seconds:
+        if self.weather_forecast and current_ts - self.weather_forecast_updated_at < WEATHER_FORECAST_REFRESH_SECONDS:
             return
 
         try:
@@ -604,11 +664,11 @@ class OpenPoolController:
                 entity_response = next(iter(service_response.values()))
             forecast = entity_response.get("forecast") if isinstance(entity_response, dict) else None
             if isinstance(forecast, list):
-                self.weather_forecast = forecast[:5]
-                self.weather_forecast_updated_at = current_ts
-                self.weather_forecast_error = ""
+                self._store_weather_forecast(forecast[:5], current_ts, "")
+            else:
+                self._store_weather_forecast(self.weather_forecast, current_ts, "Keine Tagesvorhersage erhalten.")
         except Exception as err:  # noqa: BLE001 - forecast is optional UI context
-            self.weather_forecast_error = str(err)
+            self._store_weather_forecast(self.weather_forecast, current_ts, str(err))
 
     def _track_runtime(self, states: dict[str, dict]) -> None:
         current_day = today_key()
@@ -781,8 +841,14 @@ class OpenPoolController:
         elif heater_mode == "Ein":
             self._reset_pv_tracking()
             self._turn_heater(True)
-        elif heater_mode in {"PV-Automatik", "Wetterautomatik"}:
+        elif heater_mode == "PV-Automatik":
             self._apply_pv_heating(pump_should_run)
+        elif heater_mode == "Wetterautomatik":
+            if self.weather_recommendation().get("category") == "bathing":
+                self._apply_pv_heating(pump_should_run)
+            else:
+                self._reset_pv_tracking()
+                self._turn_heater(False)
 
         self._save_state()
 
@@ -1020,7 +1086,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.22"
+    server_version = "OpenPool/0.2.23"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

@@ -14,9 +14,8 @@ long-lived access token in the frontend.
 
 Daily weather forecasts are read server-side with
 `weather.get_forecasts?return_response` for the configured `entities.weather`
-entity. The forecast is cached according to
-`weather_forecast_refresh_minutes` so normal one-second sensor polling does not
-hammer the weather provider.
+entity. The forecast is cached for 12 hours and persisted in the OpenPool state
+file. Normal one-second sensor polling does not read the weather entity.
 
 If the Supervisor token is not available in the add-on container, OpenPool can
 fall back to the configured `connection.homeassistant_url` and
@@ -73,12 +72,17 @@ the available PV power stays below `pv_stop_export_w` for
 
 OpenPool uses the configured Home Assistant weather entity, for example
 `weather.home`, `weather.openweathermap` or another provider-specific weather
-entity, and asks Home Assistant for the daily forecast. The dashboard
-recommendation switches to `Schlechtwetter` when the daily condition is
-rainy/severe, the precipitation probability reaches
-`weather_bad_precip_probability_percent`, the expected precipitation reaches
-`weather_bad_precipitation_mm`, or the forecast temperature is below
-`weather_min_bathing_temperature_c`. Otherwise it recommends `Badebetrieb`.
+entity, and asks Home Assistant for the daily forecast at most twice per day.
+The recommendation is intentionally coarse:
+
+- `Badewetter`: `sunny`, `clear-night` or `partlycloudy`.
+- `Schlechtwetter`: strongly cloudy, rain, storms, fog, snow or exceptional
+  weather states.
+
+The dashboard only shows the resulting daily class and the recommended pump
+profile. In `Wetterautomatik`, heat-pump control uses the cached daily
+recommendation: with `Badewetter` it behaves like PV automation, with
+`Schlechtwetter` it keeps the heat pump off.
 
 ## Feature Switches
 
