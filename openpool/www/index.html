@@ -309,6 +309,7 @@
       text-align: center;
       border-color: rgba(55,212,166,.42);
       background:
+        linear-gradient(90deg, var(--accent) 0 3px, transparent 3px),
         linear-gradient(135deg, rgba(55,212,166,.16), rgba(80,183,255,.07)),
         rgba(15,23,42,.52);
       box-shadow:
@@ -317,23 +318,11 @@
       overflow: hidden;
     }
 
-    .master::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 10px;
-      bottom: 10px;
-      width: 3px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, var(--accent), var(--accent-2));
-      opacity: .95;
-    }
-
     .master-control {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 9px;
       min-width: 0;
     }
 
@@ -347,11 +336,11 @@
     }
 
     .switch {
-      width: 56px;
-      height: 30px;
+      width: 48px;
+      height: 26px;
       border-radius: 999px;
       background: rgba(255,255,255,.16);
-      padding: 4px;
+      padding: 3px;
       position: relative;
       transition: .2s ease;
     }
@@ -365,7 +354,7 @@
       transition: .2s ease;
       box-shadow: 0 5px 14px rgba(0,0,0,.25);
     }
-    .switch.on .knob { transform: translateX(26px); }
+    .switch.on .knob { transform: translateX(22px); }
 
     .metrics {
       display: grid;

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4
+
+- Remove the master tile pseudo-element conflict with hover tooltips.
+- Make the master toggle itself smaller while keeping the master tile style.
+
 ## 1.0.3
 
 - Vertically center the heater mode buttons inside the Heizungsmodus control
