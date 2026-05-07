@@ -199,6 +199,10 @@
       min-width: 0;
     }
 
+    .feature-hidden {
+      display: none !important;
+    }
+
     .card {
       background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
       border: 1px solid var(--line);
@@ -1230,12 +1234,12 @@
                 <div class="value" id="chlor-status">--</div>
                 <div class="hint" id="chlor-hint">warte auf Home Assistant</div>
               </div>
-              <div class="metric">
+              <div class="metric" id="heater-status-metric">
                 <div class="label">Heizung</div>
                 <div class="value" id="heater-status">--</div>
                 <div class="hint" id="heater-hint">warte auf Home Assistant</div>
               </div>
-              <div class="metric">
+              <div class="metric" id="heat-source-status-metric">
                 <div class="label">Heizenergiequelle</div>
                 <div class="value" id="heat-source-metric">--</div>
                 <div class="hint" id="heat-source-hint">warte auf Steuerzustand</div>
@@ -1261,7 +1265,7 @@
           </div>
         </section>
 
-        <section class="card weather-card">
+        <section class="card weather-card" id="weather-card">
           <div class="card-inner">
             <div class="section-title">
               <h3>Wetterprognose</h3>
@@ -1305,7 +1309,7 @@
               <div class="mode" data-pump-mode="Dauerbetrieb"><div class="icon">🔁</div><strong>Dauerbetrieb</strong><small>Pumpe läuft dauerhaft, Restart alle 12 Stunden.</small></div>
               <div class="mode active" data-pump-mode="Badebetrieb"><div class="icon">🏊</div><strong>Badebetrieb</strong><small>07:30–22:00 mit Restart-Pulsen.</small></div>
               <div class="mode" data-pump-mode="Schlechtwetter"><div class="icon">🌧️</div><strong>Schlechtwetter</strong><small>Reduzierte Chlorung bei wenig UV/Badenden.</small></div>
-              <div class="mode" data-pump-mode="Nachtbaden"><div class="icon">🌙</div><strong>Nachtbaden</strong><small>Pumpe + Heizung EIN, PV egal, max. 10h.</small></div>
+              <div class="mode" data-pump-mode="Nachtbaden"><div class="icon">🌙</div><strong>Nachtbaden</strong><small id="night-swim-hint">Pumpe + Heizung EIN, PV egal, max. 10h.</small></div>
               <div class="mode action-mode" data-action="restart"><div class="icon">↻</div><strong>Chlorsystem neu starten</strong><small>Kurzer Restart-Pulse für den Chlorinator.</small></div>
             </div>
           </div>
@@ -1321,7 +1325,7 @@
               <div class="mode" data-heater-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Wärmepumpe bleibt aus.</small></div>
               <div class="mode" data-heater-mode="Ein"><div class="icon">🔥</div><strong>Ein</strong><small>Heizen erzwingen, aber nur mit Pumpenflow.</small></div>
               <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach PV-Leistung und Stabilzeit.</small></div>
-              <div class="mode" data-heater-mode="Wetterautomatik"><div class="icon">🌤️</div><strong>Wetterautomatik</strong><small>Optional: Modus nach Wetterempfehlung setzen.</small></div>
+              <div class="mode" data-heater-mode="Wetterautomatik" id="weather-heater-mode"><div class="icon">🌤️</div><strong>Wetterautomatik</strong><small>Optional: Modus nach Wetterempfehlung setzen.</small></div>
             </div>
             <div class="temperature-control">
               <div class="section-title">
@@ -1379,7 +1383,7 @@
                   <div><span>Signal</span><strong id="pump-signal-value">--</strong></div>
                 </div>
               </div>
-              <div class="sensor-category heater">
+              <div class="sensor-category heater" id="heater-sensor-category">
                 <div class="sensor-category-title">Heizung</div>
                 <div class="sensor-list">
                   <div><span>Leistung</span><strong id="heater-power-value">--</strong></div>
@@ -1416,7 +1420,9 @@
       pumpPowerWithChlorinatorW: 500,
       weatherBadPrecipProbabilityPercent: 50,
       weatherBadPrecipitationMm: 1,
-      weatherMinBathingTemperatureC: 20
+      weatherMinBathingTemperatureC: 20,
+      heatPumpControl: true,
+      weatherControl: true
     };
     let shutdownActive = false;
     let restartPulseActive = false;
@@ -1657,6 +1663,7 @@
     }
 
     function nextPvReleaseTask(snapshot, controller) {
+      if (!controlConfig.heatPumpControl) return null;
       if (controller.master_enabled === false || (controller.pump_mode || 'Aus') === 'Aus') return null;
       if (!['PV-Automatik', 'Wetterautomatik'].includes(controller.heater_mode || 'Aus')) return null;
 
@@ -1758,7 +1765,10 @@
 
     function applyAddonOptions(snapshot) {
       const options = snapshot?.options || {};
+      const features = snapshot?.features || options?.features || {};
       const thresholds = snapshot?.thresholds || options?.thresholds || {};
+      controlConfig.heatPumpControl = features.heat_pump_control !== false;
+      controlConfig.weatherControl = features.weather_control !== false;
       controlConfig.pvStartExportW = optionNumber(thresholds.pv_start_export_w, controlConfig.pvStartExportW);
       controlConfig.pvStopExportW = optionNumber(thresholds.pv_stop_export_w, controlConfig.pvStopExportW);
       controlConfig.pvStartStableMinutes = optionNumber(thresholds.pv_start_stable_minutes, controlConfig.pvStartStableMinutes);
@@ -1770,6 +1780,26 @@
       controlConfig.weatherBadPrecipProbabilityPercent = optionNumber(thresholds.weather_bad_precip_probability_percent, controlConfig.weatherBadPrecipProbabilityPercent);
       controlConfig.weatherBadPrecipitationMm = optionNumber(thresholds.weather_bad_precipitation_mm, controlConfig.weatherBadPrecipitationMm);
       controlConfig.weatherMinBathingTemperatureC = optionNumber(thresholds.weather_min_bathing_temperature_c, controlConfig.weatherMinBathingTemperatureC);
+      applyFeatureVisibility();
+    }
+
+    function setFeatureVisible(id, visible) {
+      document.getElementById(id)?.classList.toggle('feature-hidden', !visible);
+    }
+
+    function applyFeatureVisibility() {
+      setFeatureVisible('weather-card', controlConfig.weatherControl);
+      setFeatureVisible('heater-control-card', controlConfig.heatPumpControl);
+      setFeatureVisible('heater-status-metric', controlConfig.heatPumpControl);
+      setFeatureVisible('heat-source-status-metric', controlConfig.heatPumpControl);
+      setFeatureVisible('heater-sensor-category', controlConfig.heatPumpControl);
+      setFeatureVisible('weather-heater-mode', controlConfig.weatherControl && controlConfig.heatPumpControl);
+      setText(
+        'night-swim-hint',
+        controlConfig.heatPumpControl
+          ? 'Pumpe + Heizung EIN, PV egal, max. 10h.'
+          : 'Pumpe läuft max. 10h.'
+      );
     }
 
     async function loadInitialState() {
@@ -1910,6 +1940,9 @@
     }
 
     function heatSourceFromLivePower(states) {
+      if (!controlConfig.heatPumpControl) {
+        return { value: 'KEINE', hint: 'Wärmepumpensteuerung deaktiviert.' };
+      }
       if (!isHeaterActive(states['entity-heater-climate'])) {
         return { value: 'KEINE', hint: 'Wärmepumpe ist aus.' };
       }
@@ -2084,6 +2117,7 @@
     }
 
     function updateWeather(states, snapshot = latestSnapshot) {
+      if (!controlConfig.weatherControl) return;
       const weather = states['entity-weather'];
       if (isUnavailableState(weather)) return;
 
@@ -2116,32 +2150,39 @@
 
       if (!isUnavailableState(heater)) {
         heaterRunning = isHeaterActive(heater);
-        if (heaterRunning) {
-          heaterOffSince = null;
-        } else if (heaterOffSince === null) {
-          heaterOffSince = Date.now();
-        }
+        if (controlConfig.heatPumpControl) {
+          if (heaterRunning) {
+            heaterOffSince = null;
+          } else if (heaterOffSince === null) {
+            heaterOffSince = Date.now();
+          }
 
-        setText('heater-status', heaterRunning ? 'EIN' : 'AUS');
-        setText('heater-hint', `Home Assistant: ${heater.state}`);
+          setText('heater-status', heaterRunning ? 'EIN' : 'AUS');
+          setText('heater-hint', `Home Assistant: ${heater.state}`);
 
-        const currentTemp = Number(heater.attributes?.current_temperature);
-        const targetTemp = Number(heater.attributes?.temperature);
-        if (Number.isFinite(currentTemp)) {
-          setText('heater-current-temp', `${formatDecimal(currentTemp, 1)}°`);
-        }
-        if (Number.isFinite(targetTemp)) {
-          heaterTargetTemp = targetTemp;
-          setTargetTemp(targetTemp);
+          const currentTemp = Number(heater.attributes?.current_temperature);
+          const targetTemp = Number(heater.attributes?.temperature);
+          if (Number.isFinite(currentTemp)) {
+            setText('heater-current-temp', `${formatDecimal(currentTemp, 1)}°`);
+          }
+          if (Number.isFinite(targetTemp)) {
+            heaterTargetTemp = targetTemp;
+            setTargetTemp(targetTemp);
+          }
         }
       }
 
       if (!restartPulseActive && (pumpOn !== null || heaterRunning !== null)) {
         const pumpText = pumpOn === true ? 'Pumpe läuft' : 'Pumpe ist aus';
         const heaterText = heaterRunning === true ? 'Wärmepumpe läuft' : 'Wärmepumpe ist aus';
-        const active = pumpOn === true || heaterRunning === true;
+        const active = pumpOn === true || (controlConfig.heatPumpControl && heaterRunning === true);
         setText('hero-title', active ? 'Pool aktiv' : 'Pool inaktiv');
-        setText('hero-subtitle', `${pumpText}. ${heaterText}. Status kommt live aus Home Assistant.`);
+        setText(
+          'hero-subtitle',
+          controlConfig.heatPumpControl
+            ? `${pumpText}. ${heaterText}. Status kommt live aus Home Assistant.`
+            : `${pumpText}. Wärmepumpensteuerung ist deaktiviert.`
+        );
       }
 
       updatePvAvailability(states);
@@ -2150,6 +2191,7 @@
       updateSensorValue('pump-current-value', states['entity-pump-current'], 'A', 1);
       updateSensorValue('pump-voltage-value', states['entity-pump-voltage'], 'V', 0);
       updateSensorValue('pump-signal-value', states['entity-pump-signal'], '%', 0);
+      if (!controlConfig.heatPumpControl) return;
       updatePowerValue('heater-power-value', states['entity-heater-power']);
       updateSensorValue('heater-current-value', states['entity-heater-current'], 'A', 1);
       updateSensorValue('heater-voltage-value', states['entity-heater-voltage'], 'V', 0);
@@ -2179,7 +2221,10 @@
       setText('master-state-label', controller.master_enabled !== false ? 'Poolsystem EIN' : 'Poolsystem AUS');
 
       setActiveMode('#pump-control-card', 'pumpMode', controller.pump_mode || 'Aus');
-      setActiveMode('#heater-control-card', 'heaterMode', controller.heater_mode || 'Aus');
+      const heaterMode = (!controlConfig.weatherControl && controller.heater_mode === 'Wetterautomatik')
+        ? 'PV-Automatik'
+        : (controller.heater_mode || 'Aus');
+      setActiveMode('#heater-control-card', 'heaterMode', heaterMode);
       updateHeaterLock();
       document.getElementById('pump-control-card').classList.toggle('disabled', controller.master_enabled === false);
 
@@ -2270,11 +2315,13 @@
     }
 
     function getHeaterMode() {
-      return document.querySelector('#heater-control-card .mode.active')?.dataset.heaterMode || 'Aus';
+      if (!controlConfig.heatPumpControl) return 'Aus';
+      const mode = document.querySelector('#heater-control-card .mode.active')?.dataset.heaterMode || 'Aus';
+      return (!controlConfig.weatherControl && mode === 'Wetterautomatik') ? 'PV-Automatik' : mode;
     }
 
     function isHeaterRunningForFlow(pumpMode, heaterMode) {
-      return isMasterEnabled() && pumpMode !== 'Aus' && (pumpMode === 'Nachtbaden' || heaterMode === 'Ein');
+      return controlConfig.heatPumpControl && isMasterEnabled() && pumpMode !== 'Aus' && (pumpMode === 'Nachtbaden' || heaterMode === 'Ein');
     }
 
     function trackHeaterOffState(pumpMode, heaterMode) {
@@ -2291,11 +2338,12 @@
     }
 
     function needsPumpRunOnForHeater() {
-      return heaterOffSince === null || Date.now() - heaterOffSince < heaterRunOnMs;
+      return controlConfig.heatPumpControl && (heaterOffSince === null || Date.now() - heaterOffSince < heaterRunOnMs);
     }
 
     function updateHeaterLock() {
       const heaterCard = document.getElementById('heater-control-card');
+      if (!heaterCard) return;
       const overlay = heaterCard.querySelector('.disabled-overlay span');
       const masterEnabled = isMasterEnabled();
       const pumpMode = getPumpMode();
@@ -2343,7 +2391,7 @@
     }
 
     async function applyHeaterModeToHomeAssistant(heaterMode) {
-      if (!isMasterEnabled() || getPumpMode() === 'Aus') return;
+      if (!controlConfig.heatPumpControl || !isMasterEnabled() || getPumpMode() === 'Aus') return;
 
       try {
         await sendOpenPoolAction({ type: 'heater_mode', mode: heaterMode });
@@ -2429,14 +2477,21 @@
         trackHeaterOffState('Aus', 'Aus');
         setShutdownSequenceVisible(false);
         document.getElementById('hero-title').textContent = 'Pool inaktiv';
-        document.getElementById('hero-subtitle').textContent = 'Hauptfreigabe ist ausgeschaltet. Pumpe, Chlorinator und Wärmepumpe sind gesperrt.';
+        document.getElementById('hero-subtitle').textContent = controlConfig.heatPumpControl
+          ? 'Hauptfreigabe ist ausgeschaltet. Pumpe, Chlorinator und Wärmepumpe sind gesperrt.'
+          : 'Hauptfreigabe ist ausgeschaltet. Pumpe und Chlorinator sind gesperrt.';
         document.getElementById('pump-status').textContent = 'AUS';
         document.getElementById('pump-hint').textContent = 'durch Hauptfreigabe gesperrt';
         document.getElementById('chlor-status').textContent = 'AUS';
         document.getElementById('chlor-hint').textContent = 'gemeinsam mit Pumpe aus';
         document.getElementById('heater-status').textContent = 'AUS';
         document.getElementById('heater-hint').textContent = 'durch Hauptfreigabe gesperrt';
-        pushCommand('Hauptfreigabe AUS', 'Pumpe, Chlorinator und Wärmepumpe gesperrt.');
+        pushCommand(
+          'Hauptfreigabe AUS',
+          controlConfig.heatPumpControl
+            ? 'Pumpe, Chlorinator und Wärmepumpe gesperrt.'
+            : 'Pumpe und Chlorinator gesperrt.'
+        );
         return;
       }
 
@@ -2502,9 +2557,15 @@
 
       if (pumpMode === 'Aus' && !pumpOffNeedsRunOn) {
         selected.title = 'Pumpe aus';
-        selected.subtitle = 'Die Heizung ist bereits seit mehr als 5 Minuten aus. Die Pumpe stoppt ohne Nachlauf.';
+        selected.subtitle = controlConfig.heatPumpControl
+          ? 'Die Heizung ist bereits seit mehr als 5 Minuten aus. Die Pumpe stoppt ohne Nachlauf.'
+          : 'Die Pumpe stoppt ohne Heizungs-Nachlauf.';
         selected.pump = 'AUS';
         selected.pumpHint = 'kein Nachlauf nötig';
+      }
+
+      if (!controlConfig.heatPumpControl && pumpMode === 'Nachtbaden') {
+        selected.subtitle = 'Die Pumpe läuft unabhängig vom Tagesprofil. Der Modus endet automatisch nach maximal 10 Stunden.';
       }
 
       document.getElementById('hero-title').textContent = selected.title;
@@ -2532,9 +2593,13 @@
 
       if (pumpMode === 'Nachtbaden') {
         trackHeaterOffState(pumpMode, heaterMode);
-        document.getElementById('heater-status').textContent = 'EIN';
-        document.getElementById('heater-hint').textContent = 'PV wird ignoriert';
-        pushCommand('Nachtbaden aktiv', 'Pumpe + Heizung EIN, PV wird ignoriert, max. 10h.');
+        if (controlConfig.heatPumpControl) {
+          document.getElementById('heater-status').textContent = 'EIN';
+          document.getElementById('heater-hint').textContent = 'PV wird ignoriert';
+          pushCommand('Nachtbaden aktiv', 'Pumpe + Heizung EIN, PV wird ignoriert, max. 10h.');
+        } else {
+          pushCommand('Nachtbaden aktiv', 'Pumpe EIN, max. 10h.');
+        }
         return;
       }
 

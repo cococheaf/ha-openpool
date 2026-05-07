@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.22
+
+- Add add-on feature switches for heat pump control and weather control.
+- Skip heat-pump entities, UI cards and control actions when heat pump control
+  is disabled.
+- Make the default weather entity provider-neutral and keep provider selection
+  in the add-on entity options.
+- Add a GitHub Actions release workflow for tagged OpenPool releases.
+
 ## 0.2.21
 
 - Fetch daily Home Assistant weather forecasts through `weather.get_forecasts`

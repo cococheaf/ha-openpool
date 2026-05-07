@@ -79,6 +79,8 @@ entities, enable the control logic, open the dashboard and see what is happening
   a desktop browser.
 - Persist controller state in `/data/openpool_state.json`, so runtimes and jobs
   survive add-on restarts.
+- Enable or disable weather control and heat pump control through add-on
+  options.
 
 ## How The System Works
 
@@ -124,6 +126,10 @@ Check especially:
 If these entities are wrong, OpenPool may start, but it cannot make reliable
 decisions or send commands to the correct devices.
 
+The weather entity is provider-neutral. You can use any suitable Home Assistant
+weather entity, for example `weather.home`, `weather.openweathermap` or another
+integration.
+
 ## Home Assistant Logbook Attribution
 
 By default, OpenPool uses the `SUPERVISOR_TOKEN` provided by Home Assistant.
@@ -165,3 +171,9 @@ Assistant attributes API calls to the authenticated user behind the token.
 
 For the add-on build, Home Assistant uses `openpool/config.yaml` and
 `openpool/Dockerfile`. The bundled frontend lives in `openpool/www/index.html`.
+
+## Releases
+
+Versioned releases are created from Git tags in the `v0.2.x` format. When such
+a tag is pushed, GitHub Actions automatically creates a GitHub release from the
+matching section in `openpool/CHANGELOG.md`.

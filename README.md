@@ -81,6 +81,8 @@ sehen, was gerade passiert.
   Browser am PC.
 - Controller-State in `/data/openpool_state.json` persistieren, damit Laufzeiten
   und Jobs nach einem Add-on-Neustart erhalten bleiben.
+- Wettersteuerung und Wärmepumpensteuerung über Add-on-Optionen aktivieren
+  oder deaktivieren.
 
 ## Wie das System funktioniert
 
@@ -129,6 +131,10 @@ Wenn diese Entitäten nicht stimmen, kann OpenPool zwar starten, aber keine
 sauberen Entscheidungen treffen oder keine Befehle an die richtigen Geräte
 senden.
 
+Die Wetter-Entität ist provider-neutral. Du kannst also jede passende
+Home-Assistant-Weather-Entität verwenden, zum Beispiel `weather.home`,
+`weather.openweathermap` oder eine andere Integration.
+
 ## Home-Assistant-Verlauf
 
 Standardmäßig nutzt OpenPool den von Home Assistant bereitgestellten
@@ -175,3 +181,9 @@ zuordnet.
 Für den Add-on-Build verwendet Home Assistant `openpool/config.yaml` und
 `openpool/Dockerfile`. Die gebündelte Oberfläche liegt in
 `openpool/www/index.html`.
+
+## Releases
+
+Versionierte Releases entstehen über Git-Tags im Format `v0.2.x`. Beim Push
+eines solchen Tags erstellt GitHub Actions automatisch einen GitHub Release aus
+dem passenden Abschnitt in `openpool/CHANGELOG.md`.

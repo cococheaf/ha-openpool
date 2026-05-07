@@ -36,7 +36,7 @@ DEFAULT_WEATHER_FORECAST_REFRESH_MINUTES = 15
 DEFAULT_ENTITIES = {
     "pump_switch": "switch.poolpumpe",
     "heater_climate": "climate.poolheizung",
-    "weather": "weather.openweathermap",
+    "weather": "weather.home",
     "pv_generation": "sensor.pv_erzeugungsleistung",
     "pv_export": "sensor.stromzahler_active_power_minus",
     "grid_import": "sensor.stromzahler_active_power_plus",
@@ -71,6 +71,17 @@ UI_ENTITY_KEYS = {
     "entity-heater-ambient": "heater_ambient",
     "entity-heater-water-in": "heater_water_in",
     "entity-heater-water-out": "heater_water_out",
+}
+
+HEATER_ENTITY_KEYS = {
+    "heater_climate",
+    "heater_power",
+    "heater_current",
+    "heater_voltage",
+    "heater_fan",
+    "heater_ambient",
+    "heater_water_in",
+    "heater_water_out",
 }
 
 
@@ -349,12 +360,31 @@ class OpenPoolController:
     def options(self) -> dict:
         return read_options()
 
+    def features(self) -> dict:
+        values = {
+            "heat_pump_control": True,
+            "weather_control": True,
+        }
+        values.update((self.options().get("features") or {}))
+        return {key: bool(values.get(key)) for key in values}
+
+    def heat_pump_enabled(self) -> bool:
+        return bool(self.features().get("heat_pump_control", True))
+
+    def weather_control_enabled(self) -> bool:
+        return bool(self.features().get("weather_control", True))
+
     def entities(self) -> dict:
         entities = dict(DEFAULT_ENTITIES)
         configured = self.options().get("entities") or {}
         for key in entities:
             if configured.get(key) is not None:
                 entities[key] = configured[key]
+        if not self.heat_pump_enabled():
+            for key in HEATER_ENTITY_KEYS:
+                entities.pop(key, None)
+        if not self.weather_control_enabled():
+            entities.pop("weather", None)
         return entities
 
     def thresholds(self) -> dict:
@@ -419,6 +449,7 @@ class OpenPoolController:
                 "weather_forecast": list(self.weather_forecast),
                 "weather_forecast_updated_at": self.weather_forecast_updated_at,
                 "weather_forecast_error": self.weather_forecast_error,
+                "features": self.features(),
                 "options": public_options(self.options()),
                 "entities": self.entities(),
                 "thresholds": self.thresholds(),
@@ -468,7 +499,10 @@ class OpenPoolController:
         with self.lock:
             if action_type == "master":
                 self.state["master_enabled"] = bool(action.get("enabled"))
-                self.command("Hauptfreigabe EIN" if self.state["master_enabled"] else "Hauptfreigabe AUS", "Von der OpenPool UI gesetzt.")
+                self.command(
+                    "Hauptfreigabe EIN" if self.state["master_enabled"] else "Hauptfreigabe AUS",
+                    "Von der OpenPool UI gesetzt.",
+                )
                 self._save_state()
             elif action_type == "pump_mode":
                 mode = str(action.get("mode") or "Aus")
@@ -478,12 +512,16 @@ class OpenPoolController:
                 self.command("Pumpenmodus", self.state["pump_mode"])
                 self._save_state()
             elif action_type == "heater_mode":
+                if not self.heat_pump_enabled():
+                    return self.snapshot()
                 if str(action.get("mode") or "Aus") != self.state.get("heater_mode"):
                     self._reset_pv_tracking()
                 self.state["heater_mode"] = str(action.get("mode") or "Aus")
                 self.command("Heizungsmodus", self.state["heater_mode"])
                 self._save_state()
             elif action_type == "target_temp":
+                if not self.heat_pump_enabled():
+                    return self.snapshot()
                 self.state["heater_target_temp"] = float(action.get("value") or self.state.get("heater_target_temp") or 28)
                 self.command("Zieltemperatur gesetzt", f"{self.state['heater_target_temp']:.1f} Grad")
                 self._save_state()
@@ -530,6 +568,11 @@ class OpenPoolController:
             self._save_state()
 
     def _refresh_weather_forecast_if_needed(self, entities: dict) -> None:
+        if not self.weather_control_enabled():
+            self.weather_forecast = []
+            self.weather_forecast_error = ""
+            return
+
         entity_id = entities.get("weather")
         if not entity_id:
             return
@@ -620,6 +663,11 @@ class OpenPoolController:
             self._apply_control_rules()
             return
         elif job.get("type") == "pump_run_on":
+            if not self.heat_pump_enabled():
+                self._turn_pump(False)
+                self.state["pending_job"] = None
+                self._save_state()
+                return
             if self._heater_needs_run_on():
                 job["until"] = self._heater_run_on_until(current_ts)
                 self._turn_heater(False)
@@ -664,6 +712,9 @@ class OpenPoolController:
         master_enabled = bool(self.state.get("master_enabled"))
         pump_mode = str(self.state.get("pump_mode") or "Aus")
         heater_mode = str(self.state.get("heater_mode") or "Aus")
+        heat_pump_enabled = self.heat_pump_enabled()
+        if heater_mode == "Wetterautomatik" and not self.weather_control_enabled():
+            heater_mode = "PV-Automatik"
 
         if not master_enabled:
             self._reset_pv_tracking()
@@ -675,12 +726,17 @@ class OpenPoolController:
             self.state["pump_mode"] = "Aus"
             self.state["pump_mode_started_at"] = now_ts()
             pump_mode = "Aus"
-            self.command("Nachtbaden beendet", "Maximale Laufzeit erreicht, Heizung wird mit Nachlauf ausgeschaltet.")
+            self.command(
+                "Nachtbaden beendet",
+                "Maximale Laufzeit erreicht, Heizung wird mit Nachlauf ausgeschaltet."
+                if heat_pump_enabled
+                else "Maximale Laufzeit erreicht, Pumpe wird ausgeschaltet.",
+            )
 
         if pump_mode == "Aus":
             self._reset_pv_tracking()
             self._turn_heater(False)
-            if self._heater_needs_run_on():
+            if heat_pump_enabled and self._heater_needs_run_on():
                 self._start_pump_run_on("Pumpennachlauf gestartet", "Heizung war kuerzlich aktiv.")
             else:
                 self._turn_pump(False)
@@ -692,7 +748,7 @@ class OpenPoolController:
         if not pump_should_run:
             self._reset_pv_tracking()
             self._turn_heater(False)
-            if self._heater_needs_run_on():
+            if heat_pump_enabled and self._heater_needs_run_on():
                 self._start_pump_run_on("Pumpennachlauf gestartet", "Profilende erreicht, Heizung war kuerzlich aktiv.")
             else:
                 self._turn_pump(False)
@@ -706,7 +762,7 @@ class OpenPoolController:
             self._save_state()
             return
 
-        if self._pump_stop_run_on_active(pump_mode):
+        if heat_pump_enabled and self._pump_stop_run_on_active(pump_mode):
             self._reset_pv_tracking()
             if self._heater_is_active():
                 self._turn_heater(False)
@@ -714,7 +770,9 @@ class OpenPoolController:
             self._save_state()
             return
 
-        if pump_mode == "Nachtbaden":
+        if not heat_pump_enabled:
+            self._reset_pv_tracking()
+        elif pump_mode == "Nachtbaden":
             self._reset_pv_tracking()
             self._turn_heater(True)
         elif heater_mode == "Aus":
@@ -748,6 +806,8 @@ class OpenPoolController:
         return now_ts() - started_at >= max(1, max_minutes) * 60
 
     def _heater_needs_run_on(self) -> bool:
+        if not self.heat_pump_enabled():
+            return False
         return self._heater_is_active() or self._heater_run_on_until() > now_ts()
 
     def _heater_run_on_until(self, current_ts: float | None = None) -> float:
@@ -763,6 +823,8 @@ class OpenPoolController:
         self.command(title, detail)
 
     def _pump_stop_run_on_active(self, pump_mode: str) -> bool:
+        if not self.heat_pump_enabled():
+            return False
         current_ts = now_ts()
         planned_stop_ts = self._next_planned_pump_stop_ts(pump_mode, current_ts)
         return planned_stop_ts is not None and current_ts >= planned_stop_ts - RUN_ON_SECONDS
@@ -788,6 +850,9 @@ class OpenPoolController:
         return None
 
     def _apply_pv_heating(self, pump_should_run: bool) -> None:
+        if not self.heat_pump_enabled():
+            self._reset_pv_tracking()
+            return
         if not pump_should_run:
             self._reset_pv_tracking()
             self._turn_heater(False)
@@ -889,6 +954,8 @@ class OpenPoolController:
         return value * 1000 if "kw" in unit else value
 
     def _heater_is_active(self) -> bool:
+        if not self.heat_pump_enabled():
+            return False
         heater_state = str((self.ha_states.get("heater_climate") or {}).get("state", "")).lower()
         return heater_state not in {"", "off", "idle", "unavailable", "unknown"}
 
@@ -907,6 +974,8 @@ class OpenPoolController:
         self.command("Pumpe EIN" if enabled else "Pumpe AUS", "Schaltbefehl an Home Assistant gesendet.")
 
     def _turn_heater(self, enabled: bool) -> None:
+        if not self.heat_pump_enabled():
+            return
         entity_id = self.entities().get("heater_climate")
         if not entity_id:
             return
@@ -933,6 +1002,8 @@ class OpenPoolController:
         self.command("Heizung EIN" if enabled else "Heizung AUS", "Schaltbefehl an Home Assistant gesendet.")
 
     def _set_heater_temperature(self) -> None:
+        if not self.heat_pump_enabled():
+            return
         entity_id = self.entities().get("heater_climate")
         if entity_id and entity_domain(entity_id) == "climate":
             self.ha.service("climate", "set_temperature", entity_id=entity_id, data={"temperature": self.state["heater_target_temp"]})
@@ -949,7 +1020,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.21"
+    server_version = "OpenPool/0.2.22"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

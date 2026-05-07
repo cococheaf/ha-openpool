@@ -47,6 +47,7 @@ Entscheidungen.
 - Live-Synchronisation zwischen mehreren geöffneten UI-Sitzungen.
 - Persistenter Controller-State in `/data/openpool_state.json`, damit Laufzeit,
   Jobs und Aufgabenverlauf nach einem Neustart erhalten bleiben.
+- Wettersteuerung und Wärmepumpensteuerung optional per Add-on-Konfiguration.
 
 ## Wichtig vor dem ersten Start
 
@@ -68,6 +69,10 @@ Besonders wichtig sind:
 Wenn diese Entitäten nicht korrekt sind, kann OpenPool keine zuverlässigen
 Entscheidungen treffen oder Befehle an die falschen beziehungsweise an keine
 Geräte senden.
+
+Die Wetter-Entität ist nicht an einen festen Anbieter gebunden. Trage in
+`entities.weather` einfach die Weather-Entität deiner bevorzugten
+Home-Assistant-Integration ein.
 
 ## Home-Assistant-Verlauf
 

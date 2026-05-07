@@ -72,12 +72,23 @@ the available PV power stays below `pv_stop_export_w` for
 ## Weather Recommendation
 
 OpenPool uses the configured Home Assistant weather entity, for example
-`weather.openweathermap`, and asks Home Assistant for the daily forecast. The
-dashboard recommendation switches to `Schlechtwetter` when the daily condition
-is rainy/severe, the precipitation probability reaches
+`weather.home`, `weather.openweathermap` or another provider-specific weather
+entity, and asks Home Assistant for the daily forecast. The dashboard
+recommendation switches to `Schlechtwetter` when the daily condition is
+rainy/severe, the precipitation probability reaches
 `weather_bad_precip_probability_percent`, the expected precipitation reaches
 `weather_bad_precipitation_mm`, or the forecast temperature is below
 `weather_min_bathing_temperature_c`. Otherwise it recommends `Badebetrieb`.
+
+## Feature Switches
+
+`features.heat_pump_control` disables heat-pump polling, heat-pump service
+calls, heat-pump UI cards, heat-pump run-on handling and PV heating logic when
+set to `false`.
+
+`features.weather_control` disables weather forecast polling, the weather
+forecast card and the weather-dependent heat mode option when set to `false`.
+The weather provider itself is selected only through `entities.weather`.
 
 ## Configuration
 

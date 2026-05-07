@@ -44,6 +44,7 @@ switches and sensors; OpenPool makes the decisions.
 - Live synchronization between multiple open UI sessions.
 - Persistent controller state in `/data/openpool_state.json`, so runtime, jobs
   and task history survive restarts.
+- Optional weather control and heat pump control through add-on configuration.
 
 ## Important Before The First Start
 
@@ -64,6 +65,9 @@ Especially important:
 
 If these entities are not correct, OpenPool cannot make reliable decisions or
 may send commands to the wrong devices, or to no device at all.
+
+The weather entity is not tied to a fixed provider. Put the Weather entity of
+your preferred Home Assistant integration into `entities.weather`.
 
 ## Home Assistant Logbook Attribution
 
