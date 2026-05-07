@@ -191,6 +191,24 @@
       height: auto;
     }
 
+    .dashboard .sensor-list-card.height-locked {
+      height: var(--activity-card-height);
+      overflow: hidden;
+    }
+
+    .dashboard .sensor-list-card.height-locked .card-inner {
+      height: 100%;
+      min-height: 0;
+    }
+
+    .dashboard .sensor-list-card.height-locked .sensor-categories {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 2px;
+    }
+
     .grid > *,
     .mode-grid > * {
       min-width: 0;
@@ -1128,6 +1146,17 @@
       .dashboard .sensor-list-card {
         grid-column: auto;
       }
+      .dashboard .sensor-list-card.height-locked {
+        height: auto;
+        overflow: visible;
+      }
+      .dashboard .sensor-list-card.height-locked .card-inner {
+        height: auto;
+      }
+      .dashboard .sensor-list-card.height-locked .sensor-categories {
+        overflow: visible;
+        padding-right: 0;
+      }
       .controls-panel .card-inner {
         grid-template-columns: minmax(0, 1fr);
       }
@@ -1455,8 +1484,10 @@
     // or less than five minutes after it stopped.
     const heaterRunOnMs = 5 * 60 * 1000;
     const COMMAND_LOG_LIMIT = 6;
+    const SENSOR_HEIGHT_BREAKPOINT = 760;
     let heaterOffSince = Date.now() - heaterRunOnMs - 1000;
     let lastCommandSignature = '';
+    let sensorHeightFrame = null;
     const commandLog = [
       { time: '--:--', title: 'Warte auf Home Assistant', detail: 'Live-Zustand wird geladen.' }
     ];
@@ -1523,6 +1554,35 @@
           <div>${escapeHTML(command.title)}<small>${escapeHTML(command.detail)}</small></div>
         </div>
       `).join('');
+      scheduleSensorCardHeightSync();
+    }
+
+    function syncSensorCardHeight() {
+      const activityCard = document.querySelector('.decision-card');
+      const sensorCard = document.querySelector('.sensor-list-card');
+      if (!activityCard || !sensorCard) return;
+
+      if (window.innerWidth <= SENSOR_HEIGHT_BREAKPOINT) {
+        sensorCard.classList.remove('height-locked');
+        sensorCard.style.removeProperty('--activity-card-height');
+        return;
+      }
+
+      sensorCard.classList.remove('height-locked');
+      sensorCard.style.removeProperty('--activity-card-height');
+      const height = Math.ceil(activityCard.getBoundingClientRect().height);
+      sensorCard.style.setProperty('--activity-card-height', `${height}px`);
+      sensorCard.classList.add('height-locked');
+    }
+
+    function scheduleSensorCardHeightSync() {
+      if (sensorHeightFrame !== null) {
+        window.cancelAnimationFrame(sensorHeightFrame);
+      }
+      sensorHeightFrame = window.requestAnimationFrame(() => {
+        sensorHeightFrame = null;
+        syncSensorCardHeight();
+      });
     }
 
     function snapshotNowSeconds(snapshot) {
@@ -1725,6 +1785,7 @@
       const task = candidates[0];
       const label = task ? formatUpcomingLabel(task, snapshot) : 'Keine Aufgabe geplant';
       node.innerHTML = `<span>Upcoming:</span> ${escapeHTML(label)}`;
+      scheduleSensorCardHeightSync();
     }
 
     function pushCommand(title, detail) {
@@ -1864,6 +1925,7 @@
           ? `Pumpe + Heizung EIN, PV egal, ${nightSwimLimitText()}.`
           : `Pumpe läuft ${nightSwimLimitText()}.`
       );
+      scheduleSensorCardHeightSync();
     }
 
     async function loadInitialState() {
@@ -2412,6 +2474,7 @@
 
     function setShutdownSequenceVisible(visible) {
       document.getElementById('shutdown-sequence').classList.toggle('visible', visible);
+      scheduleSensorCardHeightSync();
     }
 
     function cancelShutdownSequence(targetMode) {
@@ -2744,8 +2807,11 @@
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         refreshHomeAssistantState().catch(error => handleHaError('Live-Sync', error));
+        scheduleSensorCardHeightSync();
       }
     });
+
+    window.addEventListener('resize', scheduleSensorCardHeightSync);
 
     bootOpenPool();
   </script>

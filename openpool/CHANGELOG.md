@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7
+
+- Keep the sensor card locked to the same height as the activity card on
+  desktop and tablet-wide layouts, with internal sensor scrolling when needed.
+
 ## 1.0.6
 
 - Add standard `line-clamp` CSS declarations next to the WebKit fallback.
