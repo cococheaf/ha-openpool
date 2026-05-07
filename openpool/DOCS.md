@@ -12,6 +12,12 @@ selected API calls:
 The browser UI should call the local add-on endpoints instead of storing a
 long-lived access token in the frontend.
 
+Daily weather forecasts are read server-side with
+`weather.get_forecasts?return_response` for the configured `entities.weather`
+entity. The forecast is cached according to
+`weather_forecast_refresh_minutes` so normal one-second sensor polling does not
+hammer the weather provider.
+
 If the Supervisor token is not available in the add-on container, OpenPool can
 fall back to the configured `connection.homeassistant_url` and
 `connection.access_token` add-on options.
@@ -62,6 +68,16 @@ heat pump starts only after that value has been reached continuously for
 `pv_start_stable_minutes`. While the heat pump is running, OpenPool waits until
 the available PV power stays below `pv_stop_export_w` for
 `pv_stop_stable_minutes` before switching it off.
+
+## Weather Recommendation
+
+OpenPool uses the configured Home Assistant weather entity, for example
+`weather.openweathermap`, and asks Home Assistant for the daily forecast. The
+dashboard recommendation switches to `Schlechtwetter` when the daily condition
+is rainy/severe, the precipitation probability reaches
+`weather_bad_precip_probability_percent`, the expected precipitation reaches
+`weather_bad_precipitation_mm`, or the forecast temperature is below
+`weather_min_bathing_temperature_c`. Otherwise it recommends `Badebetrieb`.
 
 ## Configuration
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.21
+
+- Fetch daily Home Assistant weather forecasts through `weather.get_forecasts`
+  and base the weather recommendation on condition, rain probability,
+  precipitation and minimum bathing temperature settings.
+- Add date-aware task history and Upcoming labels with Heute, Gestern, Morgen
+  or short dates.
+- Tighten the dashboard grid and card spacing for a more compact iPad view.
+
 ## 0.2.20
 
 - Add configurable pump power thresholds for chlorinator detection.

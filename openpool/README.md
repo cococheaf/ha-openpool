@@ -43,6 +43,7 @@ Entscheidungen.
 - Sicherer Pumpennachlauf nach Heizbetrieb.
 - Wärmepumpensteuerung mit Zieltemperatur.
 - Wärmepumpenfreigabe mit Start-/Stoppgrenzen und Stabilzeiten.
+- Wetterempfehlung aus der täglichen Home-Assistant-Vorhersage.
 - Live-Synchronisation zwischen mehreren geöffneten UI-Sitzungen.
 - Persistenter Controller-State in `/data/openpool_state.json`, damit Laufzeit,
   Jobs und Aufgabenverlauf nach einem Neustart erhalten bleiben.

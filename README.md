@@ -73,6 +73,8 @@ sehen, was gerade passiert.
   Wärmepumpenfreigabe einschalten.
 - Start- und Stoppgrenzen sowie Stabilzeiten für die Wärmepumpenfreigabe
   konfigurieren.
+- Tagesvorhersage der konfigurierten Home-Assistant-Wetterentität auswerten
+  und daraus Badebetrieb oder Schlechtwetter empfehlen.
 - Zieltemperatur der Wärmepumpe über die UI setzen.
 - Laufzeiten, anstehende Aufgaben und letzte Kommandos serverseitig speichern.
 - Mehrere offene Oberflächen synchron halten, zum Beispiel iPad, Smartphone und

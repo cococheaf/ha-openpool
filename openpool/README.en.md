@@ -40,6 +40,7 @@ switches and sensors; OpenPool makes the decisions.
 - Safe pump run-on after heat pump operation.
 - Heat pump control with target temperature.
 - Heat-pump release with start/stop thresholds and stability times.
+- Weather recommendation from the daily Home Assistant forecast.
 - Live synchronization between multiple open UI sessions.
 - Persistent controller state in `/data/openpool_state.json`, so runtime, jobs
   and task history survive restarts.

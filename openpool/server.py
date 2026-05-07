@@ -31,6 +31,7 @@ PULSE_TRIGGER_WINDOW_SECONDS = 90
 RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
 COMMAND_LOG_LIMIT = 15
+DEFAULT_WEATHER_FORECAST_REFRESH_MINUTES = 15
 
 DEFAULT_ENTITIES = {
     "pump_switch": "switch.poolpumpe",
@@ -252,13 +253,24 @@ class HomeAssistantClient:
             return None
         return json.loads(payload.decode("utf-8"))
 
-    def service(self, domain: str, service: str, entity_id: str | None = None, data: dict | None = None) -> dict | list | None:
+    def service(
+        self,
+        domain: str,
+        service: str,
+        entity_id: str | None = None,
+        data: dict | None = None,
+        return_response: bool = False,
+    ) -> dict | list | None:
         payload = dict(data or {})
         if entity_id:
             payload["entity_id"] = entity_id
 
+        path = f"/services/{domain}/{service}"
+        if return_response:
+            path += "?return_response"
+
         try:
-            return self.json_request("POST", f"/services/{domain}/{service}", payload)
+            return self.json_request("POST", path, payload)
         except RuntimeError:
             if entity_id and domain != "homeassistant" and service in {"turn_on", "turn_off"}:
                 return self.json_request("POST", f"/services/homeassistant/{service}", {"entity_id": entity_id})
@@ -271,6 +283,9 @@ class OpenPoolController:
         self.lock = threading.RLock()
         self.state = self._load_state()
         self.ha_states: dict[str, dict] = {}
+        self.weather_forecast: list[dict] = []
+        self.weather_forecast_updated_at = 0.0
+        self.weather_forecast_error = ""
         self.connected = False
         self.last_error = ""
         self._stop = threading.Event()
@@ -280,27 +295,34 @@ class OpenPoolController:
         self.thread.start()
 
     def _default_state(self) -> dict:
+        current_ts = now_ts()
         return {
             "version": 1,
             "master_enabled": True,
             "pump_mode": "Badebetrieb",
-            "pump_mode_started_at": now_ts(),
+            "pump_mode_started_at": current_ts,
             "heater_mode": "PV-Automatik",
             "heater_target_temp": 28,
             "pump_running_since": None,
             "pump_runtime_total_s": 0,
             "pump_runtime_today_s": 0,
             "runtime_day": today_key(),
-            "heater_off_since": now_ts() - RUN_ON_SECONDS - 1,
+            "heater_off_since": current_ts - RUN_ON_SECONDS - 1,
             "pv_above_since": None,
             "pv_below_since": None,
             "pv_last_available_w": None,
             "pending_job": None,
             "restart_pulses_done": {},
             "command_log": [
-                {"time": "--:--", "title": "OpenPool gestartet", "detail": "Controller wartet auf Home Assistant."}
+                {
+                    "time": time.strftime("%H:%M", time.localtime(current_ts)),
+                    "date": day_key_for_ts(current_ts),
+                    "ts": current_ts,
+                    "title": "OpenPool gestartet",
+                    "detail": "Controller wartet auf Home Assistant.",
+                }
             ],
-            "updated_at": now_ts(),
+            "updated_at": current_ts,
         }
 
     def _load_state(self) -> dict:
@@ -345,6 +367,10 @@ class OpenPoolController:
             "heater_temp_max": 32,
             "pump_power_without_chlorinator_w": 450,
             "pump_power_with_chlorinator_w": 500,
+            "weather_bad_precip_probability_percent": 50,
+            "weather_bad_precipitation_mm": 1,
+            "weather_min_bathing_temperature_c": 20,
+            "weather_forecast_refresh_minutes": DEFAULT_WEATHER_FORECAST_REFRESH_MINUTES,
         }
         values.update((self.options().get("thresholds") or {}))
         return values
@@ -390,6 +416,9 @@ class OpenPoolController:
                 "last_error": self.last_error,
                 "auth_status": self.ha.auth_status(),
                 "ha_states": self._ui_ha_states(),
+                "weather_forecast": list(self.weather_forecast),
+                "weather_forecast_updated_at": self.weather_forecast_updated_at,
+                "weather_forecast_error": self.weather_forecast_error,
                 "options": public_options(self.options()),
                 "entities": self.entities(),
                 "thresholds": self.thresholds(),
@@ -421,7 +450,17 @@ class OpenPoolController:
         log = self.state.setdefault("command_log", [])
         if log and f"{log[0].get('title')}|{log[0].get('detail')}" == signature:
             return
-        log.insert(0, {"time": time.strftime("%H:%M", time.localtime()), "title": title, "detail": detail})
+        current_ts = now_ts()
+        log.insert(
+            0,
+            {
+                "time": time.strftime("%H:%M", time.localtime(current_ts)),
+                "date": day_key_for_ts(current_ts),
+                "ts": current_ts,
+                "title": title,
+                "detail": detail,
+            },
+        )
         del log[COMMAND_LOG_LIMIT:]
 
     def handle_action(self, action: dict) -> dict:
@@ -481,12 +520,52 @@ class OpenPoolController:
             except Exception as err:  # noqa: BLE001
                 self.last_error = str(err)
 
+        self._refresh_weather_forecast_if_needed(entities)
+
         with self.lock:
             self.connected = success >= 2
             self.ha_states = states
             self._track_runtime(states)
             self.state["updated_at"] = now_ts()
             self._save_state()
+
+    def _refresh_weather_forecast_if_needed(self, entities: dict) -> None:
+        entity_id = entities.get("weather")
+        if not entity_id:
+            return
+
+        thresholds = self.thresholds()
+        refresh_minutes = self._threshold_float(
+            thresholds,
+            "weather_forecast_refresh_minutes",
+            DEFAULT_WEATHER_FORECAST_REFRESH_MINUTES,
+        )
+        refresh_seconds = max(60.0, refresh_minutes * 60)
+        current_ts = now_ts()
+        if self.weather_forecast and current_ts - self.weather_forecast_updated_at < refresh_seconds:
+            return
+
+        try:
+            response = self.ha.service(
+                "weather",
+                "get_forecasts",
+                entity_id=entity_id,
+                data={"type": "daily"},
+                return_response=True,
+            )
+            service_response = response.get("service_response") if isinstance(response, dict) else None
+            if service_response is None and isinstance(response, dict):
+                service_response = response
+            entity_response = (service_response or {}).get(entity_id) if isinstance(service_response, dict) else None
+            if entity_response is None and isinstance(service_response, dict) and service_response:
+                entity_response = next(iter(service_response.values()))
+            forecast = entity_response.get("forecast") if isinstance(entity_response, dict) else None
+            if isinstance(forecast, list):
+                self.weather_forecast = forecast[:5]
+                self.weather_forecast_updated_at = current_ts
+                self.weather_forecast_error = ""
+        except Exception as err:  # noqa: BLE001 - forecast is optional UI context
+            self.weather_forecast_error = str(err)
 
     def _track_runtime(self, states: dict[str, dict]) -> None:
         current_day = today_key()
@@ -870,7 +949,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.6"
+    server_version = "OpenPool/0.2.21"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

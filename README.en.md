@@ -71,6 +71,8 @@ entities, enable the control logic, open the dashboard and see what is happening
 - Calculate PV surplus for the heat pump and start heating only after a stable
   heat-pump release condition.
 - Configure heat-pump start and stop thresholds as well as stability times.
+- Evaluate the daily forecast of the configured Home Assistant weather entity
+  and recommend swim mode or bad weather mode.
 - Set the heat pump target temperature from the UI.
 - Store runtimes, upcoming tasks and command history server-side.
 - Keep multiple open interfaces synchronized, for example iPad, smartphone and

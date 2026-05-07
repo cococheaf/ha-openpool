@@ -24,8 +24,8 @@
       --ok: #4ade80;
       --shadow: 0 10px 30px rgba(0,0,0,.22);
       --radius: 14px;
-      --page-gap: 12px;
-      --card-pad: 12px;
+      --page-gap: 10px;
+      --card-pad: 10px;
     }
 
     * { box-sizing: border-box; }
@@ -51,7 +51,7 @@
     .app {
       width: min(1320px, calc(100% - (var(--page-gap) * 2)));
       margin: 0 auto;
-      padding: 12px 0 18px;
+      padding: 10px 0 14px;
     }
 
     header {
@@ -59,7 +59,7 @@
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 12px;
-      margin-bottom: clamp(14px, 2vw, 24px);
+      margin-bottom: clamp(10px, 1.5vw, 18px);
     }
 
     .brand {
@@ -182,7 +182,7 @@
     .dashboard #pump-control-card,
     .dashboard #heater-control-card {
       grid-column: span 4;
-      min-height: 292px;
+      min-height: 260px;
     }
 
     .dashboard .sensor-list-card {
@@ -218,7 +218,7 @@
 
     /* Dashboard status card: operating state plus master enable switch. */
     .hero {
-      min-height: 186px;
+      min-height: 162px;
       position: relative;
       background:
         radial-gradient(circle at 15% 25%, rgba(80,183,255,.22), transparent 17rem),
@@ -262,9 +262,9 @@
       background: rgba(15,23,42,.62);
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 9px;
+      padding: 8px;
       min-width: 0;
-      min-height: 92px;
+      min-height: 78px;
       width: 100%;
       grid-column: 4;
       justify-content: flex-start;
@@ -305,7 +305,7 @@
       border-radius: 12px;
       padding: 9px;
       min-width: 0;
-      min-height: 92px;
+      min-height: 78px;
       height: 100%;
       display: grid;
       grid-template-rows: auto auto 1fr;
@@ -353,25 +353,25 @@
     /* Mode tiles are intentionally button-like cards for touch-first use on tablets. */
     .mode-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
       gap: 8px;
       align-items: stretch;
       grid-auto-rows: 1fr;
     }
 
     .mode-grid.pump-modes {
-      grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
     }
 
     .mode {
       background: rgba(255,255,255,.045);
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 9px;
+      padding: 8px;
       cursor: pointer;
       transition: .16s ease;
       min-width: 0;
-      min-height: 92px;
+      min-height: 74px;
       height: 100%;
       display: grid;
       grid-template-rows: auto auto 1fr;
@@ -394,9 +394,9 @@
       background: rgba(255,107,107,.20);
     }
 
-    .mode .icon { font-size: 18px; margin-bottom: 4px; }
-    .mode strong { display: block; font-size: 14px; margin-bottom: 2px; overflow-wrap: anywhere; }
-    .mode small { color: var(--muted); font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; align-self: start; }
+    .mode .icon { font-size: 17px; margin-bottom: 3px; }
+    .mode strong { display: block; font-size: 13px; margin-bottom: 2px; overflow-wrap: anywhere; }
+    .mode small { color: var(--muted); font-size: 11px; line-height: 1.18; overflow-wrap: anywhere; align-self: start; }
 
     /* Compact climate-style target temperature control. */
     .temperature-control {
@@ -507,7 +507,7 @@
 
     .command-log {
       margin-top: 0;
-      max-height: 190px;
+      max-height: 142px;
       overflow-y: auto;
       overscroll-behavior: contain;
       padding-right: 4px;
@@ -537,8 +537,8 @@
 
     .event {
       display: grid;
-      grid-template-columns: 62px 1fr;
-      gap: 9px;
+      grid-template-columns: 86px 1fr;
+      gap: 8px;
       align-items: start;
     }
 
@@ -781,7 +781,7 @@
       border-radius: 14px;
       background: rgba(15,23,42,.34);
       min-width: 0;
-      min-height: 86px;
+      min-height: 72px;
       display: grid;
       align-content: space-between;
     }
@@ -820,9 +820,9 @@
       border: 1px solid var(--line);
       border-radius: 12px;
       background: rgba(15,23,42,.34);
-      padding: 10px;
+      padding: 8px;
       display: grid;
-      gap: 8px;
+      gap: 6px;
       align-content: start;
     }
 
@@ -855,7 +855,7 @@
       gap: 10px;
       align-items: center;
       min-width: 0;
-      padding: 7px 0;
+      padding: 5px 0;
       border-top: 1px solid rgba(255,255,255,.07);
     }
 
@@ -1042,15 +1042,8 @@
     }
 
     @media (max-width: 1180px) {
-      .dashboard .hero,
       .dashboard .sensor-list-card {
         grid-column: 1 / -1;
-      }
-      .dashboard .decision-card,
-      .dashboard .weather-card,
-      .dashboard #pump-control-card,
-      .dashboard #heater-control-card {
-        grid-column: span 6;
       }
       .forecast-grid,
       .forecast-grid.daily-forecast {
@@ -1067,7 +1060,12 @@
       .dashboard .weather-card,
       .dashboard #pump-control-card,
       .dashboard #heater-control-card {
+        grid-column: span 6;
         min-height: 0;
+      }
+      .dashboard .hero,
+      .dashboard .decision-card {
+        grid-column: 1 / -1;
       }
       .sensor-categories {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1268,7 +1266,7 @@
             <div class="section-title">
               <h3>Wetterprognose</h3>
             </div>
-            <div class="forecast-grid daily-forecast">
+            <div class="forecast-grid daily-forecast" id="weather-forecast-grid">
               <div class="forecast-tile good weather-summary">
                 <div class="time">Empfehlung</div>
                 <div class="icon">☀️</div>
@@ -1415,7 +1413,10 @@
       heaterTempMin: 18,
       heaterTempMax: 32,
       pumpPowerWithoutChlorinatorW: 450,
-      pumpPowerWithChlorinatorW: 500
+      pumpPowerWithChlorinatorW: 500,
+      weatherBadPrecipProbabilityPercent: 50,
+      weatherBadPrecipitationMm: 1,
+      weatherMinBathingTemperatureC: 20
     };
     let shutdownActive = false;
     let restartPulseActive = false;
@@ -1450,12 +1451,51 @@
       return new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     }
 
+    function localDateKey(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function shortDateLabel(date) {
+      return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function relativeDayLabel(date, reference = new Date(), capitalized = true) {
+      const today = localDateKey(reference);
+      const yesterdayDate = new Date(reference);
+      yesterdayDate.setDate(reference.getDate() - 1);
+      const tomorrowDate = new Date(reference);
+      tomorrowDate.setDate(reference.getDate() + 1);
+      const key = localDateKey(date);
+
+      if (key === today) return capitalized ? 'Heute' : 'heute';
+      if (key === localDateKey(yesterdayDate)) return capitalized ? 'Gestern' : 'gestern';
+      if (key === localDateKey(tomorrowDate)) return capitalized ? 'Morgen' : 'morgen';
+      return shortDateLabel(date);
+    }
+
+    function commandDate(command) {
+      if (command?.date && /^\d{4}-\d{2}-\d{2}$/.test(command.date)) {
+        return new Date(`${command.date}T12:00:00`);
+      }
+      const ts = Number(command?.ts);
+      return Number.isFinite(ts) ? new Date(ts * 1000) : null;
+    }
+
+    function formatCommandStamp(command) {
+      const date = commandDate(command);
+      const time = command?.time || (date ? date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '--:--');
+      return date ? `${relativeDayLabel(date)} - ${time}` : time;
+    }
+
     function renderCommandLog() {
       const log = document.getElementById('command-log');
       if (!log) return;
       log.innerHTML = commandLog.slice(0, COMMAND_LOG_LIMIT).map(command => `
         <div class="event">
-          <time>${escapeHTML(command.time)}</time>
+          <time>${escapeHTML(formatCommandStamp(command))}</time>
           <div>${escapeHTML(command.title)}<small>${escapeHTML(command.detail)}</small></div>
         </div>
       `).join('');
@@ -1466,7 +1506,7 @@
       return Number.isFinite(snapshotTime) ? snapshotTime : Date.now() / 1000;
     }
 
-    function formatUpcomingTime(atSeconds, snapshot) {
+    function formatUpcomingCountdown(atSeconds, snapshot) {
       const at = Number(atSeconds);
       if (!Number.isFinite(at)) return '';
 
@@ -1478,6 +1518,23 @@
       if (minutes < 60) return `in ${minutes}:${String(seconds).padStart(2, '0')} min`;
 
       return `um ${new Date(at * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function formatTaskDateTime(atSeconds, snapshot) {
+      const at = Number(atSeconds);
+      if (!Number.isFinite(at)) return '';
+
+      const date = new Date(at * 1000);
+      const reference = new Date(snapshotNowSeconds(snapshot) * 1000);
+      const label = relativeDayLabel(date, reference, false);
+      const prefix = /^\d{2}\.\d{2}$/.test(label) ? `am ${label}` : label;
+      return `${prefix} um ${date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`;
+    }
+
+    function formatUpcomingLabel(task, snapshot) {
+      const scheduled = formatTaskDateTime(task.at, snapshot);
+      const countdown = task.countdown ? ` (${formatUpcomingCountdown(task.at, snapshot)})` : '';
+      return `${task.title} ${scheduled}${countdown}`;
     }
 
     function clockToToday(clock, nowDate) {
@@ -1624,7 +1681,7 @@
       const now = snapshotNowSeconds(snapshot);
       if (at <= now) return null;
 
-      return { title: 'Wärmepumpe startet', at };
+      return { title: 'Wärmepumpe startet', at, countdown: true };
     }
 
     function updateUpcomingTask(snapshot) {
@@ -1641,7 +1698,7 @@
       ].filter(Boolean).sort((left, right) => Number(left.at || Infinity) - Number(right.at || Infinity));
 
       const task = candidates[0];
-      const label = task ? `${task.title} ${formatUpcomingTime(task.at, snapshot)}` : 'Keine Aufgabe geplant';
+      const label = task ? formatUpcomingLabel(task, snapshot) : 'Keine Aufgabe geplant';
       node.innerHTML = `<span>Upcoming:</span> ${escapeHTML(label)}`;
     }
 
@@ -1651,7 +1708,7 @@
       const signature = `${title}|${detail}`;
       if (signature === lastCommandSignature) return;
       lastCommandSignature = signature;
-      commandLog.unshift({ time: getCommandTime(), title, detail });
+      commandLog.unshift({ time: getCommandTime(), date: localDateKey(), ts: Date.now() / 1000, title, detail });
       commandLog.splice(COMMAND_LOG_LIMIT);
       renderCommandLog();
     }
@@ -1710,6 +1767,9 @@
       controlConfig.heaterTempMax = optionNumber(thresholds.heater_temp_max, controlConfig.heaterTempMax);
       controlConfig.pumpPowerWithoutChlorinatorW = optionNumber(thresholds.pump_power_without_chlorinator_w, controlConfig.pumpPowerWithoutChlorinatorW);
       controlConfig.pumpPowerWithChlorinatorW = optionNumber(thresholds.pump_power_with_chlorinator_w, controlConfig.pumpPowerWithChlorinatorW);
+      controlConfig.weatherBadPrecipProbabilityPercent = optionNumber(thresholds.weather_bad_precip_probability_percent, controlConfig.weatherBadPrecipProbabilityPercent);
+      controlConfig.weatherBadPrecipitationMm = optionNumber(thresholds.weather_bad_precipitation_mm, controlConfig.weatherBadPrecipitationMm);
+      controlConfig.weatherMinBathingTemperatureC = optionNumber(thresholds.weather_min_bathing_temperature_c, controlConfig.weatherMinBathingTemperatureC);
     }
 
     async function loadInitialState() {
@@ -1931,21 +1991,114 @@
       return !['off', 'idle'].includes(state);
     }
 
-    function updateWeather(states) {
+    function weatherConditionIcon(condition) {
+      const state = String(condition || '').toLowerCase();
+      if (['rainy', 'pouring', 'snowy-rainy'].includes(state)) return '🌧️';
+      if (state === 'lightning-rainy') return '⛈️';
+      if (state === 'lightning') return '🌩️';
+      if (state === 'snowy') return '🌨️';
+      if (state === 'hail') return '🌨️';
+      if (state === 'cloudy') return '☁️';
+      if (state === 'partlycloudy') return '🌤️';
+      if (state === 'clear-night') return '🌙';
+      return '☀️';
+    }
+
+    function forecastNumber(item, key) {
+      if (item?.[key] === null || item?.[key] === undefined || item?.[key] === '') return null;
+      const value = Number(item?.[key]);
+      return Number.isFinite(value) ? value : null;
+    }
+
+    function forecastTemperature(item, weather) {
+      return forecastNumber(item, 'temperature') ?? forecastNumber(item, 'templow') ?? Number(weather?.attributes?.temperature);
+    }
+
+    function forecastDayLabel(item, index) {
+      const date = item?.datetime ? new Date(item.datetime) : null;
+      if (!date || Number.isNaN(date.getTime())) {
+        return index === 0 ? 'Heute' : index === 1 ? 'Morgen' : 'Übermorgen';
+      }
+      const label = relativeDayLabel(date, new Date(), true);
+      return /^\d{2}\.\d{2}$/.test(label) ? label : label;
+    }
+
+    function evaluateWeatherDay(item, weather) {
+      const condition = String(item?.condition || weather?.state || '').toLowerCase();
+      const precipitationProbability = forecastNumber(item, 'precipitation_probability');
+      const precipitation = forecastNumber(item, 'precipitation');
+      const temperature = forecastTemperature(item, weather);
+      const badConditions = new Set(['rainy', 'pouring', 'lightning-rainy', 'snowy-rainy', 'snowy', 'hail', 'lightning', 'exceptional']);
+      const reasons = [];
+
+      if (badConditions.has(condition)) reasons.push('Regen/Wetterwarnung');
+      if (precipitationProbability !== null && precipitationProbability >= controlConfig.weatherBadPrecipProbabilityPercent) {
+        reasons.push(`${Math.round(precipitationProbability)}% Regen`);
+      }
+      if (precipitation !== null && precipitation >= controlConfig.weatherBadPrecipitationMm) {
+        reasons.push(`${formatDecimal(precipitation, precipitation % 1 === 0 ? 0 : 1)} mm Regen`);
+      }
+      if (Number.isFinite(temperature) && temperature < controlConfig.weatherMinBathingTemperatureC) {
+        reasons.push(`${formatDecimal(temperature, 1)}° unter Grenzwert`);
+      }
+
+      const recommendation = reasons.length ? 'Schlechtwetter' : 'Badebetrieb';
+      const tempText = Number.isFinite(temperature) ? `${formatDecimal(temperature, 1)}°` : 'Wetter';
+      const rainText = precipitationProbability !== null
+        ? `${Math.round(precipitationProbability)}% Regen`
+        : (precipitation !== null ? `${formatDecimal(precipitation, precipitation % 1 === 0 ? 0 : 1)} mm Regen` : 'trocken');
+      const reason = reasons.length ? reasons.join(' · ') : `${tempText} · ${rainText}`;
+      const rainyByAmount = (
+        precipitationProbability !== null && precipitationProbability >= controlConfig.weatherBadPrecipProbabilityPercent
+      ) || (
+        precipitation !== null && precipitation >= controlConfig.weatherBadPrecipitationMm
+      );
+      const icon = rainyByAmount && !badConditions.has(condition) ? '🌧️' : weatherConditionIcon(condition);
+
+      return {
+        condition,
+        icon,
+        recommendation,
+        reason,
+        className: reasons.length ? 'rain' : 'good',
+        tempText,
+        rainText
+      };
+    }
+
+    function forecastTileMarkup(item, weather, index, summary = false) {
+      const evaluation = evaluateWeatherDay(item, weather);
+      const label = summary ? 'Empfehlung' : forecastDayLabel(item, index);
+      const badge = summary
+        ? `<div class="weather-badge">${evaluation.icon} Heute: ${evaluation.recommendation} empfohlen</div>`
+        : `<div class="recommendation">${evaluation.recommendation}</div>`;
+      return `
+        <div class="forecast-tile ${evaluation.className}${summary ? ' weather-summary' : ''}">
+          <div class="time">${escapeHTML(label)}</div>
+          <div class="icon">${evaluation.icon}</div>
+          <div class="temp">${escapeHTML(summary ? evaluation.recommendation : evaluation.tempText)}</div>
+          <small>${escapeHTML(evaluation.reason)}</small>
+          ${badge}
+        </div>
+      `;
+    }
+
+    function updateWeather(states, snapshot = latestSnapshot) {
       const weather = states['entity-weather'];
       if (isUnavailableState(weather)) return;
 
-      const state = String(weather.state).toLowerCase();
-      const temperature = weather.attributes?.temperature;
-      const rainy = ['rainy', 'pouring', 'lightning-rainy', 'snowy-rainy'].includes(state);
-      const recommendation = rainy ? 'Schlechtwetter' : 'Badebetrieb';
-      const icon = rainy ? '🌧️' : (state.includes('cloud') ? '🌤️' : '☀️');
-      const temperatureValue = Number(temperature);
-      const tempText = Number.isFinite(temperatureValue) ? `${formatDecimal(temperatureValue, 1)}°` : 'Wetter';
+      const forecast = Array.isArray(snapshot?.weather_forecast) ? snapshot.weather_forecast : [];
+      const days = forecast.length
+        ? forecast.slice(0, 3)
+        : [{ condition: weather.state, temperature: Number(weather.attributes?.temperature), datetime: new Date().toISOString() }];
+      const grid = document.getElementById('weather-forecast-grid');
+      if (!grid) return;
 
-      setText('weather-recommendation', recommendation);
-      setText('weather-reason', `Home Assistant meldet ${weather.state} · ${tempText}.`);
-      setText('weather-badge', `${icon} Heute: ${recommendation} empfohlen`);
+      const tiles = [
+        forecastTileMarkup(days[0], weather, 0, true),
+        ...days.slice(1, 3).map((item, index) => forecastTileMarkup(item, weather, index + 1))
+      ];
+      grid.innerHTML = tiles.join('');
     }
 
     function updateHomeAssistantValues(states) {
