@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.26
+
+- Normalize dashboard tile sizing across weather, pump, heat-pump, status and
+  energy-flow cards.
+- Stop pump and heat-pump mode buttons from stretching to fill the full card
+  height.
+- Keep the heat-pump release energy-flow tiles compact while preserving the
+  centered arrow layout on small screens.
+
 ## 0.2.25
 
 - Respect the configured add-on `log_level` for OpenPool server logs.
