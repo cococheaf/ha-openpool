@@ -26,7 +26,7 @@
       --radius: 14px;
       --page-gap: 10px;
       --card-pad: 10px;
-      --tile-height: 68px;
+      --tile-height: 64px;
       --tile-radius: 12px;
     }
 
@@ -172,19 +172,10 @@
       align-items: stretch;
     }
 
-    .dashboard .hero {
-      grid-column: span 8;
-    }
-
+    .dashboard .hero,
+    .dashboard .controls-panel,
     .dashboard .decision-card {
-      grid-column: span 4;
-    }
-
-    .dashboard .weather-card,
-    .dashboard #pump-control-card,
-    .dashboard #heater-control-card {
-      grid-column: span 4;
-      min-height: 0;
+      grid-column: 1 / -1;
     }
 
     .dashboard .sensor-list-card {
@@ -219,17 +210,21 @@
 
     /* Dashboard status card: operating state plus master enable switch. */
     .hero {
-      min-height: 162px;
+      min-height: 0;
       position: relative;
       background:
-        radial-gradient(circle at 15% 25%, rgba(80,183,255,.22), transparent 17rem),
-        radial-gradient(circle at 85% 10%, rgba(55,212,166,.18), transparent 17rem),
+        radial-gradient(circle at 14% 12%, rgba(80,183,255,.16), transparent 20rem),
+        radial-gradient(circle at 84% 8%, rgba(55,212,166,.13), transparent 18rem),
         linear-gradient(135deg, rgba(31,45,73,.98), rgba(24,36,61,.98));
+    }
+
+    .hero .section-title {
+      margin-bottom: 8px;
     }
 
     .hero-top {
       display: grid;
-      grid-template-columns: repeat(4, minmax(118px, 1fr));
+      grid-template-columns: minmax(0, 1fr) minmax(180px, 230px);
       gap: 8px;
       align-items: stretch;
       margin-bottom: 8px;
@@ -244,8 +239,15 @@
 
     .hero-copy {
       min-width: 0;
-      align-self: start;
-      grid-column: 1 / span 3;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: var(--tile-radius);
+      background: rgba(15,23,42,.48);
+      min-height: var(--tile-height);
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      text-align: center;
     }
 
     .hero .sub {
@@ -278,8 +280,7 @@
     .metric,
     .mode,
     .forecast-tile,
-    .temperature-value,
-    .energy-tile {
+    .temperature-value {
       position: relative;
     }
 
@@ -351,8 +352,15 @@
       height: var(--tile-height);
       width: 100%;
       grid-column: 4;
-      justify-content: flex-start;
+      justify-content: center;
+      text-align: center;
       flex: 0 0 auto;
+    }
+
+    .master strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.1;
     }
 
     .switch {
@@ -394,6 +402,8 @@
       display: grid;
       grid-template-rows: auto auto;
       align-content: center;
+      justify-items: center;
+      text-align: center;
     }
 
     .metric .label {
@@ -407,6 +417,16 @@
       font-size: 19px;
       letter-spacing: 0;
       overflow-wrap: anywhere;
+    }
+
+    .metric .value.status-on,
+    #master-state-label.status-on {
+      color: var(--ok);
+    }
+
+    .metric .value.status-off,
+    #master-state-label.status-off {
+      color: var(--danger);
     }
 
     .metric .hint {
@@ -453,7 +473,7 @@
 
     .weather-mode-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      margin-bottom: 8px;
+      margin-bottom: 0;
     }
 
     .weather-mode-grid .mode {
@@ -473,6 +493,8 @@
       display: grid;
       grid-template-rows: auto auto;
       align-content: center;
+      justify-items: center;
+      text-align: center;
     }
 
     .mode:hover { transform: translateY(-1px); background: rgba(255,255,255,.07); }
@@ -509,12 +531,13 @@
     .temperature-control {
       display: grid;
       gap: 7px;
-      margin-top: 8px;
+      margin-top: 0;
       margin-bottom: 0;
       padding: 9px;
       border: 1px solid var(--line);
       border-radius: 14px;
       background: rgba(15,23,42,.34);
+      min-width: 0;
     }
 
     .temperature-control .section-title {
@@ -536,6 +559,8 @@
       height: var(--tile-height);
       display: grid;
       align-content: center;
+      justify-items: center;
+      text-align: center;
     }
 
     .temperature-value .label {
@@ -684,6 +709,60 @@
       display: none;
     }
 
+    .controls-panel .card-inner {
+      gap: 0;
+    }
+
+    .control-section {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(130px, 170px) minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 10px 0;
+      min-width: 0;
+    }
+
+    .control-section:first-child {
+      padding-top: 0;
+    }
+
+    .control-section:last-child {
+      padding-bottom: 0;
+    }
+
+    .control-section + .control-section {
+      border-top: 1px solid rgba(255,255,255,.09);
+    }
+
+    .control-section-header {
+      min-width: 0;
+    }
+
+    .control-section-header h3 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .control-section-body {
+      min-width: 0;
+    }
+
+    .weather-layout {
+      display: grid;
+      grid-template-columns: minmax(180px, .48fr) minmax(0, 1.52fr);
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .heater-layout {
+      display: grid;
+      grid-template-columns: minmax(240px, .9fr) minmax(260px, 1.1fr);
+      gap: 8px;
+      align-items: stretch;
+    }
+
     .control-card {
       position: relative;
       transition: opacity .2s ease, filter .2s ease;
@@ -806,19 +885,19 @@
 
     .weather-card .forecast-grid,
     .weather-card .forecast-grid.daily-forecast {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .forecast-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(140px, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
       align-items: stretch;
       grid-auto-rows: var(--tile-height);
     }
 
     .forecast-grid.daily-forecast {
-      grid-template-columns: repeat(3, minmax(140px, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .weather-summary,
@@ -1063,91 +1142,9 @@
       background: rgba(55,212,166,.08);
     }
 
-    .energy-flow {
-      margin-top: 8px;
-      padding: 9px;
-      border: 1px solid var(--line);
-      border-radius: var(--tile-radius);
-      background: rgba(15,23,42,.38);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .energy-flow::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(80,183,255,.11), transparent);
-      transform: translateX(-100%);
-      animation: flowSweep 2.4s linear infinite;
-    }
-
-    .energy-line {
-      position: relative;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) clamp(24px, 5vw, 34px) minmax(0, 1fr);
-      gap: 8px;
-      align-items: center;
-      color: var(--muted);
-      font-size: 12px;
-      width: 100%;
-    }
-
-    .energy-line strong {
-      display: block;
-      color: var(--text);
-      font-size: 17px;
-      margin-top: 2px;
-      overflow-wrap: anywhere;
-    }
-
-    .energy-flow .section-title {
-      position: relative;
-      margin-bottom: 8px;
-    }
-
-    .energy-tile {
-      position: relative;
-      min-height: var(--tile-height);
-      height: var(--tile-height);
-      padding: 8px;
-      border: 1px solid var(--line);
-      border-radius: var(--tile-radius);
-      background: rgba(255,255,255,.045);
-      display: grid;
-      align-content: center;
-      min-width: 0;
-    }
-
-    .arrow {
-      width: min(34px, 100%);
-      height: 2px;
-      background: linear-gradient(90deg, var(--accent-2), var(--accent));
-      position: relative;
-      border-radius: 99px;
-      justify-self: center;
-    }
-
-    .arrow::after {
-      content: "";
-      position: absolute;
-      right: -1px;
-      top: 50%;
-      width: 8px;
-      height: 8px;
-      border-right: 2px solid var(--accent);
-      border-top: 2px solid var(--accent);
-      transform: translateY(-50%) rotate(45deg);
-    }
-
     @keyframes softPulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(246,200,95,.00); }
       50% { box-shadow: 0 0 0 6px rgba(246,200,95,.08); }
-    }
-
-    @keyframes flowSweep {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
     }
 
     @keyframes connectedPulse {
@@ -1168,7 +1165,7 @@
       }
       .forecast-grid,
       .forecast-grid.daily-forecast {
-        grid-template-columns: repeat(3, minmax(128px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
 
@@ -1178,12 +1175,6 @@
         --card-pad: 11px;
       }
 
-      .dashboard .weather-card,
-      .dashboard #pump-control-card,
-      .dashboard #heater-control-card {
-        grid-column: span 6;
-        min-height: 0;
-      }
       .dashboard .hero,
       .dashboard .decision-card {
         grid-column: 1 / -1;
@@ -1194,6 +1185,13 @@
       .weather-card .forecast-grid,
       .weather-card .forecast-grid.daily-forecast {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .control-section {
+        grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
+      }
+      .weather-layout,
+      .heater-layout {
+        grid-template-columns: minmax(0, 1fr);
       }
       header {
         grid-template-columns: minmax(0, 1fr) auto;
@@ -1210,9 +1208,7 @@
       .grid { grid-template-columns: minmax(0, 1fr); }
       .dashboard .hero,
       .dashboard .decision-card,
-      .dashboard .weather-card,
-      .dashboard #pump-control-card,
-      .dashboard #heater-control-card,
+      .dashboard .controls-panel,
       .dashboard .sensor-list-card {
         grid-column: auto;
       }
@@ -1226,6 +1222,10 @@
         grid-template-columns: minmax(0, 1fr);
       }
       .weather-summary { grid-column: auto; }
+      .control-section {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+      }
     }
 
     @media (max-width: 620px) {
@@ -1287,10 +1287,6 @@
         gap: 2px;
       }
       .mode { padding: 8px; }
-      .energy-line {
-        grid-template-columns: minmax(0, 1fr) clamp(24px, 5vw, 34px) minmax(0, 1fr);
-        gap: 8px;
-      }
       .sequence-step {
         grid-template-columns: 28px 1fr;
       }
@@ -1326,6 +1322,9 @@
       <div class="grid">
         <section class="card hero">
           <div class="card-inner">
+            <div class="section-title">
+              <h3>Allgemein</h3>
+            </div>
             <div class="hero-top">
               <div class="hero-copy">
                 <h2 id="hero-title">Warte auf Home Assistant</h2>
@@ -1335,7 +1334,7 @@
                 <div class="switch on" onclick="toggleSwitch(this)"><div class="knob"></div></div>
                 <div>
                   <strong>Hauptfreigabe</strong><br />
-                  <small id="master-state-label" style="color:var(--muted)">Poolsystem EIN</small>
+                  <small id="master-state-label">Poolsystem EIN</small>
                 </div>
               </div>
             </div>
@@ -1365,6 +1364,94 @@
           </div>
         </section>
 
+        <section class="card controls-panel">
+          <div class="card-inner">
+            <div class="control-section weather-card" id="weather-card">
+              <div class="control-section-header">
+                <h3>Wetterprognose</h3>
+              </div>
+              <div class="control-section-body weather-layout">
+                <div class="mode-grid weather-mode-grid" id="weather-mode-control">
+                  <div class="mode active" data-weather-mode="Empfehlung"><div class="icon">☀️</div><strong>Empfehlung</strong><small>Zeigt nur das empfohlene Pumpenprofil.</small></div>
+                  <div class="mode" data-weather-mode="Automatik"><div class="icon">↻</div><strong>Automatik</strong><small>Schaltet zwischen Badebetrieb und Schlechtwetter.</small></div>
+                </div>
+                <div class="forecast-grid daily-forecast" id="weather-forecast-grid">
+                  <div class="forecast-tile good weather-summary">
+                    <div class="time">Empfehlung</div>
+                    <div class="icon">☀️</div>
+                    <div class="temp" id="weather-recommendation">Badewetter</div>
+                    <small id="weather-reason">Überwiegend sonnig oder wolkenlos.</small>
+                    <div class="weather-badge" id="weather-badge">☀️ Heute: Badebetrieb empfohlen</div>
+                  </div>
+
+                  <div class="forecast-tile rain">
+                    <div class="time">Morgen</div>
+                    <div class="icon">🌧️</div>
+                    <div class="temp">Schlechtwetter</div>
+                    <small>Stark bewölkt oder Regen erwartet.</small>
+                  </div>
+
+                  <div class="forecast-tile rain">
+                    <div class="time">Übermorgen</div>
+                    <div class="icon">🌧️</div>
+                    <div class="temp">Schlechtwetter</div>
+                    <small>Stark bewölkt oder Regen erwartet.</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-section control-card" id="pump-control-card">
+              <div class="disabled-overlay"><span>Hauptfreigabe AUS – Pumpenmodus gesperrt</span></div>
+              <div class="control-section-header">
+                <h3>Pumpenmodus</h3>
+              </div>
+              <div class="control-section-body">
+                <div class="mode-grid pump-modes">
+                  <div class="mode" data-pump-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Nachlauf nur, wenn die Heizung kürzlich aktiv war.</small></div>
+                  <div class="mode" data-pump-mode="Dauerbetrieb"><div class="icon">🔁</div><strong>Dauerbetrieb</strong><small>Pumpe läuft dauerhaft, Restart alle 12 Stunden.</small></div>
+                  <div class="mode active" data-pump-mode="Badebetrieb"><div class="icon">🏊</div><strong>Badebetrieb</strong><small>07:30–22:00 mit Restart-Pulsen.</small></div>
+                  <div class="mode" data-pump-mode="Schlechtwetter"><div class="icon">🌧️</div><strong>Schlechtwetter</strong><small>Reduzierte Chlorung bei wenig UV/Badenden.</small></div>
+                  <div class="mode" data-pump-mode="Nachtbaden"><div class="icon">🌙</div><strong>Nachtbaden</strong><small id="night-swim-hint">Pumpe + Heizung EIN, Dauer aus Add-on-Option.</small></div>
+                  <div class="mode action-mode" data-action="restart"><div class="icon">↻</div><strong>Chlorsystem neu starten</strong><small>Kurzer Restart-Pulse für den Chlorinator.</small></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-section control-card" id="heater-control-card">
+              <div class="disabled-overlay"><span>Hauptfreigabe AUS – Heizungsmodus gesperrt</span></div>
+              <div class="control-section-header">
+                <h3>Heizungsmodus</h3>
+              </div>
+              <div class="control-section-body heater-layout">
+                <div class="mode-grid">
+                  <div class="mode" data-heater-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Wärmepumpe bleibt aus.</small></div>
+                  <div class="mode" data-heater-mode="Ein"><div class="icon">🔥</div><strong>Ein</strong><small>Heizen erzwingen, aber nur mit Pumpenflow.</small></div>
+                  <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach PV-Leistung und Stabilzeit.</small></div>
+                </div>
+                <div class="temperature-control">
+                  <div class="section-title">
+                    <h3>Heizungstemperatur</h3>
+                  </div>
+                  <div class="temperature-readout">
+                    <div class="temperature-value">
+                      <div class="label">Ist</div>
+                      <strong id="heater-current-temp">--</strong>
+                    </div>
+                    <div class="temperature-value">
+                      <div class="label">Ziel</div>
+                      <strong id="heater-target-temp">28,0°</strong>
+                    </div>
+                  </div>
+                  <div class="temp-slider">
+                    <input id="heater-target-slider" type="range" min="18" max="32" step="0.5" value="28" oninput="setTargetTemp(this.value)" aria-label="Zieltemperatur Wärmepumpe" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="card decision-card">
           <div class="card-inner">
             <div class="section-title">
@@ -1378,102 +1465,6 @@
               <div class="sequence-step done"><div class="bubble">1</div><div><strong>Heizung AUS</strong><small>Wärmepumpe bekommt Abschaltbefehl</small></div><div class="state">fertig</div></div>
               <div class="sequence-step active"><div class="bubble">2</div><div><strong>Nachlauf 5 Minuten</strong><small>Pumpe bleibt für sicheren Flow aktiv</small></div><div class="state">läuft</div></div>
               <div class="sequence-step"><div class="bubble">3</div><div><strong>Pumpe AUS</strong><small>Erst nach dem Heizungs-Nachlauf</small></div><div class="state">wartet</div></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card weather-card" id="weather-card">
-          <div class="card-inner">
-            <div class="section-title">
-              <h3>Wetterprognose</h3>
-            </div>
-            <div class="mode-grid weather-mode-grid" id="weather-mode-control">
-              <div class="mode active" data-weather-mode="Empfehlung"><div class="icon">☀️</div><strong>Empfehlung</strong><small>Zeigt nur das empfohlene Pumpenprofil.</small></div>
-              <div class="mode" data-weather-mode="Automatik"><div class="icon">↻</div><strong>Automatik</strong><small>Schaltet zwischen Badebetrieb und Schlechtwetter.</small></div>
-            </div>
-            <div class="forecast-grid daily-forecast" id="weather-forecast-grid">
-              <div class="forecast-tile good weather-summary">
-                <div class="time">Empfehlung</div>
-                <div class="icon">☀️</div>
-                <div class="temp" id="weather-recommendation">Badewetter</div>
-                <small id="weather-reason">Überwiegend sonnig oder wolkenlos.</small>
-                <div class="weather-badge" id="weather-badge">☀️ Heute: Badebetrieb empfohlen</div>
-              </div>
-
-              <div class="forecast-tile rain">
-                <div class="time">Morgen</div>
-                <div class="icon">🌧️</div>
-                <div class="temp">Schlechtwetter</div>
-                <small>Stark bewölkt oder Regen erwartet.</small>
-                <div class="recommendation">Schlechtwetter</div>
-              </div>
-
-              <div class="forecast-tile rain">
-                <div class="time">Übermorgen</div>
-                <div class="icon">🌧️</div>
-                <div class="temp">Schlechtwetter</div>
-                <small>Stark bewölkt oder Regen erwartet.</small>
-                <div class="recommendation">Schlechtwetter</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card control-card" id="pump-control-card">
-          <div class="disabled-overlay"><span>Hauptfreigabe AUS – Pumpenmodus gesperrt</span></div>
-          <div class="card-inner">
-            <div class="section-title">
-              <h3>Pumpenmodus</h3>
-            </div>
-            <div class="mode-grid pump-modes">
-              <div class="mode" data-pump-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Nachlauf nur, wenn die Heizung kürzlich aktiv war.</small></div>
-              <div class="mode" data-pump-mode="Dauerbetrieb"><div class="icon">🔁</div><strong>Dauerbetrieb</strong><small>Pumpe läuft dauerhaft, Restart alle 12 Stunden.</small></div>
-              <div class="mode active" data-pump-mode="Badebetrieb"><div class="icon">🏊</div><strong>Badebetrieb</strong><small>07:30–22:00 mit Restart-Pulsen.</small></div>
-              <div class="mode" data-pump-mode="Schlechtwetter"><div class="icon">🌧️</div><strong>Schlechtwetter</strong><small>Reduzierte Chlorung bei wenig UV/Badenden.</small></div>
-              <div class="mode" data-pump-mode="Nachtbaden"><div class="icon">🌙</div><strong>Nachtbaden</strong><small id="night-swim-hint">Pumpe + Heizung EIN, Dauer aus Add-on-Option.</small></div>
-              <div class="mode action-mode" data-action="restart"><div class="icon">↻</div><strong>Chlorsystem neu starten</strong><small>Kurzer Restart-Pulse für den Chlorinator.</small></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card control-card" id="heater-control-card">
-          <div class="disabled-overlay"><span>Hauptfreigabe AUS – Heizungsmodus gesperrt</span></div>
-          <div class="card-inner">
-            <div class="section-title">
-              <h3>Heizungsmodus</h3>
-            </div>
-            <div class="mode-grid">
-              <div class="mode" data-heater-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Wärmepumpe bleibt aus.</small></div>
-              <div class="mode" data-heater-mode="Ein"><div class="icon">🔥</div><strong>Ein</strong><small>Heizen erzwingen, aber nur mit Pumpenflow.</small></div>
-              <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach PV-Leistung und Stabilzeit.</small></div>
-            </div>
-            <div class="temperature-control">
-              <div class="section-title">
-                <h3>Heizungstemperatur</h3>
-              </div>
-              <div class="temperature-readout">
-                <div class="temperature-value">
-                  <div class="label">Ist</div>
-                  <strong id="heater-current-temp">--</strong>
-                </div>
-                <div class="temperature-value">
-                  <div class="label">Ziel</div>
-                  <strong id="heater-target-temp">28,0°</strong>
-                </div>
-              </div>
-              <div class="temp-slider">
-                <input id="heater-target-slider" type="range" min="18" max="32" step="0.5" value="28" oninput="setTargetTemp(this.value)" aria-label="Zieltemperatur Wärmepumpe" />
-              </div>
-            </div>
-            <div class="energy-flow">
-              <div class="section-title">
-                <h3>Wärmepumpenfreigabe</h3>
-              </div>
-              <div class="energy-line">
-                <div class="energy-tile">Verfügbar für WP<strong id="pv-free-value">--</strong></div>
-                <div class="arrow"></div>
-                <div class="energy-tile">Start ab<strong id="pv-ready-threshold">1,50 kW</strong></div>
-              </div>
             </div>
           </div>
         </section>
@@ -1839,7 +1830,7 @@
     }
 
     function tooltipTileForNode(node) {
-      return node?.closest('.hero-copy, .master, .metric, .mode, .forecast-tile, .temperature-value, .energy-tile');
+      return node?.closest('.hero-copy, .master, .metric, .mode, .forecast-tile, .temperature-value');
     }
 
     function syncTileTooltip(tile) {
@@ -1871,10 +1862,22 @@
       tiles.forEach(syncTileTooltip);
     }
 
+    function applyStatusTone(node, id, value) {
+      if (!['pump-status', 'chlor-status', 'heater-status', 'master-state-label'].includes(id)) return;
+      const normalized = String(value).toUpperCase();
+      node.classList.remove('status-on', 'status-off');
+      if (normalized.includes('EIN')) {
+        node.classList.add('status-on');
+      } else if (normalized.includes('AUS')) {
+        node.classList.add('status-off');
+      }
+    }
+
     function setText(id, value) {
       const node = document.getElementById(id);
       if (!node) return;
       node.textContent = value;
+      applyStatusTone(node, id, value);
       syncTooltipForNode(node);
     }
 
@@ -2155,20 +2158,14 @@
       const gridImport = entityPowerWatts(states['entity-grid-import']);
       const heaterPower = entityPowerWatts(states['entity-heater-power']);
       const heaterActive = isHeaterActive(states['entity-heater-climate']);
-      const threshold = optionNumber(controlConfig.pvStartExportW, 1500);
-      const thresholdText = formatPower(threshold);
-      const stableText = formatStableMinutes(controlConfig.pvStartStableMinutes, true);
-      const readyText = stableText === 'sofort' ? thresholdText : `${thresholdText} · ${stableText}`;
 
       setText('pv-generation-value', formatPower(pvGeneration));
       setText('pv-export-value', formatPower(pvExport));
       setText('grid-import-value', formatPower(gridImport));
-      setText('pv-ready-threshold', readyText);
       updateHeatSourceMetric(states);
 
       if ([pvGeneration, pvExport, gridImport].some(value => value === null)) {
         setText('house-consumption-value', '--');
-        setText('pv-free-value', '--');
         setText('pv-free-list-value', '--');
         return;
       }
@@ -2178,7 +2175,6 @@
       setText('house-consumption-value', formatPower(houseConsumption));
 
       const text = formatPower(available);
-      setText('pv-free-value', text);
       setText('pv-free-list-value', text);
     }
 
@@ -2274,7 +2270,7 @@
         : `${weatherMode}: ${evaluation.recommendation} empfohlen`;
       const badge = summary
         ? `<div class="weather-badge">${evaluation.icon} ${escapeHTML(badgeText)}</div>`
-        : `<div class="recommendation">${evaluation.recommendation}</div>`;
+        : '';
       return `
         <div class="forecast-tile ${evaluation.className}${summary ? ' weather-summary' : ''}">
           <div class="time">${escapeHTML(label)}</div>

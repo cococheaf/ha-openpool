@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.29
+
+- Rebuild the dashboard order as Allgemein, Steuerelemente, Aufgabenverlauf and
+  Sensorik.
+- Combine Wetterprognose, Pumpenmodus and Heizungsmodus into one large control
+  card with horizontal separators.
+- Color EIN/AUS status values in the main status tiles and center tile content
+  across the dashboard.
+- Remove the dashboard heat-pump release card and simplify tomorrow/overmorrow
+  weather tiles.
+
 ## 0.2.28
 
 - Hide explanatory dashboard tile text and expose it as hover/focus tooltips.
