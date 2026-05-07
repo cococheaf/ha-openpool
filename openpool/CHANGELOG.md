@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.9
+
+- Center the heater mode buttons inside the card body below the heading.
+
 ## 1.0.8
 
 - Re-center the heater mode button row on desktop and iPad-width layouts.
