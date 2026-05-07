@@ -49,6 +49,8 @@ Entscheidungen.
 - Persistenter Controller-State in `/data/openpool_state.json`, damit Laufzeit,
   Jobs und Aufgabenverlauf nach einem Neustart erhalten bleiben.
 - Wettersteuerung und Wärmepumpensteuerung optional per Add-on-Konfiguration.
+- Wettersteuerung als Empfehlung oder Automatik für Badebetrieb und
+  Schlechtwetterprofil.
 
 ## Wichtig vor dem ersten Start
 
@@ -76,6 +78,11 @@ Die Wetter-Entität ist nicht an einen festen Anbieter gebunden. Trage in
 Home-Assistant-Integration ein. OpenPool nutzt daraus nur die grobe Tagesklasse:
 `Badewetter` bei überwiegend sonnig oder wolkenlos, sonst `Schlechtwetter` bei
 stark bewölktem Himmel oder Regen.
+
+Im Dashboard kann die Wettersteuerung auf `Empfehlung` oder `Automatik`
+gestellt werden. In `Empfehlung` zeigt OpenPool nur das empfohlene Pumpenprofil
+an. In `Automatik` setzt OpenPool den Pumpenmodus selbst auf `Badebetrieb` oder
+`Schlechtwetter`.
 
 ## Home-Assistant-Verlauf
 

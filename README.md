@@ -104,6 +104,11 @@ Wettersteuerung zählt nur die grobe Tagesklasse: `Badewetter` bei überwiegend
 sonnig oder wolkenlos, sonst `Schlechtwetter` bei stark bewölktem Himmel oder
 Regen.
 
+Im Wetterbereich kann zwischen `Empfehlung` und `Automatik` gewählt werden.
+`Empfehlung` zeigt nur das empfohlene Pumpenprofil an. `Automatik` setzt den
+Pumpenmodus selbst zwischen `Badebetrieb` und `Schlechtwetter`. Eine manuelle
+Pumpenmodus-Auswahl pausiert die Wetterautomatik wieder.
+
 Für die Wärmepumpenfreigabe wird der Hausverbrauch aus PV-Erzeugung, saldierender
 Netzeinspeisung und Netzbezug abgeleitet:
 

@@ -100,6 +100,11 @@ details in the one-second live loop. Weather control only cares about the broad
 daily class: bathing weather for mostly sunny or clear days, bad weather for
 strong cloud cover or rain.
 
+The weather card can be set to `Empfehlung` or `Automatik`. `Empfehlung` only
+shows the recommended pump profile. `Automatik` switches the pump mode between
+swim mode and bad weather mode. A manual pump-mode selection pauses weather
+automation again.
+
 For heat-pump release, house consumption is derived from PV production, balancing grid
 export and grid import:
 

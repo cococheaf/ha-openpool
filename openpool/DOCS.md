@@ -79,10 +79,16 @@ The recommendation is intentionally coarse:
 - `Schlechtwetter`: strongly cloudy, rain, storms, fog, snow or exceptional
   weather states.
 
-The dashboard only shows the resulting daily class and the recommended pump
-profile. In `Wetterautomatik`, heat-pump control uses the cached daily
-recommendation: with `Badewetter` it behaves like PV automation, with
-`Schlechtwetter` it keeps the heat pump off.
+The dashboard shows the resulting daily class and the recommended pump profile.
+The weather card has a persistent `Empfehlung`/`Automatik` switch:
+
+- `Empfehlung`: OpenPool only displays the recommended pump profile.
+- `Automatik`: OpenPool sets the pump profile to `Badebetrieb` or
+  `Schlechtwetter` according to the cached daily recommendation.
+
+Manual pump-mode changes pause weather automation and switch it back to
+`Empfehlung`. Heat-pump control is intentionally independent from weather and is
+handled by manual heat mode or PV automation.
 
 ## Feature Switches
 
@@ -91,7 +97,8 @@ calls, heat-pump UI cards, heat-pump run-on handling and PV heating logic when
 set to `false`.
 
 `features.weather_control` disables weather forecast polling, the weather
-forecast card and the weather-dependent heat mode option when set to `false`.
+forecast card and the weather-dependent pump automation switch when set to
+`false`.
 The weather provider itself is selected only through `entities.weather`.
 
 ## Configuration

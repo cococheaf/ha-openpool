@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.24
+
+- Move weather automation from heat-pump control to pump-profile control.
+- Add a persistent dashboard switch for weather `Empfehlung` versus
+  `Automatik`.
+- In weather automation, switch only between `Badebetrieb` and
+  `Schlechtwetter`.
+- Pause weather automation when the pump mode is selected manually.
+- Remove the heat-pump `Wetterautomatik` mode and migrate old states to
+  `PV-Automatik`.
+
 ## 0.2.23
 
 - Fetch Home Assistant daily weather forecasts at most twice per day and persist

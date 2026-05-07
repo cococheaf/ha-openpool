@@ -46,6 +46,8 @@ switches and sensors; OpenPool makes the decisions.
 - Persistent controller state in `/data/openpool_state.json`, so runtime, jobs
   and task history survive restarts.
 - Optional weather control and heat pump control through add-on configuration.
+- Weather control as recommendation or automation for swim mode and bad weather
+  mode.
 
 ## Important Before The First Start
 
@@ -71,6 +73,10 @@ The weather entity is not tied to a fixed provider. Put the Weather entity of
 your preferred Home Assistant integration into `entities.weather`. OpenPool only
 uses the broad daily class: bathing weather for mostly sunny or clear days, bad
 weather for strong cloud cover or rain.
+
+In the dashboard, weather control can be set to `Empfehlung` or `Automatik`.
+With `Empfehlung`, OpenPool only shows the recommended pump profile. With
+`Automatik`, OpenPool sets the pump mode to swim mode or bad weather mode.
 
 ## Home Assistant Logbook Attribution
 

@@ -48,6 +48,8 @@ BAD_WEATHER_CONDITIONS = {
     "exceptional",
 }
 BATHING_WEATHER_CONDITIONS = {"sunny", "clear-night", "partlycloudy"}
+WEATHER_MODE_OPTIONS = {"Empfehlung", "Automatik"}
+WEATHER_MANAGED_PUMP_MODES = {"Badebetrieb", "Schlechtwetter"}
 
 DEFAULT_ENTITIES = {
     "pump_switch": "switch.poolpumpe",
@@ -331,6 +333,7 @@ class OpenPoolController:
             "pump_mode": "Badebetrieb",
             "pump_mode_started_at": current_ts,
             "heater_mode": "PV-Automatik",
+            "weather_mode": "Empfehlung",
             "heater_target_temp": 28,
             "pump_running_since": None,
             "pump_runtime_total_s": 0,
@@ -369,6 +372,10 @@ class OpenPoolController:
         state.update(loaded)
         if not state.get("pump_mode_started_at"):
             state["pump_mode_started_at"] = now_ts()
+        if state.get("heater_mode") == "Wetterautomatik":
+            state["heater_mode"] = "PV-Automatik"
+        if state.get("weather_mode") not in WEATHER_MODE_OPTIONS:
+            state["weather_mode"] = "Empfehlung"
         state["command_log"] = list(state.get("command_log") or [])[:COMMAND_LOG_LIMIT]
         return state
 
@@ -394,6 +401,12 @@ class OpenPoolController:
 
     def weather_control_enabled(self) -> bool:
         return bool(self.features().get("weather_control", True))
+
+    def weather_mode(self) -> str:
+        mode = str(self.state.get("weather_mode") or "Empfehlung")
+        if not self.weather_control_enabled() or mode not in WEATHER_MODE_OPTIONS:
+            return "Empfehlung"
+        return mode
 
     def weather_entity(self) -> str:
         configured = (self.options().get("entities") or {}).get("weather")
@@ -494,6 +507,26 @@ class OpenPoolController:
             "reason": "Tagesvorhersage noch nicht bewertet.",
         }
 
+    def _recommended_pump_mode(self) -> str:
+        mode = str(self.weather_recommendation().get("pump_mode") or "Schlechtwetter")
+        return mode if mode in WEATHER_MANAGED_PUMP_MODES else "Schlechtwetter"
+
+    def _apply_weather_pump_mode(self, force: bool = False) -> None:
+        if self.weather_mode() != "Automatik":
+            return
+
+        current_mode = str(self.state.get("pump_mode") or "Aus")
+        if not force and current_mode not in WEATHER_MANAGED_PUMP_MODES:
+            return
+
+        target_mode = self._recommended_pump_mode()
+        if current_mode == target_mode:
+            return
+
+        self.state["pump_mode"] = target_mode
+        self.state["pump_mode_started_at"] = now_ts()
+        self.command("Wetterautomatik Pumpenprofil", target_mode)
+
     def snapshot(self) -> dict:
         with self.lock:
             runtime = self._runtime_snapshot(now_ts())
@@ -567,15 +600,30 @@ class OpenPoolController:
                 mode = str(action.get("mode") or "Aus")
                 if mode != self.state.get("pump_mode"):
                     self.state["pump_mode_started_at"] = now_ts()
+                if self.weather_mode() == "Automatik":
+                    self.state["weather_mode"] = "Empfehlung"
+                    self.command("Wetterautomatik pausiert", "Pumpenmodus wurde manuell gesetzt.")
                 self.state["pump_mode"] = mode
                 self.command("Pumpenmodus", self.state["pump_mode"])
+                self._save_state()
+            elif action_type == "weather_mode":
+                mode = str(action.get("mode") or "Empfehlung")
+                if mode not in WEATHER_MODE_OPTIONS or not self.weather_control_enabled():
+                    mode = "Empfehlung"
+                self.state["weather_mode"] = mode
+                self.command("Wettersteuerung", mode)
+                if mode == "Automatik":
+                    self._apply_weather_pump_mode(force=True)
                 self._save_state()
             elif action_type == "heater_mode":
                 if not self.heat_pump_enabled():
                     return self.snapshot()
-                if str(action.get("mode") or "Aus") != self.state.get("heater_mode"):
+                mode = str(action.get("mode") or "Aus")
+                if mode == "Wetterautomatik":
+                    mode = "PV-Automatik"
+                if mode != self.state.get("heater_mode"):
                     self._reset_pv_tracking()
-                self.state["heater_mode"] = str(action.get("mode") or "Aus")
+                self.state["heater_mode"] = mode
                 self.command("Heizungsmodus", self.state["heater_mode"])
                 self._save_state()
             elif action_type == "target_temp":
@@ -741,6 +789,7 @@ class OpenPoolController:
         self._save_state()
 
     def _apply_scheduled_pulses(self) -> None:
+        self._apply_weather_pump_mode()
         pump_mode = str(self.state.get("pump_mode") or "Aus")
         if not self.state.get("master_enabled") or pump_mode == "Aus" or not self._pump_should_run(pump_mode):
             return
@@ -773,8 +822,9 @@ class OpenPoolController:
         pump_mode = str(self.state.get("pump_mode") or "Aus")
         heater_mode = str(self.state.get("heater_mode") or "Aus")
         heat_pump_enabled = self.heat_pump_enabled()
-        if heater_mode == "Wetterautomatik" and not self.weather_control_enabled():
+        if heater_mode == "Wetterautomatik":
             heater_mode = "PV-Automatik"
+            self.state["heater_mode"] = heater_mode
 
         if not master_enabled:
             self._reset_pv_tracking()
@@ -792,6 +842,9 @@ class OpenPoolController:
                 if heat_pump_enabled
                 else "Maximale Laufzeit erreicht, Pumpe wird ausgeschaltet.",
             )
+
+        self._apply_weather_pump_mode()
+        pump_mode = str(self.state.get("pump_mode") or "Aus")
 
         if pump_mode == "Aus":
             self._reset_pv_tracking()
@@ -843,12 +896,6 @@ class OpenPoolController:
             self._turn_heater(True)
         elif heater_mode == "PV-Automatik":
             self._apply_pv_heating(pump_should_run)
-        elif heater_mode == "Wetterautomatik":
-            if self.weather_recommendation().get("category") == "bathing":
-                self._apply_pv_heating(pump_should_run)
-            else:
-                self._reset_pv_tracking()
-                self._turn_heater(False)
 
         self._save_state()
 
@@ -1086,7 +1133,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.23"
+    server_version = "OpenPool/0.2.24"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:
