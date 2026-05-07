@@ -322,8 +322,9 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 9px;
+      gap: 8px;
       min-width: 0;
+      line-height: 1;
     }
 
     .master .label {
@@ -332,7 +333,8 @@
     }
 
     .master .value {
-      font-size: 18px;
+      font-size: 19px;
+      line-height: 1.2;
     }
 
     .switch {
@@ -355,6 +357,22 @@
       box-shadow: 0 5px 14px rgba(0,0,0,.25);
     }
     .switch.on .knob { transform: translateX(22px); }
+
+    .master .switch {
+      width: 40px;
+      height: 22px;
+      padding: 3px;
+      flex: 0 0 auto;
+    }
+
+    .master .switch .knob {
+      width: 16px;
+      height: 16px;
+    }
+
+    .master .switch.on .knob {
+      transform: translateX(18px);
+    }
 
     .metrics {
       display: grid;
