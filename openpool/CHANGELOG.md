@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- Mark the current UI and automation state as the first golden-image release.
+- Refresh repository screenshots for desktop, tablet and iPhone layouts.
+- Shorten the GitHub and Home Assistant README files and move detailed
+  technical information into the add-on documentation.
+- Remove local Python cache artifacts from the workspace.
+- Bump add-on and server metadata to `1.1.0`.
+
 ## 1.0.10
 
 - Center the three heater mode buttons as a fixed button group instead of using

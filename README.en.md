@@ -2,190 +2,89 @@
 
 [Deutsche Version](README.md)
 
-OpenPool is an OpenSource Pool System Controller for Home Assistant. It controls
-the pool pump, chlorinator, heat pump and PV surplus heating from one compact,
-tablet-friendly interface, while the actual automation runs server-side inside
-the Home Assistant add-on.
+OpenPool is an open source pool system controller for Home Assistant. The add-on
+controls the pump, chlorinator, heat pump, weather profiles and PV surplus
+heating from one compact web interface. The actual automation runs server-side
+inside the Home Assistant add-on, so browser, iPad and smartphone sessions all
+see the same state.
 
-OpenPool is currently designed around setups based on the Intex 26680 sand
-filter and saltwater chlorinator system. Other systems may work, but they are
-not the primary development target at the moment.
+OpenPool is currently designed for setups based on the Intex 26680 sand filter
+and saltwater chlorinator system. Other systems may work, but they are not the
+primary development target yet.
 
-![OpenPool Dashboard Demo](OpenPool_DemoImage.png)
+## Screenshots
+
+| Desktop | Tablet | iPhone |
+| --- | --- | --- |
+| ![OpenPool Desktop](docs/screenshots/openpool-desktop.png) | ![OpenPool Tablet](docs/screenshots/openpool-tablet.png) | ![OpenPool iPhone](docs/screenshots/openpool-iphone.png) |
 
 ## Why OpenPool Exists
 
-The reason for this project was very down to earth: we wanted a clean pool in
-the garden so we would not have to pack up the kids, towels, bags and half the
-house every time we wanted to go swimming in summer. So the first step was an
-Intex XTR frame pool set in the garden.
+OpenPool started with an Intex frame pool that should stay clean through summer
+without constant manual work. The original filter pump was too weak, and the
+later Intex 26680 sand filter and saltwater chlorinator combo was much better
+but still limited in its timing options. A Tasmota smart plug made switching
+more convenient and also showed that the chlorinator restarts after a short
+power loss.
 
-During the first season it quickly became clear that the filter pump included in
-the set was not enough to keep the pool reliably clean. After the water went bad,
-I upgraded one season later to the Intex 26680 sand filter and saltwater
-chlorinator combo. Filtration and chlorine production improved a lot, but the
-timing and control options of that unit were frustratingly limited in everyday
-use.
+After adding a heat pump, this became a real control problem: the heat pump
+needs safe water flow, while the pump still has to be controlled for chlorine
+production and operating profiles. OpenPool connects this logic to the Home
+Assistant entities that already exist in the installation.
 
-As a pragmatic workaround I added a switchable Tasmota smart plug. That made it
-possible to turn the system on and off from Home Assistant without walking out
-to the pool every time. While doing that I noticed a useful behavior: after a
-power loss, the chlorinator started again. So the internal timers of the unit
-kept their role, while the actual chlorine production could be influenced by the
-smart plug schedule.
+## Features
 
-When a heat pump was added later, this workaround became unreliable. The heat
-pump needs water flow, but the pump also had to remain controllable for chlorine
-production. The devices had no understanding of each other. That was the point
-where the idea for OpenPool was born: if all switches, sensors and measurements
-already exist in Home Assistant, then Home Assistant should also be able to run
-the coordinated pool control logic.
-
-I am not a strong coder myself, so OpenPool was built with the help of AI. The
-result is a specialized add-on for exactly this everyday use case: keep the pool
-clean, protect the heat pump, use PV surplus power and reduce the amount of
-manual intervention.
-
-## Project Goal
-
-OpenPool is meant to automate pool operation reliably without taking control
-away from the user. The interface intentionally stays simple: it shows the
-current state, upcoming tasks, important sensor values and the central operating
-modes. Permanent configuration lives in the Home Assistant add-on options.
-
-The goal is not to be a universal pool control system for every imaginable
-installation. OpenPool is built for real Home Assistant use: enter the existing
-entities, enable the control logic, open the dashboard and see what is happening.
-
-## What OpenPool Can Do
-
-- Control pump modes: Off, continuous operation, swim mode, bad weather mode and
+- Pump profiles: off, continuous operation, swim mode, bad weather mode and
   night swimming.
-- Run automatic pump profiles with configurable start and end times.
-- Limit night swimming duration with `profiles.night_swim_duration_hours`.
-- Execute restart pulses for the chlorinator, using short power-off pulses to
-  restart chlorine production.
-- Derive the chlorinator status from pump power, using configurable pump power
-  values without and with the chlorinator.
-- Release the heat pump only after confirmed pump flow.
-- Keep the pump running after heat pump operation for a safe run-on period.
-- Calculate PV surplus for the heat pump and start heating only after a stable
-  heat-pump release condition.
-- Configure heat-pump start and stop thresholds as well as stability times.
-- Evaluate the daily forecast of the configured Home Assistant weather entity
-  twice per day and derive bathing weather or bad weather.
-- Set the heat pump target temperature from the UI.
-- Store runtimes, upcoming tasks and command history server-side.
-- Keep multiple open interfaces synchronized, for example iPad, smartphone and
-  a desktop browser.
-- Persist controller state in `/data/openpool_state.json`, so runtimes and jobs
-  survive add-on restarts.
-- Enable or disable weather control and heat pump control through add-on
-  options.
+- Configurable night swimming duration and restart pulses for the chlorinator.
+- Chlorinator detection from pump power.
+- Heat pump control with target temperature, pump run-on and optional PV
+  automation.
+- PV release with start/stop thresholds and stability times.
+- Weather control as recommendation or automation for swim mode and bad weather
+  mode.
+- Provider-neutral weather entity with only two forecast refreshes per day.
+- Live sync between multiple open interfaces.
+- Persistent controller state in `/data/openpool_state.json`.
+- Configuration through Home Assistant add-on options.
 
-## How The System Works
+## Important Before First Start
 
-OpenPool runs as a Home Assistant add-on. The web UI is served through Home
-Assistant Ingress, while the Python controller inside the add-on owns the actual
-runtime state and executes actions. Browser, iPad and smartphone sessions do not
-talk directly to Home Assistant; they talk to the OpenPool server. This keeps
-all open sessions on the same state.
+The entity IDs in the add-on configuration must be adapted to your Home
+Assistant installation before the first live test. The defaults are only
+examples from the original OpenPool setup.
 
-The controller regularly reads the configured Home Assistant entities,
-calculates the OpenPool state from them and sends service calls back to Home
-Assistant when needed. The update rate can be configured with `poll_interval_s`.
+Especially important:
 
-Weather is intentionally handled calmly: OpenPool asks the configured weather
-entity for a daily forecast only twice per day. It does not poll hourly weather
-details in the one-second live loop. Weather control only cares about the broad
-daily class: bathing weather for mostly sunny or clear days, bad weather for
-strong cloud cover or rain.
-
-The weather card can be set to `Empfehlung` or `Automatik`. `Empfehlung` only
-shows the recommended pump profile. `Automatik` switches the pump mode between
-swim mode and bad weather mode. A manual pump-mode selection pauses weather
-automation again.
-
-For heat-pump release, house consumption is derived from PV production, balancing grid
-export and grid import:
-
-```text
-house consumption = PV production - grid export + grid import
-available for heat pump = PV production - house consumption
-```
-
-When the heat pump is already running, its current power is added back. This
-prevents the heat pump from immediately switching itself off just because its
-own load reduces the visible surplus.
-
-## Important Before The First Start
-
-The entities in the add-on configuration must be adapted to your Home Assistant
-installation before the first real test. The default values are examples from
-the original installation and will probably not match your system unchanged.
-
-Check especially:
-
-- `pump_switch`: switch for pump or pump/chlorinator system.
-- `heater_climate`: climate entity of the heat pump.
-- `weather`: weather entity.
-- `pv_generation`: current PV production.
-- `pv_export`: balancing grid export from the smart meter.
-- `grid_import`: grid import from the smart meter.
+- `entities.pump_switch`
+- `entities.heater_climate`
+- `entities.weather`
+- `entities.pv_generation`
+- `entities.pv_export`
+- `entities.grid_import`
 - Pump and heat pump sensors for power, current, voltage, signal and
-  temperatures.
+  temperatures
 
-If these entities are wrong, OpenPool may start, but it cannot make reliable
-decisions or send commands to the correct devices.
+If these entities do not match your system, OpenPool may start but cannot make
+reliable decisions or send commands to the correct devices.
 
-The weather entity is provider-neutral. You can use any suitable Home Assistant
-weather entity, for example `weather.home`, `weather.openweathermap` or another
-integration.
-
-## Home Assistant Logbook Attribution
-
-By default, OpenPool uses the `SUPERVISOR_TOKEN` provided by Home Assistant.
-This works without any additional token, but Home Assistant will attribute
-service calls in the logbook to the Supervisor.
-
-If the Home Assistant logbook should show actions as triggered by `OpenPool`,
-create a dedicated Home Assistant user named `OpenPool`, create a long-lived
-access token in that user's profile and configure the add-on like this:
-
-```yaml
-connection:
-  auth_mode: openpool_user_token
-  access_token: "TOKEN_OF_THE_OPENPOOL_USER"
-```
-
-Only this mode can cleanly attribute logbook entries to `OpenPool`, because Home
-Assistant attributes API calls to the authenticated user behind the token.
-
-## Installation As Home Assistant Add-on
+## Installation
 
 1. In Home Assistant, open **Settings -> Add-ons -> Add-on Store**.
-2. Open **Repositories** and add:
+2. Under **Repositories**, add:
    `https://github.com/cococheaf/ha-openpool`
-3. Reload the store, install **OpenPool** and enable **Show in sidebar**.
-4. Before starting, check the add-on configuration and adapt all entities.
-5. Start the add-on and open the web interface from the Home Assistant sidebar.
+3. Reload the store and install **OpenPool**.
+4. Adjust the add-on configuration, especially all entities.
+5. Start the add-on and enable **Show in sidebar**.
 
-## Project Status
+## Documentation
 
-- `openpool/` contains the Home Assistant add-on and bundled UI.
-- The add-on serves the UI through Home Assistant Ingress.
-- The OpenPool controller owns the shared state and executes pump, restart-pulse
-  and heat pump automation.
-- Open UI sessions receive the shared controller state live from the add-on, so
-  browser, tablet and smartphone stay synchronized.
-
-## Development
-
-For the add-on build, Home Assistant uses `openpool/config.yaml` and
-`openpool/Dockerfile`. The bundled frontend lives in `openpool/www/index.html`.
+- Add-on documentation: [openpool/DOCS.md](openpool/DOCS.md)
+- Changelog: [openpool/CHANGELOG.md](openpool/CHANGELOG.md)
+- Home Assistant add-on: [openpool/](openpool/)
 
 ## Releases
 
-Versioned releases are created from Git tags in the `v0.2.x` format. When such
-a tag is pushed, GitHub Actions automatically creates a GitHub release from the
+Versioned releases are created from Git tags in the `vX.Y.Z` format. When a tag
+is pushed, GitHub Actions automatically creates a GitHub release from the
 matching section in `openpool/CHANGELOG.md`.

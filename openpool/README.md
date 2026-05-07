@@ -2,99 +2,55 @@
 
 [English version](README.en.md)
 
-OpenPool ist ein OpenSource Pool System Controller für Home Assistant. Das
-Add-on steuert Pumpe, Chlorsystem, Wärmepumpe und PV-Überschussheizung über
-eine kompakte Oberfläche, die besonders für Tablet-Dashboards wie ein iPad in
-Home Assistant gedacht ist.
+OpenPool ist ein Home Assistant Add-on fuer eine kompakte Poolsteuerung. Es
+steuert Pumpe, Chlorsystem, Waermepumpe, Wetterprofile und PV-Ueberschussheizung
+ueber eine tabletfreundliche Oberflaeche.
 
-Aktuell ist OpenPool gezielt für ein Setup rund um das Intex 26680
-Sandfilter-/Salzwasserelektrolyse-System ausgelegt. Andere Systeme können
-funktionieren, sind derzeit aber nicht der primäre Entwicklungsfokus.
+Aktuell ist OpenPool fuer Setups rund um das Intex 26680
+Sandfilter-/Salzwasserelektrolyse-System ausgelegt.
 
-![OpenPool Dashboard Demo](../OpenPool_DemoImage.png)
+![OpenPool Tablet Dashboard](https://raw.githubusercontent.com/cococheaf/ha-openpool/main/docs/screenshots/openpool-tablet.png)
 
-## Warum dieses Add-on entstanden ist
+## Kurz gesagt
 
-OpenPool kommt aus einem ganz praktischen Familienproblem: Ein sauberer Pool im
-Garten sollte den Sommer entspannter machen, ohne jedes Mal mit Kindern,
-Badetaschen und allem Drumherum ins Freibad fahren zu müssen. Aus einem Intex
-XTR Frame Pool wurde nach der ersten Saison schnell ein Setup mit stärkerer
-Sandfilter- und Salzwasserelektrolyse-Anlage. Die Wasserqualität wurde besser,
-aber die Steuerung blieb unflexibel.
+- Pumpenprofile: Aus, Dauerbetrieb, Badebetrieb, Schlechtwetter, Nachtbaden.
+- Restart-Pulse fuer das Chlorsystem.
+- Chlorinator-Status aus der Pumpenleistung.
+- Waermepumpe mit Zieltemperatur, Nachlauf und optionaler PV-Automatik.
+- Wettersteuerung als Empfehlung oder Automatik.
+- Live-Sync zwischen mehreren offenen Oberflaechen.
+- Persistenter Zustand in `/data/openpool_state.json`.
 
-Ein Tasmota Smartplug half zunächst, die Intex 26680 bequem aus Home Assistant
-zu schalten. Dabei zeigte sich, dass der Chlorgenerator nach einem Stromverlust
-wieder anlief, was sich als einfacher Restart-Pulse nutzen ließ. Mit einer
-zusätzlichen Wärmepumpe wurde das Zusammenspiel aber schwieriger: Die
-Wärmepumpe braucht sicheren Volumenstrom, während die Pumpe weiterhin gezielt
-für die Chlorproduktion geschaltet werden muss.
+## Vor dem ersten Start
 
-OpenPool verbindet diese Teile deshalb in einer gemeinsamen Logik. Home
-Assistant liefert die Schalter und Sensoren, OpenPool übernimmt die
-Entscheidungen.
+Passe die Entitaeten in der Add-on-Konfiguration an deine Home-Assistant-Anlage
+an. Die mitgelieferten Entity-IDs sind nur Beispiele.
 
-## Was OpenPool macht
+Wichtig sind vor allem:
 
-- Pumpenprofile für Badebetrieb, Schlechtwetter, Dauerbetrieb, Nachtbaden und
-  Aus.
-- Konfigurierbare Nachtbadedauer über
-  `profiles.night_swim_duration_hours`.
-- Automatische Restart-Pulse für das Chlorsystem.
-- Chlorinator-Anzeige aus der Pumpenleistung mit konfigurierbaren
-  Leistungsschwellen.
-- Sicherer Pumpennachlauf nach Heizbetrieb.
-- Wärmepumpensteuerung mit Zieltemperatur.
-- Wärmepumpenfreigabe mit Start-/Stoppgrenzen und Stabilzeiten.
-- Ruhige Wetterempfehlung aus der Home-Assistant-Tagesvorhersage mit zwei
-  Abrufen pro Tag.
-- Live-Synchronisation zwischen mehreren geöffneten UI-Sitzungen.
-- Persistenter Controller-State in `/data/openpool_state.json`, damit Laufzeit,
-  Jobs und Aufgabenverlauf nach einem Neustart erhalten bleiben.
-- Wettersteuerung und Wärmepumpensteuerung optional per Add-on-Konfiguration.
-- Wettersteuerung als Empfehlung oder Automatik für Badebetrieb und
-  Schlechtwetterprofil.
+- `entities.pump_switch`
+- `entities.heater_climate`
+- `entities.weather`
+- `entities.pv_generation`
+- `entities.pv_export`
+- `entities.grid_import`
+- Pumpen- und Heizungssensoren
 
-## Wichtig vor dem ersten Start
+Falsche Entitaeten koennen dazu fuehren, dass OpenPool keine sauberen
+Entscheidungen trifft oder Befehle an das falsche Geraet sendet.
 
-Bitte passe vor dem ersten echten Test die Entitäten in der Add-on-Konfiguration
-an deine Home-Assistant-Installation an. Die mitgelieferten Entity-IDs sind
-Beispiele aus der ursprünglichen Anlage.
+## Installation
 
-Besonders wichtig sind:
+1. Add-on installieren.
+2. Add-on-Konfiguration pruefen und Entitaeten anpassen.
+3. Add-on starten.
+4. **In Seitenleiste anzeigen** aktivieren.
 
-- `pump_switch`
-- `heater_climate`
-- `weather`
-- `pv_generation`
-- `pv_export`
-- `grid_import`
-- Pumpen- und Heizungssensoren für Leistung, Strom, Spannung, Signal und
-  Temperaturen
+## Hinweis zum Home-Assistant-Verlauf
 
-Wenn diese Entitäten nicht korrekt sind, kann OpenPool keine zuverlässigen
-Entscheidungen treffen oder Befehle an die falschen beziehungsweise an keine
-Geräte senden.
-
-Die Wetter-Entität ist nicht an einen festen Anbieter gebunden. Trage in
-`entities.weather` einfach die Weather-Entität deiner bevorzugten
-Home-Assistant-Integration ein. OpenPool nutzt daraus nur die grobe Tagesklasse:
-`Badewetter` bei überwiegend sonnig oder wolkenlos, sonst `Schlechtwetter` bei
-stark bewölktem Himmel oder Regen.
-
-Im Dashboard kann die Wettersteuerung auf `Empfehlung` oder `Automatik`
-gestellt werden. In `Empfehlung` zeigt OpenPool nur das empfohlene Pumpenprofil
-an. In `Automatik` setzt OpenPool den Pumpenmodus selbst auf `Badebetrieb` oder
-`Schlechtwetter`.
-
-## Home-Assistant-Verlauf
-
-Standardmäßig nutzt das Add-on den Home-Assistant-`SUPERVISOR_TOKEN`. Damit ist
-keine zusätzliche Anmeldung nötig, der Home-Assistant-Verlauf zeigt
-Service-Calls aber als vom Supervisor ausgelöst.
-
-Soll der Verlauf `wurde ausgelöst durch OpenPool` anzeigen, lege in Home
-Assistant einen Benutzer namens `OpenPool` an, erstelle in dessen Profil einen
-Long-Lived Access Token und setze in der Add-on-Konfiguration:
+Standardmaessig nutzt OpenPool den `SUPERVISOR_TOKEN`. Soll der Verlauf
+`wurde ausgelöst durch OpenPool` anzeigen, lege einen Home-Assistant-Benutzer
+`OpenPool` an, erstelle fuer ihn einen Long-Lived Access Token und setze:
 
 ```yaml
 connection:
@@ -102,20 +58,4 @@ connection:
   access_token: "TOKEN_DES_OPENPOOL_BENUTZERS"
 ```
 
-OpenPool nutzt dann diesen Benutzer-Token für Home-Assistant-Service-Calls.
-
-## Installation
-
-1. In Home Assistant **Einstellungen -> Add-ons -> Add-on Store** öffnen.
-2. Unter **Repositories** `https://github.com/cococheaf/ha-openpool` hinzufügen
-   und den Store neu laden.
-3. **OpenPool** installieren.
-4. Add-on-Konfiguration anpassen, insbesondere alle Entitäten.
-5. Add-on starten und **In Seitenleiste anzeigen** aktivieren.
-
-## Status
-
-Das Add-on stellt die OpenPool-Weboberfläche über Home Assistant Ingress bereit.
-Die Automatik läuft im Add-on-Server, nicht im Browser. Dadurch bleiben mehrere
-offene Oberflächen synchron, und Laufzeiten sowie geplante Jobs überstehen
-Frontend-Reloads und Add-on-Neustarts.
+Ausfuehrliche technische Details stehen in [DOCS.md](DOCS.md).

@@ -1,6 +1,6 @@
 # OpenPool Add-on Documentation
 
-![OpenPool Dashboard Demo](../OpenPool_DemoImage.png)
+![OpenPool Desktop Dashboard](../docs/screenshots/openpool-desktop.png)
 
 ## Home Assistant API
 
