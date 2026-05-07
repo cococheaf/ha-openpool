@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2
+
+- Move the master enable switch to the first dashboard status tile and give it
+  a stronger but still integrated master-switch style.
+- Increase task-history typography on desktop and iPad while keeping the mobile
+  layout compact.
+
 ## 1.0.1
 
 - Add the visible add-on option `profiles.night_swim_duration_hours` for
