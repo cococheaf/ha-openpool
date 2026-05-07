@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5
+
+- Change master toggle design to fit text alignment
+
 ## 1.0.4
 
 - Remove the master tile pseudo-element conflict with hover tooltips.
