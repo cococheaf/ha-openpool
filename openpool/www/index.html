@@ -26,7 +26,7 @@
       --radius: 14px;
       --page-gap: 10px;
       --card-pad: 10px;
-      --tile-height: 86px;
+      --tile-height: 68px;
       --tile-radius: 12px;
     }
 
@@ -205,7 +205,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      overflow: hidden;
+      overflow: visible;
       height: 100%;
     }
 
@@ -254,6 +254,88 @@
       font-size: 13px;
       max-width: 520px;
       overflow-wrap: anywhere;
+    }
+
+    .hero-copy .sub,
+    .master small,
+    .metric .hint,
+    .mode small,
+    .forecast-tile small,
+    .weather-badge {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    .hero-copy,
+    .master,
+    .metric,
+    .mode,
+    .forecast-tile,
+    .temperature-value,
+    .energy-tile {
+      position: relative;
+    }
+
+    [data-tooltip]::before,
+    [data-tooltip]::after {
+      position: absolute;
+      left: 50%;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .14s ease, transform .14s ease;
+      z-index: 30;
+    }
+
+    [data-tooltip]::before {
+      content: "";
+      bottom: calc(100% + 8px);
+      width: 10px;
+      height: 10px;
+      background: rgba(11,18,32,.98);
+      border-right: 1px solid rgba(255,255,255,.12);
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      transform: translate(-50%, 3px) rotate(45deg);
+    }
+
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      bottom: calc(100% + 12px);
+      width: max-content;
+      max-width: min(280px, 84vw);
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(11,18,32,.98);
+      color: var(--text);
+      box-shadow: 0 12px 28px rgba(0,0,0,.30);
+      font-size: 12px;
+      line-height: 1.25;
+      text-align: center;
+      white-space: normal;
+      transform: translate(-50%, 3px);
+    }
+
+    [data-tooltip]:hover,
+    [data-tooltip]:focus-visible,
+    [data-tooltip]:focus-within {
+      z-index: 40;
+    }
+
+    [data-tooltip]:hover::before,
+    [data-tooltip]:hover::after,
+    [data-tooltip]:focus-visible::before,
+    [data-tooltip]:focus-visible::after,
+    [data-tooltip]:focus-within::before,
+    [data-tooltip]:focus-within::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
     }
 
     .master {
@@ -310,8 +392,8 @@
       min-height: var(--tile-height);
       height: var(--tile-height);
       display: grid;
-      grid-template-rows: auto auto 1fr;
-      align-content: start;
+      grid-template-rows: auto auto;
+      align-content: center;
     }
 
     .metric .label {
@@ -331,7 +413,7 @@
       color: var(--muted);
       font-size: 12px;
       margin-top: 5px;
-      overflow: hidden;
+      overflow: visible;
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
@@ -389,8 +471,8 @@
       min-height: var(--tile-height);
       height: var(--tile-height);
       display: grid;
-      grid-template-rows: auto auto 1fr;
-      align-content: start;
+      grid-template-rows: auto auto;
+      align-content: center;
     }
 
     .mode:hover { transform: translateY(-1px); background: rgba(255,255,255,.07); }
@@ -415,7 +497,7 @@
       color: var(--muted);
       font-size: 11px;
       line-height: 1.16;
-      overflow: hidden;
+      overflow: visible;
       overflow-wrap: anywhere;
       align-self: start;
       display: -webkit-box;
@@ -746,7 +828,7 @@
       background: rgba(15,23,42,.38);
       padding: 9px;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       min-width: 0;
       min-height: var(--tile-height);
       height: var(--tile-height);
@@ -776,7 +858,7 @@
       align-self: start;
       display: block;
       width: 100%;
-      overflow: hidden;
+      overflow: visible;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -1756,9 +1838,44 @@
       renderCommandLog();
     }
 
+    function tooltipTileForNode(node) {
+      return node?.closest('.hero-copy, .master, .metric, .mode, .forecast-tile, .temperature-value, .energy-tile');
+    }
+
+    function syncTileTooltip(tile) {
+      if (!tile) return;
+      const parts = [
+        ...tile.querySelectorAll('.sub, .hint, small, .weather-badge')
+      ]
+        .map(part => part.textContent.trim())
+        .filter(Boolean);
+
+      if (parts.length) {
+        tile.dataset.tooltip = parts.join(' · ');
+      } else {
+        delete tile.dataset.tooltip;
+      }
+    }
+
+    function syncTooltipForNode(node) {
+      syncTileTooltip(tooltipTileForNode(node));
+    }
+
+    function syncTileTooltips(scope = document) {
+      const tiles = new Set();
+      scope.querySelectorAll('.hero-copy .sub, .master small, .metric .hint, .mode small, .forecast-tile small, .weather-badge')
+        .forEach(node => {
+          const tile = tooltipTileForNode(node);
+          if (tile) tiles.add(tile);
+        });
+      tiles.forEach(syncTileTooltip);
+    }
+
     function setText(id, value) {
       const node = document.getElementById(id);
-      if (node) node.textContent = value;
+      if (!node) return;
+      node.textContent = value;
+      syncTooltipForNode(node);
     }
 
     function setConnectionStatus(connected, text) {
@@ -2182,6 +2299,7 @@
         ...days.slice(1, 3).map((item, index) => forecastTileMarkup(item, index + 1))
       ];
       grid.innerHTML = tiles.join('');
+      syncTileTooltips(grid);
     }
 
     function updateHomeAssistantValues(states) {
@@ -2461,12 +2579,12 @@
       restartPulseActive = true;
       shutdownActive = false;
       setShutdownSequenceVisible(false);
-      document.getElementById('hero-title').textContent = 'Chlorsystem neu starten';
-      document.getElementById('hero-subtitle').textContent = 'Kurzer Restart-Pulse: Die Pumpe wird für wenige Sekunden ausgeschaltet und direkt wieder eingeschaltet. Der Betriebsmodus bleibt unverändert.';
-      document.getElementById('pump-status').textContent = 'Pulse';
-      document.getElementById('pump-hint').textContent = '5 Sekunden AUS/EIN';
-      document.getElementById('chlor-status').textContent = 'Neustart';
-      document.getElementById('chlor-hint').textContent = 'Chlorinator wird neu angestoßen';
+      setText('hero-title', 'Chlorsystem neu starten');
+      setText('hero-subtitle', 'Kurzer Restart-Pulse: Die Pumpe wird für wenige Sekunden ausgeschaltet und direkt wieder eingeschaltet. Der Betriebsmodus bleibt unverändert.');
+      setText('pump-status', 'Pulse');
+      setText('pump-hint', '5 Sekunden AUS/EIN');
+      setText('chlor-status', 'Neustart');
+      setText('chlor-hint', 'Chlorinator wird neu angestoßen');
       pushCommand('Chlorsystem neu starten', 'Restart-Pulse aktiv, Modus bleibt unverändert.');
 
       try {
@@ -2499,7 +2617,7 @@
       const { min, max } = getTemperatureBounds();
       heaterTargetTemp = Math.min(max, Math.max(min, Number(value)));
       const formatted = heaterTargetTemp.toFixed(1).replace('.', ',');
-      document.getElementById('heater-target-temp').textContent = formatted + '°';
+      setText('heater-target-temp', formatted + '°');
       const slider = document.getElementById('heater-target-slider');
       if (slider) {
         slider.min = min;
@@ -2525,23 +2643,23 @@
       updateHeaterLock();
       updateHeatSourceMetric();
 
-      document.getElementById('master-state-label').textContent = masterEnabled ? 'Poolsystem EIN' : 'Poolsystem AUS';
+      setText('master-state-label', masterEnabled ? 'Poolsystem EIN' : 'Poolsystem AUS');
 
       if (!masterEnabled) {
         shutdownActive = false;
         restartPulseActive = false;
         trackHeaterOffState('Aus', 'Aus');
         setShutdownSequenceVisible(false);
-        document.getElementById('hero-title').textContent = 'Pool inaktiv';
-        document.getElementById('hero-subtitle').textContent = controlConfig.heatPumpControl
+        setText('hero-title', 'Pool inaktiv');
+        setText('hero-subtitle', controlConfig.heatPumpControl
           ? 'Hauptfreigabe ist ausgeschaltet. Pumpe, Chlorinator und Wärmepumpe sind gesperrt.'
-          : 'Hauptfreigabe ist ausgeschaltet. Pumpe und Chlorinator sind gesperrt.';
-        document.getElementById('pump-status').textContent = 'AUS';
-        document.getElementById('pump-hint').textContent = 'durch Hauptfreigabe gesperrt';
-        document.getElementById('chlor-status').textContent = 'AUS';
-        document.getElementById('chlor-hint').textContent = 'gemeinsam mit Pumpe aus';
-        document.getElementById('heater-status').textContent = 'AUS';
-        document.getElementById('heater-hint').textContent = 'durch Hauptfreigabe gesperrt';
+          : 'Hauptfreigabe ist ausgeschaltet. Pumpe und Chlorinator sind gesperrt.');
+        setText('pump-status', 'AUS');
+        setText('pump-hint', 'durch Hauptfreigabe gesperrt');
+        setText('chlor-status', 'AUS');
+        setText('chlor-hint', 'gemeinsam mit Pumpe aus');
+        setText('heater-status', 'AUS');
+        setText('heater-hint', 'durch Hauptfreigabe gesperrt');
         pushCommand(
           'Hauptfreigabe AUS',
           controlConfig.heatPumpControl
@@ -2624,18 +2742,18 @@
         selected.subtitle = `Die Pumpe läuft unabhängig vom Tagesprofil. Der Modus endet automatisch nach ${formatMinutesCompact(controlConfig.nightSwimMaxMinutes)}.`;
       }
 
-      document.getElementById('hero-title').textContent = selected.title;
-      document.getElementById('hero-subtitle').textContent = selected.subtitle;
-      document.getElementById('pump-status').textContent = selected.pump;
-      document.getElementById('pump-hint').textContent = selected.pumpHint;
-      document.getElementById('chlor-status').textContent = selected.chlor;
-      document.getElementById('chlor-hint').textContent = selected.chlorHint;
+      setText('hero-title', selected.title);
+      setText('hero-subtitle', selected.subtitle);
+      setText('pump-status', selected.pump);
+      setText('pump-hint', selected.pumpHint);
+      setText('chlor-status', selected.chlor);
+      setText('chlor-hint', selected.chlorHint);
       if (latestSnapshot?.ha_states) updateChlorinatorStatus(latestSnapshot.ha_states);
 
       if (pumpMode === 'Aus') {
         trackHeaterOffState(pumpMode, heaterMode);
-        document.getElementById('heater-status').textContent = 'gesperrt';
-        document.getElementById('heater-hint').textContent = 'Pumpe ist ausgeschaltet';
+        setText('heater-status', 'gesperrt');
+        setText('heater-hint', 'Pumpe ist ausgeschaltet');
         if (pumpOffNeedsRunOn) {
           startShutdownSequence();
           pushCommand('Pumpenmodus Aus', 'Heizung aus, 5 Minuten Nachlauf, dann Pumpe aus.');
@@ -2650,8 +2768,8 @@
       if (pumpMode === 'Nachtbaden') {
         trackHeaterOffState(pumpMode, heaterMode);
         if (controlConfig.heatPumpControl) {
-          document.getElementById('heater-status').textContent = 'EIN';
-          document.getElementById('heater-hint').textContent = 'PV wird ignoriert';
+          setText('heater-status', 'EIN');
+          setText('heater-hint', 'PV wird ignoriert');
           pushCommand('Nachtbaden aktiv', `Pumpe + Heizung EIN, PV wird ignoriert, ${nightSwimLimitText()}.`);
         } else {
           pushCommand('Nachtbaden aktiv', `Pumpe EIN, ${nightSwimLimitText()}.`);
@@ -2679,8 +2797,8 @@
 
       const heater = { ...(heaterTexts[heaterMode] || heaterTexts['Aus']) };
       trackHeaterOffState(pumpMode, heaterMode);
-      document.getElementById('heater-status').textContent = heater.status;
-      document.getElementById('heater-hint').textContent = heater.hint;
+      setText('heater-status', heater.status);
+      setText('heater-hint', heater.hint);
       pushCommand(selected.title + ' aktiv', 'Pumpe: ' + selected.pumpHint + ' · Heizung: ' + heater.hint + '.');
     }
 
@@ -2729,6 +2847,7 @@
     });
 
     async function bootOpenPool() {
+      syncTileTooltips();
       await loadInitialState();
       updateTemperatureRange();
       renderCommandLog();

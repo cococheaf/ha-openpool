@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.28
+
+- Hide explanatory dashboard tile text and expose it as hover/focus tooltips.
+- Reduce the shared tile height for a cleaner, more compact dashboard layout.
+- Keep dynamic hints such as Nachtbaden duration, runtime, chlorinator state and
+  heat-pump source details synchronized with their tile tooltip.
+
 ## 0.2.27
 
 - Use the configured `profiles.night_swim_max_minutes` value in all dashboard
