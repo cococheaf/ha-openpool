@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.27
+
+- Use the configured `profiles.night_swim_max_minutes` value in all dashboard
+  Nachtbaden labels and command text.
+- Align status, pump mode, weather mode, weather recommendation, temperature
+  and heat-pump release tiles to one shared dashboard tile size.
+- Compact the weather recommendation tiles so they match the rest of the
+  control surface.
+
 ## 0.2.26
 
 - Normalize dashboard tile sizing across weather, pump, heat-pump, status and

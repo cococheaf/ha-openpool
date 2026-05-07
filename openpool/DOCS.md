@@ -68,6 +68,13 @@ heat pump starts only after that value has been reached continuously for
 the available PV power stays below `pv_stop_export_w` for
 `pv_stop_stable_minutes` before switching it off.
 
+## Pump Profiles
+
+Profile times are configured in the add-on `profiles` section. Nachtbaden uses
+`profiles.night_swim_max_minutes` as its maximum runtime. The dashboard labels,
+the upcoming task and the automatic Nachtbaden shutdown all use this same add-on
+option.
+
 ## Weather Recommendation
 
 OpenPool uses the configured Home Assistant weather entity, for example

@@ -26,7 +26,7 @@
       --radius: 14px;
       --page-gap: 10px;
       --card-pad: 10px;
-      --tile-height: 64px;
+      --tile-height: 86px;
       --tile-radius: 12px;
     }
 
@@ -266,6 +266,7 @@
       padding: 8px;
       min-width: 0;
       min-height: var(--tile-height);
+      height: var(--tile-height);
       width: 100%;
       grid-column: 4;
       justify-content: flex-start;
@@ -307,7 +308,7 @@
       padding: 9px;
       min-width: 0;
       min-height: var(--tile-height);
-      height: 100%;
+      height: var(--tile-height);
       display: grid;
       grid-template-rows: auto auto 1fr;
       align-content: start;
@@ -330,6 +331,10 @@
       color: var(--muted);
       font-size: 12px;
       margin-top: 5px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
     }
 
     .section-title {
@@ -357,7 +362,7 @@
       grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
       gap: 8px;
       align-items: stretch;
-      grid-auto-rows: minmax(var(--tile-height), auto);
+      grid-auto-rows: var(--tile-height);
     }
 
     .mode-grid.pump-modes {
@@ -382,7 +387,7 @@
       transition: .16s ease;
       min-width: 0;
       min-height: var(--tile-height);
-      height: auto;
+      height: var(--tile-height);
       display: grid;
       grid-template-rows: auto auto 1fr;
       align-content: start;
@@ -404,9 +409,19 @@
       background: rgba(255,107,107,.20);
     }
 
-    .mode .icon { font-size: 17px; margin-bottom: 3px; }
+    .mode .icon { font-size: 17px; margin-bottom: 2px; }
     .mode strong { display: block; font-size: 13px; margin-bottom: 2px; overflow-wrap: anywhere; }
-    .mode small { color: var(--muted); font-size: 11px; line-height: 1.18; overflow-wrap: anywhere; align-self: start; }
+    .mode small {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.16;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      align-self: start;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
 
     /* Compact climate-style target temperature control. */
     .temperature-control {
@@ -435,6 +450,10 @@
       border: 1px solid var(--line);
       border-radius: var(--tile-radius);
       background: rgba(255,255,255,.045);
+      min-height: var(--tile-height);
+      height: var(--tile-height);
+      display: grid;
+      align-content: center;
     }
 
     .temperature-value .label {
@@ -713,7 +732,7 @@
       grid-template-columns: repeat(3, minmax(140px, 1fr));
       gap: 8px;
       align-items: stretch;
-      grid-auto-rows: minmax(var(--tile-height), auto);
+      grid-auto-rows: var(--tile-height);
     }
 
     .forecast-grid.daily-forecast {
@@ -730,7 +749,7 @@
       overflow: hidden;
       min-width: 0;
       min-height: var(--tile-height);
-      height: auto;
+      height: var(--tile-height);
     }
 
     .weather-summary::before {
@@ -752,11 +771,18 @@
     .weather-summary small,
     .forecast-tile small {
       color: var(--muted);
-      line-height: 1.25;
-      font-size: 11px;
+      line-height: 1.15;
+      font-size: 10px;
       align-self: start;
       display: block;
       width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .forecast-tile small {
+      display: none;
     }
 
     .weather-badge {
@@ -765,17 +791,17 @@
       gap: 5px;
       align-items: center;
       justify-content: center;
-      padding: 5px 8px;
+      padding: 3px 6px;
       border-radius: 999px;
       background: rgba(55,212,166,.14);
       border: 1px solid rgba(55,212,166,.32);
-      font-size: 10px;
+      font-size: 9px;
       line-height: 1.2;
-      margin-top: 7px;
+      margin-top: 3px;
       margin-left: auto;
       margin-right: auto;
       max-width: 100%;
-      min-height: 28px;
+      min-height: 20px;
       white-space: normal;
       align-self: end;
     }
@@ -891,8 +917,8 @@
       text-align: center;
       transition: transform .16s ease, background .16s ease;
       display: grid;
-      grid-template-rows: auto auto auto minmax(28px, 1fr) auto;
-      align-content: stretch;
+      grid-template-rows: auto auto auto auto;
+      align-content: center;
       justify-items: center;
     }
 
@@ -903,32 +929,33 @@
 
     .forecast-tile .time {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
     }
 
     .forecast-tile .icon {
-      font-size: 22px;
-      margin: 3px 0 2px;
+      font-size: 17px;
+      margin: 1px 0 0;
     }
 
     .forecast-tile .temp {
       font-weight: 760;
-      font-size: 16px;
+      font-size: 14px;
+      line-height: 1.05;
     }
 
     .forecast-tile .recommendation {
-      margin-top: 6px;
+      margin-top: 3px;
       display: inline-flex;
       justify-content: center;
       align-items: center;
-      padding: 5px 8px;
+      padding: 3px 6px;
       border-radius: 999px;
       background: rgba(255,255,255,.07);
       border: 1px solid var(--line);
       color: var(--text);
-      font-size: 10px;
+      font-size: 9px;
       line-height: 1.2;
-      min-height: 28px;
+      min-height: 20px;
       max-width: 100%;
       width: min(100%, 158px);
       align-self: end;
@@ -1000,6 +1027,7 @@
     .energy-tile {
       position: relative;
       min-height: var(--tile-height);
+      height: var(--tile-height);
       padding: 8px;
       border: 1px solid var(--line);
       border-radius: var(--tile-radius);
@@ -1320,7 +1348,7 @@
               <div class="mode" data-pump-mode="Dauerbetrieb"><div class="icon">🔁</div><strong>Dauerbetrieb</strong><small>Pumpe läuft dauerhaft, Restart alle 12 Stunden.</small></div>
               <div class="mode active" data-pump-mode="Badebetrieb"><div class="icon">🏊</div><strong>Badebetrieb</strong><small>07:30–22:00 mit Restart-Pulsen.</small></div>
               <div class="mode" data-pump-mode="Schlechtwetter"><div class="icon">🌧️</div><strong>Schlechtwetter</strong><small>Reduzierte Chlorung bei wenig UV/Badenden.</small></div>
-              <div class="mode" data-pump-mode="Nachtbaden"><div class="icon">🌙</div><strong>Nachtbaden</strong><small id="night-swim-hint">Pumpe + Heizung EIN, PV egal, max. 10h.</small></div>
+              <div class="mode" data-pump-mode="Nachtbaden"><div class="icon">🌙</div><strong>Nachtbaden</strong><small id="night-swim-hint">Pumpe + Heizung EIN, Dauer aus Add-on-Option.</small></div>
               <div class="mode action-mode" data-action="restart"><div class="icon">↻</div><strong>Chlorsystem neu starten</strong><small>Kurzer Restart-Pulse für den Chlorinator.</small></div>
             </div>
           </div>
@@ -1428,6 +1456,7 @@
       heaterTempMax: 32,
       pumpPowerWithoutChlorinatorW: 450,
       pumpPowerWithChlorinatorW: 500,
+      nightSwimMaxMinutes: 600,
       heatPumpControl: true,
       weatherControl: true
     };
@@ -1774,6 +1803,7 @@
       const options = snapshot?.options || {};
       const features = snapshot?.features || options?.features || {};
       const thresholds = snapshot?.thresholds || options?.thresholds || {};
+      const profiles = snapshot?.profiles || options?.profiles || {};
       controlConfig.heatPumpControl = features.heat_pump_control !== false;
       controlConfig.weatherControl = features.weather_control !== false;
       controlConfig.pvStartExportW = optionNumber(thresholds.pv_start_export_w, controlConfig.pvStartExportW);
@@ -1784,6 +1814,7 @@
       controlConfig.heaterTempMax = optionNumber(thresholds.heater_temp_max, controlConfig.heaterTempMax);
       controlConfig.pumpPowerWithoutChlorinatorW = optionNumber(thresholds.pump_power_without_chlorinator_w, controlConfig.pumpPowerWithoutChlorinatorW);
       controlConfig.pumpPowerWithChlorinatorW = optionNumber(thresholds.pump_power_with_chlorinator_w, controlConfig.pumpPowerWithChlorinatorW);
+      controlConfig.nightSwimMaxMinutes = optionNumber(profiles.night_swim_max_minutes, controlConfig.nightSwimMaxMinutes);
       applyFeatureVisibility();
     }
 
@@ -1800,8 +1831,8 @@
       setText(
         'night-swim-hint',
         controlConfig.heatPumpControl
-          ? 'Pumpe + Heizung EIN, PV egal, max. 10h.'
-          : 'Pumpe läuft max. 10h.'
+          ? `Pumpe + Heizung EIN, PV egal, ${nightSwimLimitText()}.`
+          : `Pumpe läuft ${nightSwimLimitText()}.`
       );
     }
 
@@ -1924,6 +1955,19 @@
       const hours = Math.floor(value / 3600);
       const minutes = Math.floor((value % 3600) / 60);
       return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+    }
+
+    function formatMinutesCompact(minutes) {
+      const value = Math.max(1, Math.round(Number(minutes) || 600));
+      const hours = Math.floor(value / 60);
+      const rest = value % 60;
+      if (hours && rest) return `${hours}h ${rest}m`;
+      if (hours) return `${hours}h`;
+      return `${value}min`;
+    }
+
+    function nightSwimLimitText() {
+      return `max. ${formatMinutesCompact(controlConfig.nightSwimMaxMinutes)}`;
     }
 
     function formatStableMinutes(value, compact = false) {
@@ -2550,12 +2594,12 @@
         },
         'Nachtbaden': {
           title: 'Nachtbaden',
-          subtitle: 'Pumpe und Heizung laufen unabhängig von der PV-Leistung. Der Modus endet automatisch nach maximal 10 Stunden.',
+          subtitle: `Pumpe und Heizung laufen unabhängig von der PV-Leistung. Der Modus endet automatisch nach ${formatMinutesCompact(controlConfig.nightSwimMaxMinutes)}.`,
           pump: 'EIN',
-          pumpHint: 'max. 10h',
+          pumpHint: nightSwimLimitText(),
           chlor: '--',
           chlorHint: 'wird aus Pumpenleistung berechnet',
-          reason: '<strong>Nachtbaden.</strong> Pumpe + Heizung EIN, PV wird ignoriert, max. 10h.'
+          reason: `<strong>Nachtbaden.</strong> Pumpe + Heizung EIN, PV wird ignoriert, ${nightSwimLimitText()}.`
         }
       };
 
@@ -2577,7 +2621,7 @@
       }
 
       if (!controlConfig.heatPumpControl && pumpMode === 'Nachtbaden') {
-        selected.subtitle = 'Die Pumpe läuft unabhängig vom Tagesprofil. Der Modus endet automatisch nach maximal 10 Stunden.';
+        selected.subtitle = `Die Pumpe läuft unabhängig vom Tagesprofil. Der Modus endet automatisch nach ${formatMinutesCompact(controlConfig.nightSwimMaxMinutes)}.`;
       }
 
       document.getElementById('hero-title').textContent = selected.title;
@@ -2608,9 +2652,9 @@
         if (controlConfig.heatPumpControl) {
           document.getElementById('heater-status').textContent = 'EIN';
           document.getElementById('heater-hint').textContent = 'PV wird ignoriert';
-          pushCommand('Nachtbaden aktiv', 'Pumpe + Heizung EIN, PV wird ignoriert, max. 10h.');
+          pushCommand('Nachtbaden aktiv', `Pumpe + Heizung EIN, PV wird ignoriert, ${nightSwimLimitText()}.`);
         } else {
-          pushCommand('Nachtbaden aktiv', 'Pumpe EIN, max. 10h.');
+          pushCommand('Nachtbaden aktiv', `Pumpe EIN, ${nightSwimLimitText()}.`);
         }
         return;
       }

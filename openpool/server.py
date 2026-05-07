@@ -1161,7 +1161,7 @@ CONTROLLER = OpenPoolController(HA)
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/0.2.26"
+    server_version = "OpenPool/0.2.27"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:
