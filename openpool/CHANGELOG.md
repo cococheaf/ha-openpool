@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Vertically center the heater mode buttons inside the Heizungsmodus control
+  card.
+
 ## 1.0.2
 
 - Move the master enable switch to the first dashboard status tile and give it
