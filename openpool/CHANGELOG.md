@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.32
+
+- Arrange the control panel as a clean two-column grid: Pumpenmodus next to
+  Wettersteuerung, Heizungsmodus next to Heizungstemperatur.
+- Split Heizungstemperatur into its own subcard while preserving the existing
+  heater lock behavior.
+- Center control contents consistently inside the subcards.
+
 ## 0.2.31
 
 - Treat the heat pump as running when the heater power sensor reports active

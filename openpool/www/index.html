@@ -464,7 +464,8 @@
       gap: 8px;
       align-items: stretch;
       grid-auto-rows: var(--button-height);
-      justify-content: start;
+      justify-content: center;
+      width: 100%;
     }
 
     .mode-grid.pump-modes {
@@ -545,6 +546,7 @@
       border-radius: 14px;
       background: rgba(15,23,42,.34);
       min-width: 0;
+      width: min(100%, 420px);
     }
 
     .temperature-control .section-title {
@@ -717,6 +719,8 @@
     }
 
     .controls-panel .card-inner {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -731,9 +735,11 @@
       border: 1px solid var(--line);
       border-radius: var(--tile-radius);
       background: rgba(15,23,42,.34);
+      align-content: start;
     }
 
     .controls-panel .section-title {
+      grid-column: 1 / -1;
       margin-bottom: 2px;
     }
 
@@ -743,6 +749,7 @@
 
     .control-section-header {
       min-width: 0;
+      text-align: center;
     }
 
     .control-section-header h3 {
@@ -753,17 +760,13 @@
 
     .control-section-body {
       min-width: 0;
+      display: grid;
+      justify-items: center;
     }
 
-    .weather-layout {
-      display: block;
-    }
-
+    .weather-layout,
     .heater-layout {
       display: grid;
-      grid-template-columns: auto minmax(280px, 420px);
-      gap: 10px;
-      align-items: stretch;
     }
 
     .control-card {
@@ -1032,6 +1035,9 @@
       .dashboard .sensor-list-card {
         grid-column: auto;
       }
+      .controls-panel .card-inner {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
 
     @media (max-width: 620px) {
@@ -1184,18 +1190,6 @@
             <div class="section-title">
               <h3>Steuerelemente</h3>
             </div>
-            <div class="control-section weather-card" id="weather-card">
-              <div class="control-section-header">
-                <h3>Wettersteuerung</h3>
-              </div>
-              <div class="control-section-body weather-layout">
-                <div class="mode-grid weather-mode-grid" id="weather-mode-control">
-                  <div class="mode active" data-weather-mode="Empfehlung"><div class="icon">☀️</div><strong>Deaktiviert</strong><small id="weather-disabled-hint">Wetter schaltet den Pumpenmodus nicht automatisch.</small></div>
-                  <div class="mode" data-weather-mode="Automatik"><div class="icon">↻</div><strong>Aktiviert</strong><small id="weather-auto-hint">Empfehlung wird geladen.</small></div>
-                </div>
-              </div>
-            </div>
-
             <div class="control-section control-card" id="pump-control-card">
               <div class="disabled-overlay"><span>Hauptfreigabe AUS – Pumpenmodus gesperrt</span></div>
               <div class="control-section-header">
@@ -1213,6 +1207,18 @@
               </div>
             </div>
 
+            <div class="control-section weather-card" id="weather-card">
+              <div class="control-section-header">
+                <h3>Wettersteuerung</h3>
+              </div>
+              <div class="control-section-body weather-layout">
+                <div class="mode-grid weather-mode-grid" id="weather-mode-control">
+                  <div class="mode active" data-weather-mode="Empfehlung"><div class="icon">☀️</div><strong>Deaktiviert</strong><small id="weather-disabled-hint">Wetter schaltet den Pumpenmodus nicht automatisch.</small></div>
+                  <div class="mode" data-weather-mode="Automatik"><div class="icon">↻</div><strong>Aktiviert</strong><small id="weather-auto-hint">Empfehlung wird geladen.</small></div>
+                </div>
+              </div>
+            </div>
+
             <div class="control-section control-card" id="heater-control-card">
               <div class="disabled-overlay"><span>Hauptfreigabe AUS – Heizungsmodus gesperrt</span></div>
               <div class="control-section-header">
@@ -1224,10 +1230,16 @@
                   <div class="mode" data-heater-mode="Ein"><div class="icon">🔥</div><strong>Ein</strong><small>Heizen erzwingen, aber nur mit Pumpenflow.</small></div>
                   <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach PV-Leistung und Stabilzeit.</small></div>
                 </div>
+              </div>
+            </div>
+
+            <div class="control-section control-card temperature-card" id="heater-temperature-card">
+              <div class="disabled-overlay"><span>Hauptfreigabe AUS – Heizungstemperatur gesperrt</span></div>
+              <div class="control-section-header">
+                <h3>Heizungstemperatur</h3>
+              </div>
+              <div class="control-section-body">
                 <div class="temperature-control">
-                  <div class="section-title">
-                    <h3>Heizungstemperatur</h3>
-                  </div>
                   <div class="temperature-readout">
                     <div class="temperature-value">
                       <div class="label">Ist</div>
@@ -1740,6 +1752,7 @@
     function applyFeatureVisibility() {
       setFeatureVisible('weather-card', controlConfig.weatherControl);
       setFeatureVisible('heater-control-card', controlConfig.heatPumpControl);
+      setFeatureVisible('heater-temperature-card', controlConfig.heatPumpControl);
       setFeatureVisible('heater-status-metric', controlConfig.heatPumpControl);
       setFeatureVisible('heat-source-status-metric', controlConfig.heatPumpControl);
       setFeatureVisible('heater-sensor-category', controlConfig.heatPumpControl);
@@ -2270,15 +2283,23 @@
     function updateHeaterLock() {
       const heaterCard = document.getElementById('heater-control-card');
       if (!heaterCard) return;
-      const overlay = heaterCard.querySelector('.disabled-overlay span');
+      const temperatureCard = document.getElementById('heater-temperature-card');
       const masterEnabled = isMasterEnabled();
       const pumpMode = getPumpMode();
       const heaterLocked = !masterEnabled || pumpMode === 'Aus';
-
-      heaterCard.classList.toggle('disabled', heaterLocked);
-      overlay.textContent = !masterEnabled
+      const overlayText = !masterEnabled
         ? 'Hauptfreigabe AUS – Heizungsmodus gesperrt'
         : 'Pumpenmodus AUS – Heizung benötigt Pumpenflow';
+      const temperatureOverlayText = !masterEnabled
+        ? 'Hauptfreigabe AUS – Heizungstemperatur gesperrt'
+        : 'Pumpenmodus AUS – Heizung benötigt Pumpenflow';
+
+      heaterCard.classList.toggle('disabled', heaterLocked);
+      temperatureCard?.classList.toggle('disabled', heaterLocked);
+      const overlay = heaterCard.querySelector('.disabled-overlay span');
+      const temperatureOverlay = temperatureCard?.querySelector('.disabled-overlay span');
+      if (overlay) overlay.textContent = overlayText;
+      if (temperatureOverlay) temperatureOverlay.textContent = temperatureOverlayText;
     }
 
     function setShutdownSequenceVisible(visible) {
