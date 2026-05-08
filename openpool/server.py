@@ -32,6 +32,7 @@ DEFAULT_LOG_LEVEL = "info"
 PULSE_TRIGGER_WINDOW_SECONDS = 90
 RUN_ON_SECONDS = 5 * 60
 RESTART_PULSE_SECONDS = 5
+CONTINUOUS_RESTART_INTERVAL_SECONDS = 12 * 60 * 60
 COMMAND_LOG_LIMIT = 6
 WEATHER_FORECAST_REFRESH_SECONDS = 12 * 60 * 60
 HEATER_ACTIVE_POWER_W = 100
@@ -375,6 +376,7 @@ class OpenPoolController:
             "pv_last_available_w": None,
             "pending_job": None,
             "restart_pulses_done": {},
+            "continuous_restart_last_at": None,
             "weather_forecast": [],
             "weather_forecast_updated_at": 0,
             "weather_forecast_error": "",
@@ -402,6 +404,14 @@ class OpenPoolController:
         state.update(loaded)
         if not state.get("pump_mode_started_at"):
             state["pump_mode_started_at"] = now_ts()
+        if state.get("pump_mode") == "Dauerbetrieb":
+            state["continuous_restart_last_at"] = (
+                state.get("continuous_restart_last_at")
+                or state.get("pump_mode_started_at")
+                or now_ts()
+            )
+        else:
+            state["continuous_restart_last_at"] = None
         if state.get("heater_mode") == "Wetterautomatik":
             state["heater_mode"] = "PV-Automatik"
         if state.get("weather_mode") not in WEATHER_MODE_OPTIONS:
@@ -571,6 +581,7 @@ class OpenPoolController:
 
         self.state["pump_mode"] = target_mode
         self.state["pump_mode_started_at"] = now_ts()
+        self.state["continuous_restart_last_at"] = None
         self.command("Wetterautomatik Pumpenprofil", target_mode)
 
     def snapshot(self) -> dict:
@@ -593,6 +604,7 @@ class OpenPoolController:
                 "thresholds": self.thresholds(),
                 "profiles": self.profile(),
                 "restart_pulses": self.restart_pulses(),
+                "continuous_restart_interval_s": CONTINUOUS_RESTART_INTERVAL_SECONDS,
                 "now": now_ts(),
             }
 
@@ -636,7 +648,10 @@ class OpenPoolController:
         action_type = action.get("type")
         with self.lock:
             if action_type == "master":
+                current_ts = now_ts()
                 self.state["master_enabled"] = bool(action.get("enabled"))
+                if self.state.get("pump_mode") == "Dauerbetrieb":
+                    self.state["continuous_restart_last_at"] = current_ts if self.state["master_enabled"] else None
                 self.command(
                     "Hauptfreigabe EIN" if self.state["master_enabled"] else "Hauptfreigabe AUS",
                     "Von der OpenPool UI gesetzt.",
@@ -645,7 +660,9 @@ class OpenPoolController:
             elif action_type == "pump_mode":
                 mode = str(action.get("mode") or "Aus")
                 if mode != self.state.get("pump_mode"):
-                    self.state["pump_mode_started_at"] = now_ts()
+                    current_ts = now_ts()
+                    self.state["pump_mode_started_at"] = current_ts
+                    self.state["continuous_restart_last_at"] = current_ts if mode == "Dauerbetrieb" else None
                 if self.weather_mode() == "Automatik":
                     self.state["weather_mode"] = "Empfehlung"
                     self.command("Wetterautomatik pausiert", "Pumpenmodus wurde manuell gesetzt.")
@@ -846,6 +863,10 @@ class OpenPoolController:
         current_ts = now_ts()
         done = self.state.setdefault("restart_pulses_done", {})
 
+        if pump_mode == "Dauerbetrieb":
+            self._apply_continuous_restart_pulse(current_ts)
+            return
+
         for pulse in self.restart_pulses():
             scheduled_ts = clock_to_day_ts(pulse.get("time"), current_ts)
             if (
@@ -862,6 +883,21 @@ class OpenPoolController:
             done[key] = True
             self._start_restart_pulse(int(pulse.get("duration_s") or 5), f"Automatischer {pulse['key']}")
             break
+
+    def _continuous_restart_due_ts(self, current_ts: float) -> float:
+        baseline = self.state.get("continuous_restart_last_at") or self.state.get("pump_mode_started_at")
+        try:
+            baseline_ts = float(baseline)
+        except (TypeError, ValueError):
+            baseline_ts = current_ts
+            self.state["continuous_restart_last_at"] = baseline_ts
+        return baseline_ts + CONTINUOUS_RESTART_INTERVAL_SECONDS
+
+    def _apply_continuous_restart_pulse(self, current_ts: float) -> None:
+        if current_ts < self._continuous_restart_due_ts(current_ts):
+            return
+        self.state["continuous_restart_last_at"] = current_ts
+        self._start_restart_pulse(RESTART_PULSE_SECONDS, "12h-Restart Dauerbetrieb")
 
     def _apply_control_rules(self) -> None:
         if self.state.get("pending_job"):
@@ -1181,8 +1217,11 @@ class OpenPoolController:
             self.ha.service("climate", "set_temperature", entity_id=entity_id, data={"temperature": self.state["heater_target_temp"]})
 
     def _start_restart_pulse(self, duration_s: int, title: str) -> None:
+        current_ts = now_ts()
         self._turn_pump(False)
-        self.state["pending_job"] = {"type": "restart_pulse", "until": now_ts() + max(1, duration_s)}
+        self.state["pending_job"] = {"type": "restart_pulse", "until": current_ts + max(1, duration_s)}
+        if self.state.get("pump_mode") == "Dauerbetrieb":
+            self.state["continuous_restart_last_at"] = current_ts
         self.command(title, f"Pumpe fuer {duration_s} Sekunden ausgeschaltet.")
         self._save_state()
 
@@ -1203,7 +1242,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.1.3"
+    server_version = "OpenPool/1.1.4"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

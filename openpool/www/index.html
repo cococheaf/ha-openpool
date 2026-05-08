@@ -1654,6 +1654,7 @@
     // Safety rule: pump run-on is only required while the heat pump is running
     // or less than five minutes after it stopped.
     const heaterRunOnMs = 5 * 60 * 1000;
+    const defaultContinuousRestartIntervalS = 12 * 60 * 60;
     const COMMAND_LOG_LIMIT = 6;
     let heaterOffSince = Date.now() - heaterRunOnMs - 1000;
     let lastCommandSignature = '';
@@ -1850,8 +1851,31 @@
       return { title: 'Pumpenstart', at: tomorrowStart.getTime() / 1000 };
     }
 
+    function nextContinuousRestartTask(snapshot, controller) {
+      const baseline = Number(
+        controller.continuous_restart_last_at
+        || controller.pump_mode_started_at
+        || snapshot?.runtime?.pump_running_since
+      );
+      if (!Number.isFinite(baseline)) return null;
+
+      const interval = optionNumber(
+        snapshot?.continuous_restart_interval_s,
+        defaultContinuousRestartIntervalS
+      );
+      const now = snapshotNowSeconds(snapshot);
+      const at = baseline + Math.max(60, interval);
+
+      return {
+        title: at <= now ? '12h-Restart startet' : '12h-Restart',
+        at: at <= now ? now : at
+      };
+    }
+
     function nextRestartPulseTask(snapshot, controller, nowDate) {
-      if (controller.master_enabled === false || (controller.pump_mode || 'Aus') === 'Aus') return null;
+      const pumpMode = controller.pump_mode || 'Aus';
+      if (controller.master_enabled === false || pumpMode === 'Aus') return null;
+      if (pumpMode === 'Dauerbetrieb') return nextContinuousRestartTask(snapshot, controller);
 
       const pulses = Array.isArray(snapshot?.restart_pulses) ? snapshot.restart_pulses : [];
       const done = controller.restart_pulses_done || {};
@@ -1864,7 +1888,7 @@
           .map(pulse => ({ pulse, date: clockToToday(pulse.time, day) })))
         .filter(task => task.date && task.date >= nowDate)
         .filter(task => !done[`${dayKey(task.date)}:${task.pulse.key}`])
-        .filter(task => pumpRunsAtTaskTime(snapshot, controller.pump_mode || 'Aus', task.date))
+        .filter(task => pumpRunsAtTaskTime(snapshot, pumpMode, task.date))
         .sort((left, right) => left.date - right.date)
         .map(task => ({
           title: `${pulseLabel(task.pulse)} ausführen`,

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.4
+
+- Change Dauerbetrieb restart handling from fixed daily restart pulses to a
+  dedicated 12-hour runtime restart.
+- Show the next Dauerbetrieb restart as `12h-Restart` in the activity card
+  instead of showing the configured `Pulse 1` schedule.
+
 ## 1.1.3
 
 - Add a large-desktop layout profile that uses more available screen width and
