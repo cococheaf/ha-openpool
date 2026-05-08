@@ -1103,6 +1103,188 @@
       }
     }
 
+    @media (min-width: 1440px) and (hover: hover) and (pointer: fine) {
+      :root {
+        --page-gap: clamp(18px, 1.9vw, 36px);
+        --card-pad: clamp(12px, .9vw, 18px);
+        --tile-height: clamp(72px, 4.4vw, 88px);
+        --button-width: clamp(154px, 9.4vw, 178px);
+        --button-height: clamp(72px, 4.4vw, 86px);
+        --radius: 16px;
+        --tile-radius: 13px;
+      }
+
+      .app {
+        width: min(1920px, calc(100% - (var(--page-gap) * 2)));
+        padding-top: clamp(14px, 1.2vw, 24px);
+        padding-bottom: clamp(18px, 1.4vw, 30px);
+      }
+
+      header {
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .brand {
+        gap: 12px;
+        min-height: 48px;
+      }
+
+      .logo {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+      }
+
+      .logo img {
+        width: 34px;
+        height: 34px;
+      }
+
+      .brand-title {
+        height: 46px;
+      }
+
+      .brand h1 {
+        font-size: 23px;
+      }
+
+      .brand-tagline {
+        font-size: 12px;
+      }
+
+      .pill {
+        height: 46px;
+        min-width: 210px;
+        padding: 8px 14px;
+        font-size: 13px;
+      }
+
+      header > .pill {
+        min-width: 260px;
+      }
+
+      .grid {
+        gap: clamp(12px, .9vw, 18px);
+      }
+
+      .dashboard .decision-card {
+        min-height: clamp(420px, 43vh, 540px);
+      }
+
+      .section-title {
+        margin-bottom: 12px;
+      }
+
+      .section-title h3,
+      .control-section-header h3 {
+        font-size: 19px;
+      }
+
+      .metrics,
+      .mode-grid,
+      .controls-panel .card-inner,
+      .sensor-categories {
+        gap: clamp(10px, .75vw, 14px);
+      }
+
+      .metric {
+        padding: 12px;
+      }
+
+      .metric .label,
+      .temperature-value .label {
+        font-size: 13px;
+      }
+
+      .metric .value,
+      .master .value {
+        font-size: 22px;
+      }
+
+      .control-section {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .mode {
+        padding: 10px;
+      }
+
+      .mode .icon {
+        font-size: 20px;
+        margin-bottom: 4px;
+      }
+
+      .mode strong {
+        font-size: 13px;
+      }
+
+      .temperature-control {
+        width: min(100%, 520px);
+        gap: 9px;
+      }
+
+      .temperature-readout {
+        gap: 10px;
+      }
+
+      .temperature-value strong {
+        font-size: 25px;
+      }
+
+      .temp-slider input[type="range"] {
+        min-height: 32px;
+      }
+
+      .upcoming-task {
+        min-height: 42px;
+        padding: 10px 12px;
+        font-size: 15px;
+      }
+
+      .timeline {
+        gap: 9px;
+        margin-top: 12px;
+      }
+
+      .event {
+        grid-template-columns: 116px 1fr;
+        gap: 12px;
+      }
+
+      .event time,
+      .event div {
+        font-size: 15px;
+      }
+
+      .event small {
+        font-size: 12px;
+      }
+
+      .sensor-category {
+        padding: 10px;
+        gap: 6px;
+      }
+
+      .sensor-category-title {
+        font-size: 14px;
+      }
+
+      .sensor-list {
+        gap: 2px;
+      }
+
+      .sensor-list > div {
+        padding: 4px 0;
+      }
+
+      .sensor-list span,
+      .sensor-list strong {
+        font-size: 13px;
+      }
+    }
+
     @media (hover: none), (pointer: coarse), (max-width: 1024px) {
       [data-tooltip]::before,
       [data-tooltip]::after {

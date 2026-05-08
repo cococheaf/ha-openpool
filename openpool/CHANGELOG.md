@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.3
+
+- Add a large-desktop layout profile that uses more available screen width and
+  scales dashboard spacing, cards, buttons and sensor typography on wide desktop
+  screens only.
+
 ## 1.1.2
 
 - Remove the internal sensor-card scroll area and let the dashboard grid size the

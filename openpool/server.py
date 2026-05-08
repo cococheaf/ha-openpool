@@ -1203,7 +1203,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.1.2"
+    server_version = "OpenPool/1.1.3"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:
