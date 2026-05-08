@@ -204,9 +204,19 @@
     .dashboard .sensor-list-card.height-locked .sensor-categories {
       flex: 1 1 auto;
       min-height: 0;
+      grid-auto-rows: max-content;
+      align-content: start;
+      align-items: start;
       overflow-y: auto;
       overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+      -webkit-overflow-scrolling: touch;
       padding-right: 2px;
+    }
+
+    .dashboard .sensor-list-card.height-locked .sensor-category {
+      align-self: start;
+      min-height: 0;
     }
 
     .grid > *,
@@ -979,7 +989,7 @@
 
     .sensor-category {
       min-width: 0;
-      min-height: 100%;
+      min-height: 0;
       border: 1px solid var(--line);
       border-radius: 12px;
       background: rgba(15,23,42,.34);

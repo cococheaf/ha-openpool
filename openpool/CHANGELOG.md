@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Fix the iPad/tablet sensor card layout so the pump, heater and energy sensor
+  groups no longer overlap when the sensor card is locked to the activity card
+  height.
+
 ## 1.1.0
 
 - Mark the current UI and automation state as the first golden-image release.
