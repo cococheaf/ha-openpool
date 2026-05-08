@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.2
+
+- Remove the internal sensor-card scroll area and let the dashboard grid size the
+  task history and sensor cards together.
+- Enlarge the task history card and its text so the tablet layout has enough
+  natural height for the full sensor list.
+
 ## 1.1.1
 
 - Fix the iPad/tablet sensor card layout so the pump, heater and energy sensor

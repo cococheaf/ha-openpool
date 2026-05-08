@@ -182,41 +182,17 @@
     .dashboard .decision-card,
     .dashboard .sensor-list-card {
       grid-column: span 6;
-      align-self: start;
+      align-self: stretch;
       height: auto;
     }
 
     .dashboard .decision-card .card-inner,
     .dashboard .sensor-list-card .card-inner {
-      height: auto;
-    }
-
-    .dashboard .sensor-list-card.height-locked {
-      height: var(--activity-card-height);
-      overflow: hidden;
-    }
-
-    .dashboard .sensor-list-card.height-locked .card-inner {
       height: 100%;
-      min-height: 0;
     }
 
-    .dashboard .sensor-list-card.height-locked .sensor-categories {
-      flex: 1 1 auto;
-      min-height: 0;
-      grid-auto-rows: max-content;
-      align-content: start;
-      align-items: start;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      scrollbar-gutter: stable;
-      -webkit-overflow-scrolling: touch;
-      padding-right: 2px;
-    }
-
-    .dashboard .sensor-list-card.height-locked .sensor-category {
-      align-self: start;
-      min-height: 0;
+    .dashboard .decision-card {
+      min-height: clamp(360px, 42vh, 440px);
     }
 
     .grid > *,
@@ -676,8 +652,8 @@
 
     .timeline {
       display: grid;
-      gap: 5px;
-      margin-top: 10px;
+      gap: 8px;
+      margin-top: 12px;
     }
 
     .command-log {
@@ -688,14 +664,14 @@
     .upcoming-task {
       display: flex;
       align-items: center;
-      min-height: 32px;
-      margin-bottom: 9px;
-      padding: 7px 9px;
+      min-height: 38px;
+      margin-bottom: 11px;
+      padding: 9px 11px;
       border: 1px solid rgba(80,183,255,.22);
       border-radius: 8px;
       background: rgba(80,183,255,.08);
       color: var(--text);
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       line-height: 1.25;
     }
@@ -708,29 +684,29 @@
 
     .event {
       display: grid;
-      grid-template-columns: 98px 1fr;
-      gap: 10px;
+      grid-template-columns: 108px 1fr;
+      gap: 12px;
       align-items: start;
     }
 
     .event time {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 14px;
       padding-top: 1px;
     }
 
     .event div {
       border-left: 2px solid rgba(80,183,255,.55);
-      padding-left: 9px;
+      padding-left: 10px;
       color: var(--text);
-      font-size: 13px;
+      font-size: 14px;
     }
 
     .event small {
       display: -webkit-box;
       color: var(--muted);
-      margin-top: 2px;
-      font-size: 11px;
+      margin-top: 3px;
+      font-size: 12px;
       line-height: 1.25;
       overflow: hidden;
       -webkit-box-orient: vertical;
@@ -1073,28 +1049,29 @@
       }
 
       .upcoming-task {
-        min-height: 30px;
-        margin-bottom: 7px;
-        padding: 6px 9px;
+        min-height: 36px;
+        margin-bottom: 10px;
+        padding: 8px 10px;
+        font-size: 14px;
       }
 
       .timeline {
-        gap: 4px;
-        margin-top: 8px;
+        gap: 7px;
+        margin-top: 10px;
       }
 
       .event {
-        grid-template-columns: 86px 1fr;
-        gap: 8px;
+        grid-template-columns: 104px 1fr;
+        gap: 10px;
       }
 
       .event time,
       .event div {
-        font-size: 12px;
+        font-size: 14px;
       }
 
       .event small {
-        font-size: 10.5px;
+        font-size: 11.5px;
         -webkit-line-clamp: 1;
         line-clamp: 1;
       }
@@ -1162,16 +1139,8 @@
       .dashboard .sensor-list-card {
         grid-column: auto;
       }
-      .dashboard .sensor-list-card.height-locked {
-        height: auto;
-        overflow: visible;
-      }
-      .dashboard .sensor-list-card.height-locked .card-inner {
-        height: auto;
-      }
-      .dashboard .sensor-list-card.height-locked .sensor-categories {
-        overflow: visible;
-        padding-right: 0;
+      .dashboard .decision-card {
+        min-height: 0;
       }
       .controls-panel .card-inner {
         grid-template-columns: minmax(0, 1fr);
@@ -1241,21 +1210,23 @@
         width: 100%;
       }
       .upcoming-task {
-        font-size: 12px;
+        font-size: 13px;
+        min-height: 34px;
+        padding: 8px 9px;
       }
       .event {
-        grid-template-columns: 74px 1fr;
+        grid-template-columns: 84px 1fr;
         gap: 8px;
       }
       .event time,
       .event div {
-        font-size: 12px;
+        font-size: 13px;
       }
       .event div {
         padding-left: 7px;
       }
       .event small {
-        font-size: 10px;
+        font-size: 11px;
       }
       .sequence-step {
         grid-template-columns: 28px 1fr;
@@ -1502,10 +1473,8 @@
     // or less than five minutes after it stopped.
     const heaterRunOnMs = 5 * 60 * 1000;
     const COMMAND_LOG_LIMIT = 6;
-    const SENSOR_HEIGHT_BREAKPOINT = 760;
     let heaterOffSince = Date.now() - heaterRunOnMs - 1000;
     let lastCommandSignature = '';
-    let sensorHeightFrame = null;
     const commandLog = [
       { time: '--:--', title: 'Warte auf Home Assistant', detail: 'Live-Zustand wird geladen.' }
     ];
@@ -1572,35 +1541,6 @@
           <div>${escapeHTML(command.title)}<small>${escapeHTML(command.detail)}</small></div>
         </div>
       `).join('');
-      scheduleSensorCardHeightSync();
-    }
-
-    function syncSensorCardHeight() {
-      const activityCard = document.querySelector('.decision-card');
-      const sensorCard = document.querySelector('.sensor-list-card');
-      if (!activityCard || !sensorCard) return;
-
-      if (window.innerWidth <= SENSOR_HEIGHT_BREAKPOINT) {
-        sensorCard.classList.remove('height-locked');
-        sensorCard.style.removeProperty('--activity-card-height');
-        return;
-      }
-
-      sensorCard.classList.remove('height-locked');
-      sensorCard.style.removeProperty('--activity-card-height');
-      const height = Math.ceil(activityCard.getBoundingClientRect().height);
-      sensorCard.style.setProperty('--activity-card-height', `${height}px`);
-      sensorCard.classList.add('height-locked');
-    }
-
-    function scheduleSensorCardHeightSync() {
-      if (sensorHeightFrame !== null) {
-        window.cancelAnimationFrame(sensorHeightFrame);
-      }
-      sensorHeightFrame = window.requestAnimationFrame(() => {
-        sensorHeightFrame = null;
-        syncSensorCardHeight();
-      });
     }
 
     function snapshotNowSeconds(snapshot) {
@@ -1803,7 +1743,6 @@
       const task = candidates[0];
       const label = task ? formatUpcomingLabel(task, snapshot) : 'Keine Aufgabe geplant';
       node.innerHTML = `<span>Upcoming:</span> ${escapeHTML(label)}`;
-      scheduleSensorCardHeightSync();
     }
 
     function pushCommand(title, detail) {
@@ -1943,7 +1882,6 @@
           ? `Pumpe + Heizung EIN, PV egal, ${nightSwimLimitText()}.`
           : `Pumpe läuft ${nightSwimLimitText()}.`
       );
-      scheduleSensorCardHeightSync();
     }
 
     async function loadInitialState() {
@@ -2492,7 +2430,6 @@
 
     function setShutdownSequenceVisible(visible) {
       document.getElementById('shutdown-sequence').classList.toggle('visible', visible);
-      scheduleSensorCardHeightSync();
     }
 
     function cancelShutdownSequence(targetMode) {
@@ -2825,11 +2762,8 @@
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         refreshHomeAssistantState().catch(error => handleHaError('Live-Sync', error));
-        scheduleSensorCardHeightSync();
       }
     });
-
-    window.addEventListener('resize', scheduleSensorCardHeightSync);
 
     bootOpenPool();
   </script>
