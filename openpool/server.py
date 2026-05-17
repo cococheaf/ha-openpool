@@ -38,7 +38,7 @@ WEATHER_FORECAST_REFRESH_SECONDS = 12 * 60 * 60
 HEATER_ACTIVE_POWER_W = 100
 DEFAULT_WEATHER_ENTITY = "weather.home"
 DEFAULT_HEATER_START_MODE = "Auto"
-HEATER_START_MODES = ("Heat", "Cool", "Auto", "Boost Heat", "Silent Heat")
+FALLBACK_HEATER_START_MODES = ("Heat", "Cool", "Auto", "Boost Heat", "Silent Heat")
 BAD_WEATHER_CONDITIONS = {
     "cloudy",
     "fog",
@@ -195,12 +195,16 @@ def day_key_for_ts(value: float) -> str:
     return time.strftime("%Y-%m-%d", time.localtime(value))
 
 
-def normalize_heater_start_mode(value: object) -> str:
+def normalize_heater_start_mode(value: object, options: list[str] | tuple[str, ...] | None = None) -> str:
+    available = [str(option).strip() for option in (options or FALLBACK_HEATER_START_MODES) if str(option).strip()]
     requested = str(value or "").strip().lower()
-    for mode in HEATER_START_MODES:
+    for mode in available:
         if requested == mode.lower():
             return mode
-    return DEFAULT_HEATER_START_MODE
+    for mode in available:
+        if DEFAULT_HEATER_START_MODE.lower() == mode.lower():
+            return mode
+    return available[0] if available else DEFAULT_HEATER_START_MODE
 
 
 def seconds_to_clock(value: float | None) -> str:
@@ -468,6 +472,15 @@ class OpenPoolController:
         entity_id = str(configured or DEFAULT_WEATHER_ENTITY).strip()
         return entity_id or DEFAULT_WEATHER_ENTITY
 
+    def heater_start_modes(self) -> list[str]:
+        selector = self.ha_states.get("heater_operation_mode") or {}
+        options = (selector.get("attributes") or {}).get("options")
+        if isinstance(options, list):
+            modes = [str(option).strip() for option in options if str(option).strip()]
+            if modes:
+                return modes
+        return list(FALLBACK_HEATER_START_MODES)
+
     def entities(self) -> dict:
         entities = dict(DEFAULT_ENTITIES)
         configured = self.options().get("entities") or {}
@@ -602,6 +615,11 @@ class OpenPoolController:
     def snapshot(self) -> dict:
         with self.lock:
             runtime = self._runtime_snapshot(now_ts())
+            heater_start_modes = self.heater_start_modes()
+            self.state["heater_start_mode"] = normalize_heater_start_mode(
+                self.state.get("heater_start_mode"),
+                heater_start_modes,
+            )
             return {
                 "controller": dict(self.state),
                 "runtime": runtime,
@@ -620,7 +638,7 @@ class OpenPoolController:
                 "profiles": self.profile(),
                 "restart_pulses": self.restart_pulses(),
                 "continuous_restart_interval_s": CONTINUOUS_RESTART_INTERVAL_SECONDS,
-                "heater_start_modes": list(HEATER_START_MODES),
+                "heater_start_modes": heater_start_modes,
                 "now": now_ts(),
             }
 
@@ -708,7 +726,7 @@ class OpenPoolController:
             elif action_type == "heater_start_mode":
                 if not self.heat_pump_enabled():
                     return self.snapshot()
-                mode = normalize_heater_start_mode(action.get("mode"))
+                mode = normalize_heater_start_mode(action.get("mode"), self.heater_start_modes())
                 self.state["heater_start_mode"] = mode
                 self.command("WP-Startmodus", mode)
                 self._save_state()
@@ -1260,7 +1278,7 @@ class OpenPoolController:
             "select",
             "select_option",
             entity_id=entity_id,
-            data={"option": normalize_heater_start_mode(self.state.get("heater_start_mode"))},
+            data={"option": normalize_heater_start_mode(self.state.get("heater_start_mode"), self.heater_start_modes())},
         )
 
     def _start_restart_pulse(self, duration_s: int, title: str) -> None:
@@ -1289,7 +1307,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.1.5"
+    server_version = "OpenPool/1.1.6"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

@@ -70,6 +70,15 @@ heat pump starts only after that value has been reached continuously for
 the available PV power stays below `pv_stop_export_w` for
 `pv_stop_stable_minutes` before switching it off.
 
+## Heat Pump Start Mode
+
+If `entities.heater_operation_mode` points to a Home Assistant `select` entity,
+OpenPool reads the available start modes directly from that entity's
+`attributes.options`. The UI dropdown therefore follows the actual modes
+provided by the heat pump integration. Until Home Assistant has reported the
+selector options, OpenPool keeps a small fallback list with the known Intex
+modes so the dashboard remains usable during startup.
+
 ## Pump Profiles
 
 Profile times are configured in the add-on `profiles` section. Nachtbaden uses

@@ -1602,11 +1602,7 @@
                   <div class="heater-start-mode">
                     <label for="heater-start-mode-select">Betriebsmodus beim Start</label>
                     <select id="heater-start-mode-select" aria-label="Betriebsmodus beim Start der Wärmepumpe">
-                      <option value="Heat">Heat</option>
-                      <option value="Cool">Cool</option>
                       <option value="Auto" selected>Auto</option>
-                      <option value="Boost Heat">Boost Heat</option>
-                      <option value="Silent Heat">Silent Heat</option>
                     </select>
                   </div>
                 </div>
@@ -1734,7 +1730,8 @@
     const heaterRunOnMs = 5 * 60 * 1000;
     const defaultContinuousRestartIntervalS = 12 * 60 * 60;
     const defaultHeaterStartMode = 'Auto';
-    const heaterStartModes = ['Heat', 'Cool', 'Auto', 'Boost Heat', 'Silent Heat'];
+    const fallbackHeaterStartModes = ['Heat', 'Cool', 'Auto', 'Boost Heat', 'Silent Heat'];
+    let heaterStartModes = [...fallbackHeaterStartModes];
     const COMMAND_LOG_LIMIT = 6;
     let heaterOffSince = Date.now() - heaterRunOnMs - 1000;
     let lastCommandSignature = '';
@@ -2251,16 +2248,45 @@
       setText(valueId, formatSensorValue(entityState, fallbackUnit, digits));
     }
 
-    function normalizeHeaterStartMode(value) {
-      const requested = String(value || '').trim().toLowerCase();
-      return heaterStartModes.find(mode => mode.toLowerCase() === requested) || defaultHeaterStartMode;
+    function cleanHeaterStartModes(options) {
+      const values = Array.isArray(options) ? options : [];
+      const unique = [];
+      values.forEach(option => {
+        const mode = String(option || '').trim();
+        if (mode && !unique.some(existing => existing.toLowerCase() === mode.toLowerCase())) {
+          unique.push(mode);
+        }
+      });
+      return unique.length ? unique : [...fallbackHeaterStartModes];
     }
 
-    function setHeaterStartModeSelect(value) {
+    function heaterStartModesFromSnapshot(snapshot) {
+      const liveOptions = snapshot?.ha_states?.['entity-heater-operation-mode']?.attributes?.options;
+      if (Array.isArray(liveOptions) && liveOptions.length) return cleanHeaterStartModes(liveOptions);
+      return cleanHeaterStartModes(snapshot?.heater_start_modes);
+    }
+
+    function normalizeHeaterStartMode(value, options = heaterStartModes) {
+      const requested = String(value || '').trim().toLowerCase();
+      const modes = cleanHeaterStartModes(options);
+      const selected = modes.find(mode => mode.toLowerCase() === requested);
+      if (selected) return selected;
+      return modes.find(mode => mode.toLowerCase() === defaultHeaterStartMode.toLowerCase()) || modes[0];
+    }
+
+    function setHeaterStartModeOptions(options, selectedValue) {
       const select = document.getElementById('heater-start-mode-select');
       if (!select) return;
-      const normalized = normalizeHeaterStartMode(value);
-      if (select.value !== normalized) select.value = normalized;
+
+      heaterStartModes = cleanHeaterStartModes(options);
+      const selected = normalizeHeaterStartMode(selectedValue, heaterStartModes);
+      select.replaceChildren(...heaterStartModes.map(mode => {
+        const option = document.createElement('option');
+        option.value = mode;
+        option.textContent = mode;
+        option.selected = mode === selected;
+        return option;
+      }));
     }
 
     function chlorinatorStateFromPower(states) {
@@ -2589,7 +2615,10 @@
       setActiveMode('#pump-control-card', 'pumpMode', controller.pump_mode || 'Aus');
       setActiveMode('#weather-mode-control', 'weatherMode', controller.weather_mode || 'Empfehlung');
       setActiveMode('#heater-control-card', 'heaterMode', controller.heater_mode || 'Aus');
-      setHeaterStartModeSelect(controller.heater_start_mode || defaultHeaterStartMode);
+      setHeaterStartModeOptions(
+        heaterStartModesFromSnapshot(snapshot),
+        controller.heater_start_mode || defaultHeaterStartMode
+      );
       updateHeaterLock();
       document.getElementById('pump-control-card').classList.toggle('disabled', controller.master_enabled === false);
 

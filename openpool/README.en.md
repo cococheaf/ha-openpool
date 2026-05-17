@@ -17,8 +17,8 @@ and saltwater chlorinator system.
   swimming.
 - Restart pulses for the chlorinator.
 - Chlorinator status from pump power.
-- Heat pump with target temperature, start operating mode, run-on and optional PV
-  automation.
+- Heat pump with target temperature, start operating mode from a Home Assistant
+  selector, run-on and optional PV automation.
 - Weather control as recommendation or automation.
 - Live sync between multiple open interfaces.
 - Persistent state in `/data/openpool_state.json`.

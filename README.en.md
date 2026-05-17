@@ -38,8 +38,8 @@ Assistant entities that already exist in the installation.
   night swimming.
 - Configurable night swimming duration and restart pulses for the chlorinator.
 - Chlorinator detection from pump power.
-- Heat pump control with target temperature, start operating mode, pump run-on
-  and optional PV automation.
+- Heat pump control with target temperature, start operating mode from a Home
+  Assistant selector, pump run-on and optional PV automation.
 - PV release with start/stop thresholds and stability times.
 - Weather control as recommendation or automation for swim mode and bad weather
   mode.

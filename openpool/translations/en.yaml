@@ -36,6 +36,9 @@ configuration:
         name: Pump/chlorinator switch
       heater_climate:
         name: Heat pump climate entity
+      heater_operation_mode:
+        name: Heat pump operating mode selector
+        description: Optional Home Assistant select entity from which OpenPool reads the available heat pump start modes.
       weather:
         name: Weather entity
       pv_generation:

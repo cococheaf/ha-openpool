@@ -16,8 +16,8 @@ Sandfilter-/Salzwasserelektrolyse-System ausgelegt.
 - Pumpenprofile: Aus, Dauerbetrieb, Badebetrieb, Schlechtwetter, Nachtbaden.
 - Restart-Pulse fuer das Chlorsystem.
 - Chlorinator-Status aus der Pumpenleistung.
-- Waermepumpe mit Zieltemperatur, Start-Betriebsmodus, Nachlauf und optionaler
-  PV-Automatik.
+- Waermepumpe mit Zieltemperatur, Start-Betriebsmodus aus dem
+  Home-Assistant-Selector, Nachlauf und optionaler PV-Automatik.
 - Wettersteuerung als Empfehlung oder Automatik.
 - Live-Sync zwischen mehreren offenen Oberflaechen.
 - Persistenter Zustand in `/data/openpool_state.json`.

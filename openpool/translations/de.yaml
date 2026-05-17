@@ -36,6 +36,9 @@ configuration:
         name: Pumpe-/Chlorsystem-Schalter
       heater_climate:
         name: Wärmepumpen-Climate-Entität
+      heater_operation_mode:
+        name: Wärmepumpen-Betriebsmodus-Selector
+        description: Optionale Home-Assistant-select-Entität, aus der OpenPool die verfügbaren Start-Betriebsmodi der Wärmepumpe liest.
       weather:
         name: Wetter-Entität
       pv_generation:

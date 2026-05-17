@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.6
+
+- Read the available heat-pump start operating modes from the configured Home
+  Assistant `select` entity instead of relying on a fixed UI list.
+- Keep the previous Heat/Cool/Auto/Boost Heat/Silent Heat values as a fallback
+  while Home Assistant has not yet provided selector options.
+- Add translated add-on option labels and documentation for the heat-pump
+  operating mode selector.
+
 ## 1.1.5
 
 - Add `entities.heater_operation_mode` for a Home Assistant `select` entity that
