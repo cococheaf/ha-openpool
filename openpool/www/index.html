@@ -785,12 +785,21 @@
     }
 
     #heater-control-card .control-section-body {
-      display: flex;
+      display: grid;
       align-items: center;
       justify-content: center;
       align-content: center;
+      justify-items: center;
       height: 100%;
       min-height: 0;
+    }
+
+    .heater-mode-stack {
+      width: 100%;
+      display: grid;
+      justify-items: center;
+      align-content: center;
+      gap: 8px;
     }
 
     #heater-control-card .mode-grid {
@@ -801,6 +810,42 @@
       align-content: center;
       align-items: center;
       justify-content: center;
+    }
+
+    .heater-start-mode {
+      width: min(100%, calc((var(--button-width) * 3) + 16px));
+      display: grid;
+      gap: 5px;
+      justify-items: stretch;
+    }
+
+    .heater-start-mode label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      line-height: 1.15;
+      text-align: center;
+    }
+
+    .heater-start-mode select {
+      width: 100%;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255,255,255,.045);
+      color: var(--text);
+      color-scheme: dark;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 760;
+      text-align: center;
+      text-align-last: center;
+      cursor: pointer;
+    }
+
+    .heater-start-mode select:focus-visible {
+      outline: 2px solid rgba(80,183,255,.55);
+      outline-offset: 3px;
     }
 
     .control-card {
@@ -814,7 +859,8 @@
     }
 
     .control-card.disabled .mode,
-    .control-card.disabled .temperature-control {
+    .control-card.disabled .temperature-control,
+    .control-card.disabled .heater-start-mode {
       pointer-events: none;
     }
 
@@ -1220,6 +1266,23 @@
         font-size: 13px;
       }
 
+      .heater-mode-stack {
+        gap: 10px;
+      }
+
+      .heater-start-mode {
+        width: min(100%, calc((var(--button-width) * 3) + 28px));
+      }
+
+      .heater-start-mode label {
+        font-size: 12px;
+      }
+
+      .heater-start-mode select {
+        height: 40px;
+        font-size: 14px;
+      }
+
       .temperature-control {
         width: min(100%, 520px);
         gap: 9px;
@@ -1382,6 +1445,9 @@
       #heater-control-card .mode-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+      .heater-start-mode {
+        width: 100%;
+      }
       .section-title {
         align-items: flex-start;
         flex-direction: column;
@@ -1527,10 +1593,22 @@
                 <h3>Heizungsmodus</h3>
               </div>
               <div class="control-section-body heater-layout">
-                <div class="mode-grid">
-                  <div class="mode" data-heater-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Wärmepumpe bleibt aus.</small></div>
-                  <div class="mode" data-heater-mode="Ein"><div class="icon">🔥</div><strong>Ein</strong><small>Heizen erzwingen, aber nur mit Pumpenflow.</small></div>
-                  <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach PV-Leistung und Stabilzeit.</small></div>
+                <div class="heater-mode-stack">
+                  <div class="mode-grid">
+                    <div class="mode" data-heater-mode="Aus"><div class="icon">⏻</div><strong>Aus</strong><small>Wärmepumpe bleibt aus.</small></div>
+                    <div class="mode" data-heater-mode="Ein"><div class="icon">🔥</div><strong>Ein</strong><small>Wärmepumpe erzwingen, aber nur mit Pumpenflow.</small></div>
+                    <div class="mode active" data-heater-mode="PV-Automatik"><div class="icon">☀️</div><strong>PV-Automatik</strong><small>Start/Stopp nach PV-Leistung und Stabilzeit.</small></div>
+                  </div>
+                  <div class="heater-start-mode">
+                    <label for="heater-start-mode-select">Betriebsmodus beim Start</label>
+                    <select id="heater-start-mode-select" aria-label="Betriebsmodus beim Start der Wärmepumpe">
+                      <option value="Heat">Heat</option>
+                      <option value="Cool">Cool</option>
+                      <option value="Auto" selected>Auto</option>
+                      <option value="Boost Heat">Boost Heat</option>
+                      <option value="Silent Heat">Silent Heat</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1655,6 +1733,8 @@
     // or less than five minutes after it stopped.
     const heaterRunOnMs = 5 * 60 * 1000;
     const defaultContinuousRestartIntervalS = 12 * 60 * 60;
+    const defaultHeaterStartMode = 'Auto';
+    const heaterStartModes = ['Heat', 'Cool', 'Auto', 'Boost Heat', 'Silent Heat'];
     const COMMAND_LOG_LIMIT = 6;
     let heaterOffSince = Date.now() - heaterRunOnMs - 1000;
     let lastCommandSignature = '';
@@ -2171,6 +2251,18 @@
       setText(valueId, formatSensorValue(entityState, fallbackUnit, digits));
     }
 
+    function normalizeHeaterStartMode(value) {
+      const requested = String(value || '').trim().toLowerCase();
+      return heaterStartModes.find(mode => mode.toLowerCase() === requested) || defaultHeaterStartMode;
+    }
+
+    function setHeaterStartModeSelect(value) {
+      const select = document.getElementById('heater-start-mode-select');
+      if (!select) return;
+      const normalized = normalizeHeaterStartMode(value);
+      if (select.value !== normalized) select.value = normalized;
+    }
+
     function chlorinatorStateFromPower(states) {
       const pump = states['entity-pump-switch'];
       const pumpPower = entityPowerWatts(states['entity-pump-power']);
@@ -2497,6 +2589,7 @@
       setActiveMode('#pump-control-card', 'pumpMode', controller.pump_mode || 'Aus');
       setActiveMode('#weather-mode-control', 'weatherMode', controller.weather_mode || 'Empfehlung');
       setActiveMode('#heater-control-card', 'heaterMode', controller.heater_mode || 'Aus');
+      setHeaterStartModeSelect(controller.heater_start_mode || defaultHeaterStartMode);
       updateHeaterLock();
       document.getElementById('pump-control-card').classList.toggle('disabled', controller.master_enabled === false);
 
@@ -2628,6 +2721,8 @@
 
       heaterCard.classList.toggle('disabled', heaterLocked);
       temperatureCard?.classList.toggle('disabled', heaterLocked);
+      const startModeSelect = document.getElementById('heater-start-mode-select');
+      if (startModeSelect) startModeSelect.disabled = heaterLocked;
       const overlay = heaterCard.querySelector('.disabled-overlay span');
       const temperatureOverlay = temperatureCard?.querySelector('.disabled-overlay span');
       if (overlay) overlay.textContent = overlayText;
@@ -2686,6 +2781,16 @@
         await sendOpenPoolAction({ type: 'heater_mode', mode: heaterMode });
       } catch (error) {
         handleHaError('Heizungsmodus', error);
+      }
+    }
+
+    async function applyHeaterStartModeToHomeAssistant(mode) {
+      if (!controlConfig.heatPumpControl || !isMasterEnabled() || getPumpMode() === 'Aus') return;
+
+      try {
+        await sendOpenPoolAction({ type: 'heater_start_mode', mode: normalizeHeaterStartMode(mode) });
+      } catch (error) {
+        handleHaError('WP-Startmodus', error);
       }
     }
 
@@ -2951,6 +3056,10 @@
       } catch (error) {
         handleHaError('Zieltemperatur', error);
       }
+    });
+
+    document.getElementById('heater-start-mode-select')?.addEventListener('change', event => {
+      applyHeaterStartModeToHomeAssistant(event.target.value);
     });
 
     async function bootOpenPool() {

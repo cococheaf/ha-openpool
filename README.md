@@ -38,8 +38,8 @@ Logik mit den ohnehin vorhandenen Home-Assistant-Entitaeten.
   Nachtbaden.
 - Einstellbare Nachtbadedauer und Restart-Pulse fuer das Chlorsystem.
 - Chlorinator-Erkennung ueber die Pumpenleistung.
-- Waermepumpensteuerung mit Zieltemperatur, Pumpennachlauf und optionaler
-  PV-Automatik.
+- Waermepumpensteuerung mit Zieltemperatur, Start-Betriebsmodus,
+  Pumpennachlauf und optionaler PV-Automatik.
 - PV-Freigabe mit Start-/Stoppgrenzen und Stabilzeiten.
 - Wettersteuerung als Empfehlung oder Automatik fuer Badebetrieb und
   Schlechtwetterprofil.
@@ -58,6 +58,7 @@ Besonders wichtig sind:
 
 - `entities.pump_switch`
 - `entities.heater_climate`
+- `entities.heater_operation_mode`
 - `entities.weather`
 - `entities.pv_generation`
 - `entities.pv_export`

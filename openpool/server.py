@@ -37,6 +37,8 @@ COMMAND_LOG_LIMIT = 6
 WEATHER_FORECAST_REFRESH_SECONDS = 12 * 60 * 60
 HEATER_ACTIVE_POWER_W = 100
 DEFAULT_WEATHER_ENTITY = "weather.home"
+DEFAULT_HEATER_START_MODE = "Auto"
+HEATER_START_MODES = ("Heat", "Cool", "Auto", "Boost Heat", "Silent Heat")
 BAD_WEATHER_CONDITIONS = {
     "cloudy",
     "fog",
@@ -58,6 +60,7 @@ WEATHER_MANAGED_PUMP_MODES = {"Badebetrieb", "Schlechtwetter"}
 DEFAULT_ENTITIES = {
     "pump_switch": "switch.poolpumpe",
     "heater_climate": "climate.poolheizung",
+    "heater_operation_mode": "select.poolheizung_betriebsmodus",
     "pv_generation": "sensor.pv_erzeugungsleistung",
     "pv_export": "sensor.stromzahler_active_power_minus",
     "grid_import": "sensor.stromzahler_active_power_plus",
@@ -77,6 +80,7 @@ DEFAULT_ENTITIES = {
 UI_ENTITY_KEYS = {
     "entity-pump-switch": "pump_switch",
     "entity-heater-climate": "heater_climate",
+    "entity-heater-operation-mode": "heater_operation_mode",
     "entity-pv-generation": "pv_generation",
     "entity-pv-export": "pv_export",
     "entity-grid-import": "grid_import",
@@ -95,6 +99,7 @@ UI_ENTITY_KEYS = {
 
 HEATER_ENTITY_KEYS = {
     "heater_climate",
+    "heater_operation_mode",
     "heater_power",
     "heater_current",
     "heater_voltage",
@@ -188,6 +193,14 @@ def today_key() -> str:
 
 def day_key_for_ts(value: float) -> str:
     return time.strftime("%Y-%m-%d", time.localtime(value))
+
+
+def normalize_heater_start_mode(value: object) -> str:
+    requested = str(value or "").strip().lower()
+    for mode in HEATER_START_MODES:
+        if requested == mode.lower():
+            return mode
+    return DEFAULT_HEATER_START_MODE
 
 
 def seconds_to_clock(value: float | None) -> str:
@@ -366,6 +379,7 @@ class OpenPoolController:
             "heater_mode": "PV-Automatik",
             "weather_mode": "Empfehlung",
             "heater_target_temp": 28,
+            "heater_start_mode": DEFAULT_HEATER_START_MODE,
             "pump_running_since": None,
             "pump_runtime_total_s": 0,
             "pump_runtime_today_s": 0,
@@ -414,6 +428,7 @@ class OpenPoolController:
             state["continuous_restart_last_at"] = None
         if state.get("heater_mode") == "Wetterautomatik":
             state["heater_mode"] = "PV-Automatik"
+        state["heater_start_mode"] = normalize_heater_start_mode(state.get("heater_start_mode"))
         if state.get("weather_mode") not in WEATHER_MODE_OPTIONS:
             state["weather_mode"] = "Empfehlung"
         state["command_log"] = list(state.get("command_log") or [])[:COMMAND_LOG_LIMIT]
@@ -605,6 +620,7 @@ class OpenPoolController:
                 "profiles": self.profile(),
                 "restart_pulses": self.restart_pulses(),
                 "continuous_restart_interval_s": CONTINUOUS_RESTART_INTERVAL_SECONDS,
+                "heater_start_modes": list(HEATER_START_MODES),
                 "now": now_ts(),
             }
 
@@ -689,6 +705,15 @@ class OpenPoolController:
                 self.state["heater_mode"] = mode
                 self.command("Heizungsmodus", self.state["heater_mode"])
                 self._save_state()
+            elif action_type == "heater_start_mode":
+                if not self.heat_pump_enabled():
+                    return self.snapshot()
+                mode = normalize_heater_start_mode(action.get("mode"))
+                self.state["heater_start_mode"] = mode
+                self.command("WP-Startmodus", mode)
+                self._save_state()
+                if self._heater_is_active():
+                    self._set_heater_operation_mode()
             elif action_type == "target_temp":
                 if not self.heat_pump_enabled():
                     return self.snapshot()
@@ -1203,10 +1228,19 @@ class OpenPoolController:
                     self._set_heater_temperature()
                 except RuntimeError:
                     pass
+                try:
+                    self._set_heater_operation_mode()
+                except RuntimeError as err:
+                    log("warning", f"could not set heat pump operation mode: {err}")
             else:
                 self.ha.service("climate", "turn_off", entity_id=entity_id)
         else:
             self.ha.service(domain, "turn_on" if enabled else "turn_off", entity_id=entity_id)
+            if enabled:
+                try:
+                    self._set_heater_operation_mode()
+                except RuntimeError as err:
+                    log("warning", f"could not set heat pump operation mode: {err}")
         self.command("Heizung EIN" if enabled else "Heizung AUS", "Schaltbefehl an Home Assistant gesendet.")
 
     def _set_heater_temperature(self) -> None:
@@ -1215,6 +1249,19 @@ class OpenPoolController:
         entity_id = self.entities().get("heater_climate")
         if entity_id and entity_domain(entity_id) == "climate":
             self.ha.service("climate", "set_temperature", entity_id=entity_id, data={"temperature": self.state["heater_target_temp"]})
+
+    def _set_heater_operation_mode(self) -> None:
+        if not self.heat_pump_enabled():
+            return
+        entity_id = self.entities().get("heater_operation_mode")
+        if not entity_id:
+            return
+        self.ha.service(
+            "select",
+            "select_option",
+            entity_id=entity_id,
+            data={"option": normalize_heater_start_mode(self.state.get("heater_start_mode"))},
+        )
 
     def _start_restart_pulse(self, duration_s: int, title: str) -> None:
         current_ts = now_ts()
@@ -1242,7 +1289,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.1.4"
+    server_version = "OpenPool/1.1.5"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

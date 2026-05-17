@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.5
+
+- Add `entities.heater_operation_mode` for a Home Assistant `select` entity that
+  controls the heat pump operating mode.
+- Add a persisted heat-pump start mode selector to the heating controls with
+  `Auto` as default and options for Heat, Cool, Auto, Boost Heat and Silent Heat.
+- Apply the selected operating mode when OpenPool starts the heat pump.
+
 ## 1.1.4
 
 - Change Dauerbetrieb restart handling from fixed daily restart pulses to a
