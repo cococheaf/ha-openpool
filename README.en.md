@@ -72,8 +72,8 @@ reliable decisions or send commands to the correct devices.
 ## Installation
 
 1. In Home Assistant, open **Settings -> Add-ons -> Add-on Store**.
-2. Under **Repositories**, add:
-   `https://github.com/cococheaf/ha-openpool`
+2. Under **Repositories**, add the combined add-on repository:
+   `https://github.com/cococheaf/ha-addons`
 3. Reload the store and install **OpenPool**.
 4. Adjust the add-on configuration, especially all entities.
 5. Start the add-on and enable **Show in sidebar**.

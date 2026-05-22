@@ -72,8 +72,8 @@ Entscheidungen treffen oder Befehle an die richtigen Geraete senden.
 ## Installation
 
 1. In Home Assistant **Einstellungen -> Add-ons -> Add-on Store** oeffnen.
-2. Unter **Repositories** dieses Repository hinzufuegen:
-   `https://github.com/cococheaf/ha-openpool`
+2. Unter **Repositories** das gemeinsame Add-on-Repository hinzufuegen:
+   `https://github.com/cococheaf/ha-addons`
 3. Store neu laden und **OpenPool** installieren.
 4. Add-on-Konfiguration anpassen, insbesondere alle Entitaeten.
 5. Add-on starten und **In Seitenleiste anzeigen** aktivieren.
