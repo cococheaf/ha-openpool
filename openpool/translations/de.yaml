@@ -49,7 +49,10 @@ configuration:
         fields:
           use_combined_grid_sensor:
             name: Kombinierter Netzsensor
-            description: Aktiviert einen Sensor für Netzbezug und Einspeisung. Positiv bedeutet Netzbezug, negativ bedeutet Einspeisung.
+            description: Aktiviert einen gemeinsamen Sensor für Netzbezug und Einspeisung.
+          grid_power_import_positive:
+            name: Netzbezug ist positiv
+            description: Aktiviert bedeutet positiver Sensorwert ist Netzbezug. Deaktiviert bedeutet positiver Sensorwert ist Einspeisung.
           grid_power:
             name: Kombinierter Netzsensor
           pv_generation:

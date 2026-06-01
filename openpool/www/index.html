@@ -1714,6 +1714,7 @@
       pumpPowerWithChlorinatorW: 500,
       nightSwimMaxMinutes: 600,
       useCombinedGridSensor: false,
+      gridPowerImportPositive: true,
       heatPumpControl: true,
       weatherControl: true
     };
@@ -2144,6 +2145,10 @@
         energyEntities.use_combined_grid_sensor ?? entities.use_combined_grid_sensor,
         controlConfig.useCombinedGridSensor
       );
+      controlConfig.gridPowerImportPositive = optionBool(
+        energyEntities.grid_power_import_positive ?? entities.grid_power_import_positive,
+        controlConfig.gridPowerImportPositive
+      );
       controlConfig.pvStartExportW = optionNumber(thresholds.pv_start_export_w, controlConfig.pvStartExportW);
       controlConfig.pvStopExportW = optionNumber(thresholds.pv_stop_export_w, controlConfig.pvStopExportW);
       controlConfig.pvStartStableMinutes = optionNumber(thresholds.pv_start_stable_minutes, controlConfig.pvStartStableMinutes);
@@ -2219,6 +2224,12 @@
       if (controlConfig.useCombinedGridSensor) {
         const balance = entityPowerWatts(states['entity-grid-power']);
         if (balance === null) return { gridImport: null, pvExport: null };
+        if (!controlConfig.gridPowerImportPositive) {
+          return {
+            gridImport: Math.max(0, -balance),
+            pvExport: Math.max(0, balance)
+          };
+        }
         return {
           gridImport: Math.max(0, balance),
           pvExport: Math.max(0, -balance)

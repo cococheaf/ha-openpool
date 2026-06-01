@@ -177,6 +177,18 @@ def public_options(options: dict) -> dict:
     return public
 
 
+def bool_option(value: object, fallback: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "on", "yes", "1"}:
+            return True
+        if normalized in {"false", "off", "no", "0"}:
+            return False
+    return fallback
+
+
 def read_s6_environment(name: str) -> str:
     for folder in ("/run/s6/container_environment", "/var/run/s6/container_environment"):
         path = Path(folder) / name
@@ -559,10 +571,19 @@ class OpenPoolController:
         configured = self.entity_options()
         energy = configured.get("energy") or {}
         if isinstance(energy, dict) and energy.get("use_combined_grid_sensor") is not None:
-            return bool(energy.get("use_combined_grid_sensor"))
+            return bool_option(energy.get("use_combined_grid_sensor"))
         if configured.get("use_combined_grid_sensor") is not None:
-            return bool(configured.get("use_combined_grid_sensor"))
+            return bool_option(configured.get("use_combined_grid_sensor"))
         return False
+
+    def grid_power_import_positive(self) -> bool:
+        configured = self.entity_options()
+        energy = configured.get("energy") or {}
+        if isinstance(energy, dict) and energy.get("grid_power_import_positive") is not None:
+            return bool_option(energy.get("grid_power_import_positive"), True)
+        if configured.get("grid_power_import_positive") is not None:
+            return bool_option(configured.get("grid_power_import_positive"), True)
+        return True
 
     def thresholds(self) -> dict:
         values = {
@@ -1303,7 +1324,9 @@ class OpenPoolController:
             balance = self._entity_power_watts("grid_power")
             if balance is None:
                 return None, None
-            return max(0.0, balance), max(0.0, -balance)
+            if self.grid_power_import_positive():
+                return max(0.0, balance), max(0.0, -balance)
+            return max(0.0, -balance), max(0.0, balance)
 
         grid_import = self._entity_power_watts("grid_import")
         pv_export = self._entity_power_watts("pv_export")
@@ -1465,7 +1488,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.2.1"
+    server_version = "OpenPool/1.2.2"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

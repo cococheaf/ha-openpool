@@ -1,5 +1,5 @@
 name: OpenPool
-version: "1.2.1"
+version: "1.2.2"
 slug: openpool
 description: OpenSource Pool System Controller currently designed for Intex 26680 based pump/chlorinator systems, heat pumps and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool
@@ -51,6 +51,7 @@ options:
       weather: weather.home
     energy:
       use_combined_grid_sensor: false
+      grid_power_import_positive: true
       grid_power: sensor.netzleistung
       pv_generation: sensor.pv_erzeugungsleistung
       pv_export: sensor.stromzahler_active_power_minus
@@ -115,6 +116,7 @@ schema:
       weather: str
     energy:
       use_combined_grid_sensor: bool
+      grid_power_import_positive: bool
       grid_power: str
       pv_generation: str
       pv_export: str
@@ -141,6 +143,7 @@ schema:
     grid_import: str?
     grid_power: str?
     use_combined_grid_sensor: bool?
+    grid_power_import_positive: bool?
     pump_power: str?
     pump_current: str?
     pump_voltage: str?

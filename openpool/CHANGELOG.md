@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2
+
+- Add `entities.energy.grid_power_import_positive` so combined grid sensors can
+  be configured for either sign convention.
+- Use the configured combined grid-sensor sign direction consistently in the
+  controller and web UI.
+
 ## 1.2.1
 
 - Group OpenPool entity add-on options into control, energy/grid, pump and heat

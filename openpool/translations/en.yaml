@@ -49,7 +49,10 @@ configuration:
         fields:
           use_combined_grid_sensor:
             name: Combined grid sensor
-            description: Enables one sensor for grid import and export. Positive means grid import, negative means export/feed-in.
+            description: Enables one shared sensor for grid import and export.
+          grid_power_import_positive:
+            name: Grid import is positive
+            description: Enabled means a positive sensor value is grid import. Disabled means a positive sensor value is export/feed-in.
           grid_power:
             name: Combined grid sensor
           pv_generation:

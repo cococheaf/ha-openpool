@@ -30,7 +30,8 @@ Most important:
 - `entities.energy.pv_generation`
 - Energy/grid: either `entities.energy.pv_export` and
   `entities.energy.grid_import` or `entities.energy.grid_power` with
-  `entities.energy.use_combined_grid_sensor`
+  `entities.energy.use_combined_grid_sensor` and the matching sign option
+  `entities.energy.grid_power_import_positive`
 - Pump and heat pump sensors
 
 Wrong entities can make OpenPool take bad decisions or send commands to the
