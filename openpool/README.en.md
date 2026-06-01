@@ -13,7 +13,7 @@ system.
   swimming.
 - Restart pulses for the chlorinator with configurable pulse duration.
 - Heat-pump control with target temperature, start operating mode from a Home
-  Assistant selector, run-on protection and optional PV automation.
+  Assistant selection list, run-on protection and optional PV automation.
 - Weather control as recommendation or automation.
 - Live sync between multiple browsers and persistent state in
   `/data/openpool_state.json`.

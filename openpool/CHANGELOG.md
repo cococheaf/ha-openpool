@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.3
+
+- Remove old duplicate entity fields from the add-on options schema.
+- Hide obsolete per-pulse duration fields so only the central pulse duration is
+  shown.
+- Rewrite add-on option labels and descriptions in clearer user-facing wording.
+- Drop old option-name fallbacks from the controller where they are no longer
+  shown in the add-on options.
+
 ## 1.2.2
 
 - Add `entities.energy.grid_power_import_positive` so combined grid sensors can

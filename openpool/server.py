@@ -543,9 +543,6 @@ class OpenPoolController:
     def entities(self) -> dict:
         entities = dict(DEFAULT_ENTITIES)
         configured = self.entity_options()
-        for key in entities:
-            if configured.get(key) is not None:
-                entities[key] = configured[key]
         for group, keys in ENTITY_GROUP_KEYS.items():
             group_options = configured.get(group) or {}
             if not isinstance(group_options, dict):
@@ -572,8 +569,6 @@ class OpenPoolController:
         energy = configured.get("energy") or {}
         if isinstance(energy, dict) and energy.get("use_combined_grid_sensor") is not None:
             return bool_option(energy.get("use_combined_grid_sensor"))
-        if configured.get("use_combined_grid_sensor") is not None:
-            return bool_option(configured.get("use_combined_grid_sensor"))
         return False
 
     def grid_power_import_positive(self) -> bool:
@@ -581,8 +576,6 @@ class OpenPoolController:
         energy = configured.get("energy") or {}
         if isinstance(energy, dict) and energy.get("grid_power_import_positive") is not None:
             return bool_option(energy.get("grid_power_import_positive"), True)
-        if configured.get("grid_power_import_positive") is not None:
-            return bool_option(configured.get("grid_power_import_positive"), True)
         return True
 
     def thresholds(self) -> dict:
@@ -615,13 +608,6 @@ class OpenPoolController:
             "night_swim_duration_hours": 10,
         }
         configured = dict(self.options().get("profiles") or {})
-        if "night_swim_duration_hours" not in configured:
-            legacy_minutes = configured.get("night_swim_duration_minutes", configured.get("night_swim_max_minutes"))
-            if legacy_minutes is not None:
-                try:
-                    configured["night_swim_duration_hours"] = float(legacy_minutes) / 60
-                except (TypeError, ValueError):
-                    pass
         values.update(configured)
         try:
             hours = float(values.get("night_swim_duration_hours") or 10)
@@ -630,7 +616,6 @@ class OpenPoolController:
         hours = max(0.1, hours)
         values["night_swim_duration_hours"] = hours
         values["night_swim_duration_minutes"] = int(round(hours * 60))
-        values["night_swim_max_minutes"] = values["night_swim_duration_minutes"]
         return values
 
     def restart_pulses(self) -> list[dict]:
@@ -650,16 +635,7 @@ class OpenPoolController:
 
     def restart_pulse_duration_s(self) -> int:
         configured = self.options().get("restart_pulses") or {}
-        value = configured.get("pulse_duration_s")
-        if value is None:
-            # Backward compatibility for installations that still have the old
-            # per-pulse duration fields in their saved add-on options.
-            for key in ("pulse_1", "pulse_2", "pulse_3", "pulse_4"):
-                legacy = configured.get(key) or {}
-                if legacy.get("duration_s") is not None:
-                    value = legacy.get("duration_s")
-                    break
-        return normalize_restart_pulse_duration(value)
+        return normalize_restart_pulse_duration(configured.get("pulse_duration_s"))
 
     def weather_recommendation(self) -> dict:
         if not self.weather_control_enabled():
@@ -1488,7 +1464,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.2.2"
+    server_version = "OpenPool/1.2.3"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

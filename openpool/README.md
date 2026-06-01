@@ -12,7 +12,7 @@ ausgelegt.
 - Pumpenprofile: Aus, Dauerbetrieb, Badebetrieb, Schlechtwetter und Nachtbaden.
 - Restart-Pulse fuer das Chlorsystem mit einstellbarer Pulse-Dauer.
 - Waermepumpensteuerung mit Zieltemperatur, Start-Betriebsmodus aus einem
-  Home-Assistant-Selector, Nachlauf und optionaler PV-Automatik.
+  Home-Assistant-Auswahlfeld, Nachlauf und optionaler PV-Automatik.
 - Wettersteuerung als Empfehlung oder Automatik.
 - Live-Sync zwischen mehreren Browsern und persistenter Zustand unter
   `/data/openpool_state.json`.

@@ -2377,7 +2377,7 @@
       const hours = Number(profiles?.night_swim_duration_hours);
       if (Number.isFinite(hours)) return Math.max(0.1, hours) * 60;
 
-      const minutes = Number(profiles?.night_swim_duration_minutes ?? profiles?.night_swim_max_minutes);
+      const minutes = Number(profiles?.night_swim_duration_minutes);
       return Number.isFinite(minutes) ? minutes : fallback;
     }
 

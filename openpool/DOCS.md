@@ -15,9 +15,10 @@ The browser UI should call the local add-on endpoints instead of storing a
 long-lived access token in the frontend.
 
 Daily weather forecasts are read server-side with
-`weather.get_forecasts?return_response` for the configured `entities.weather`
-entity. The forecast is cached for 12 hours and persisted in the OpenPool state
-file. Normal one-second sensor polling does not read the weather entity.
+`weather.get_forecasts?return_response` for the configured
+`entities.control.weather` entity. The forecast is cached for 12 hours and
+persisted in the OpenPool state file. Normal one-second sensor polling does not
+read the weather entity.
 
 If the Supervisor token is not available in the add-on container, OpenPool can
 fall back to the configured `connection.homeassistant_url` and
@@ -77,38 +78,34 @@ without the heat pump load.
 OpenPool only enables the heat pump after the pump switch is confirmed on by
 Home Assistant, so the pump load is already represented at the grid meter.
 The add-on options control the heat-pump release with a start threshold, stop
-threshold and separate stability times. `pv_start_export_w` is the legacy option
-name for the calculated available PV power needed to start the heat pump. The
-heat pump starts only after that value has been reached continuously for
-`pv_start_stable_minutes`. While the heat pump is running, OpenPool waits until
-the available PV power stays below `pv_stop_export_w` for
-`pv_stop_stable_minutes` before switching it off.
+threshold and separate stability times. The heat pump starts only after enough
+PV power has been available continuously for the configured start stability
+time. While the heat pump is running, OpenPool waits until the available PV
+power stays below the stop threshold for the configured stop stability time
+before switching it off.
 
 ## Heat Pump Start Mode
 
-If `entities.heater_operation_mode` points to a Home Assistant `select` entity,
-OpenPool reads the available start modes directly from that entity's
+If `entities.control.heater_operation_mode` points to a Home Assistant `select`
+entity, OpenPool reads the available start modes directly from that entity's
 `attributes.options`. The UI dropdown therefore follows the actual modes
 provided by the heat pump integration. The selected value is persisted in
 `/data/openpool_state.json` and is preserved during add-on restarts even before
-Home Assistant has reported selector options again. If the heat pump is already
-running after an add-on restart, OpenPool re-applies the stored selector value
+Home Assistant has reported the available choices again. If the heat pump is
+already running after an add-on restart, OpenPool re-applies the stored mode
 when the control loop resumes.
 
 ## Pump Profiles
 
 Profile times are configured in the add-on `profiles` section. Nachtbaden uses
-`profiles.night_swim_duration_hours` as its maximum runtime. Older
-installations that still have `profiles.night_swim_duration_minutes` or
-`profiles.night_swim_max_minutes` are migrated as a fallback. The dashboard
+`profiles.night_swim_duration_hours` as its maximum runtime. The dashboard
 labels, the upcoming task and the automatic Nachtbaden shutdown all use this
 same add-on option.
 
 Restart pulses use one shared duration from
 `restart_pulses.pulse_duration_s` (`Pulse-Dauer`). This value defines how many
 seconds the pump stays off between pulse start and pulse stop. It is used for
-manual, scheduled and 12-hour restart pulses. Older per-pulse `duration_s`
-values are accepted as a migration fallback when the central option is missing.
+manual, scheduled and 12-hour restart pulses.
 
 ## Weather Recommendation
 
@@ -141,7 +138,7 @@ set to `false`.
 `features.weather_control` disables weather forecast polling, the weather
 forecast card and the weather-dependent pump automation switch when set to
 `false`.
-The weather provider itself is selected only through `entities.weather`.
+The weather provider itself is selected only through `entities.control.weather`.
 
 ## Configuration
 
