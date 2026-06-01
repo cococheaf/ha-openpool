@@ -62,12 +62,16 @@ rule because they only stop the pump for a few seconds.
 
 ## Heat Pump Release
 
-OpenPool derives the current house consumption from PV production, grid export
-and grid import: `pv_generation - pv_export + grid_import`. The heat-pump
-release value is then calculated as `pv_generation - house_consumption`, which
-is equivalent to the current grid export minus grid import balance. When the
-heat pump is already running, its current power sensor is added back to estimate
-the surplus that would exist without the heat pump load.
+OpenPool derives the current house consumption from PV production and the grid
+meter. With separate sensors the formula is
+`pv_generation - pv_export + grid_import`. If
+`entities.energy.use_combined_grid_sensor` is enabled, OpenPool reads
+`entities.energy.grid_power` instead: positive values are treated as grid
+import, negative values as export/feed-in. The heat-pump release value is then
+calculated as `pv_generation - house_consumption`, which is equivalent to the
+current grid export minus grid import balance. When the heat pump is already
+running, its current power sensor is added back to estimate the surplus that
+would exist without the heat pump load.
 OpenPool only enables the heat pump after the pump switch is confirmed on by
 Home Assistant, so the pump load is already represented at the grid meter.
 The add-on options control the heat-pump release with a start threshold, stop

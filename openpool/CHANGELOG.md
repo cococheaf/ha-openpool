@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1
+
+- Group OpenPool entity add-on options into control, energy/grid, pump and heat
+  pump sections.
+- Add `entities.energy.use_combined_grid_sensor` and
+  `entities.energy.grid_power` for installations that expose grid import and
+  export through one signed sensor.
+- Keep legacy flat entity options working during upgrades.
+
 ## 1.2.0
 
 - Preserve the selected heat-pump start mode across add-on restarts even before

@@ -32,43 +32,60 @@ configuration:
     name: Home Assistant entities
     description: Entities OpenPool uses for display and control.
     fields:
-      pump_switch:
-        name: Pump/chlorinator switch
-      heater_climate:
-        name: Heat pump climate entity
-      heater_operation_mode:
-        name: Heat pump operating mode selector
-        description: Optional Home Assistant select entity from which OpenPool reads the available heat pump start modes.
-      weather:
-        name: Weather entity
-      pv_generation:
-        name: PV production sensor
-      pv_export:
-        name: Grid export sensor
-      grid_import:
-        name: Grid import sensor
-      pump_power:
-        name: Pump power sensor
-      pump_current:
-        name: Pump current sensor
-      pump_voltage:
-        name: Pump voltage sensor
-      pump_signal:
-        name: Pump signal sensor
-      heater_power:
-        name: Heat pump power sensor
-      heater_current:
-        name: Heat pump current sensor
-      heater_voltage:
-        name: Heat pump voltage sensor
-      heater_fan:
-        name: Heat pump fan sensor
-      heater_ambient:
-        name: Heat pump ambient air sensor
-      heater_water_in:
-        name: Heat pump water inlet sensor
-      heater_water_out:
-        name: Heat pump water outlet sensor
+      control:
+        name: Control
+        fields:
+          pump_switch:
+            name: Pump/chlorinator switch
+          heater_climate:
+            name: Heat pump climate entity
+          heater_operation_mode:
+            name: Heat pump operating mode selector
+            description: Optional Home Assistant select entity from which OpenPool reads the available heat pump start modes.
+          weather:
+            name: Weather entity
+      energy:
+        name: Energy and grid
+        fields:
+          use_combined_grid_sensor:
+            name: Combined grid sensor
+            description: Enables one sensor for grid import and export. Positive means grid import, negative means export/feed-in.
+          grid_power:
+            name: Combined grid sensor
+          pv_generation:
+            name: PV production sensor
+          pv_export:
+            name: Grid export sensor
+          grid_import:
+            name: Grid import sensor
+      pump:
+        name: Pump sensors
+        fields:
+          pump_power:
+            name: Pump power sensor
+          pump_current:
+            name: Pump current sensor
+          pump_voltage:
+            name: Pump voltage sensor
+          pump_signal:
+            name: Pump signal sensor
+      heater:
+        name: Heat pump sensors
+        fields:
+          heater_power:
+            name: Heat pump power sensor
+          heater_current:
+            name: Heat pump current sensor
+          heater_voltage:
+            name: Heat pump voltage sensor
+          heater_fan:
+            name: Heat pump fan sensor
+          heater_ambient:
+            name: Heat pump ambient air sensor
+          heater_water_in:
+            name: Heat pump water inlet sensor
+          heater_water_out:
+            name: Heat pump water outlet sensor
   thresholds:
     name: Thresholds
     description: Thresholds for heat-pump release, stability times and temperature range.

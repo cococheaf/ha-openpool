@@ -23,13 +23,14 @@ system.
 Adapt all entities in the add-on configuration to your Home Assistant setup.
 Most important:
 
-- `entities.pump_switch`
-- `entities.heater_climate`
-- `entities.heater_operation_mode`
-- `entities.weather`
-- `entities.pv_generation`
-- `entities.pv_export`
-- `entities.grid_import`
+- `entities.control.pump_switch`
+- `entities.control.heater_climate`
+- `entities.control.heater_operation_mode`
+- `entities.control.weather`
+- `entities.energy.pv_generation`
+- Energy/grid: either `entities.energy.pv_export` and
+  `entities.energy.grid_import` or `entities.energy.grid_power` with
+  `entities.energy.use_combined_grid_sensor`
 - Pump and heat pump sensors
 
 Wrong entities can make OpenPool take bad decisions or send commands to the

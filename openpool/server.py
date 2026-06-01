@@ -62,9 +62,11 @@ DEFAULT_ENTITIES = {
     "pump_switch": "switch.poolpumpe",
     "heater_climate": "climate.poolheizung",
     "heater_operation_mode": "select.poolheizung_betriebsmodus",
+    "weather": DEFAULT_WEATHER_ENTITY,
     "pv_generation": "sensor.pv_erzeugungsleistung",
     "pv_export": "sensor.stromzahler_active_power_minus",
     "grid_import": "sensor.stromzahler_active_power_plus",
+    "grid_power": "sensor.netzleistung",
     "pump_power": "sensor.poolpumpe_leistung",
     "pump_current": "sensor.poolpumpe_current",
     "pump_voltage": "sensor.poolpumpe_spannung",
@@ -85,6 +87,7 @@ UI_ENTITY_KEYS = {
     "entity-pv-generation": "pv_generation",
     "entity-pv-export": "pv_export",
     "entity-grid-import": "grid_import",
+    "entity-grid-power": "grid_power",
     "entity-pump-power": "pump_power",
     "entity-pump-current": "pump_current",
     "entity-pump-voltage": "pump_voltage",
@@ -96,6 +99,21 @@ UI_ENTITY_KEYS = {
     "entity-heater-ambient": "heater_ambient",
     "entity-heater-water-in": "heater_water_in",
     "entity-heater-water-out": "heater_water_out",
+}
+
+ENTITY_GROUP_KEYS = {
+    "control": ("pump_switch", "heater_climate", "heater_operation_mode", "weather"),
+    "energy": ("pv_generation", "pv_export", "grid_import", "grid_power"),
+    "pump": ("pump_power", "pump_current", "pump_voltage", "pump_signal"),
+    "heater": (
+        "heater_power",
+        "heater_current",
+        "heater_voltage",
+        "heater_fan",
+        "heater_ambient",
+        "heater_water_in",
+        "heater_water_out",
+    ),
 }
 
 HEATER_ENTITY_KEYS = {
@@ -493,7 +511,8 @@ class OpenPoolController:
         return mode
 
     def weather_entity(self) -> str:
-        configured = (self.options().get("entities") or {}).get("weather")
+        entities = self.entities()
+        configured = entities.get("weather")
         entity_id = str(configured or DEFAULT_WEATHER_ENTITY).strip()
         return entity_id or DEFAULT_WEATHER_ENTITY
 
@@ -511,14 +530,39 @@ class OpenPoolController:
 
     def entities(self) -> dict:
         entities = dict(DEFAULT_ENTITIES)
-        configured = self.options().get("entities") or {}
+        configured = self.entity_options()
         for key in entities:
             if configured.get(key) is not None:
                 entities[key] = configured[key]
+        for group, keys in ENTITY_GROUP_KEYS.items():
+            group_options = configured.get(group) or {}
+            if not isinstance(group_options, dict):
+                continue
+            for key in keys:
+                if group_options.get(key) is not None:
+                    entities[key] = group_options[key]
+        if self.use_combined_grid_sensor():
+            entities.pop("pv_export", None)
+            entities.pop("grid_import", None)
+        else:
+            entities.pop("grid_power", None)
         if not self.heat_pump_enabled():
             for key in HEATER_ENTITY_KEYS:
                 entities.pop(key, None)
         return entities
+
+    def entity_options(self) -> dict:
+        values = self.options().get("entities") or {}
+        return values if isinstance(values, dict) else {}
+
+    def use_combined_grid_sensor(self) -> bool:
+        configured = self.entity_options()
+        energy = configured.get("energy") or {}
+        if isinstance(energy, dict) and energy.get("use_combined_grid_sensor") is not None:
+            return bool(energy.get("use_combined_grid_sensor"))
+        if configured.get("use_combined_grid_sensor") is not None:
+            return bool(configured.get("use_combined_grid_sensor"))
+        return False
 
     def thresholds(self) -> dict:
         values = {
@@ -1249,11 +1293,23 @@ class OpenPoolController:
 
     def _calculated_house_consumption_watts(self) -> float | None:
         pv_generation = self._entity_power_watts("pv_generation")
-        pv_export = self._entity_power_watts("pv_export")
-        grid_import = self._entity_power_watts("grid_import")
+        grid_import, pv_export = self._grid_import_export_watts()
         if pv_generation is None or pv_export is None or grid_import is None:
             return None
         return pv_generation - pv_export + grid_import
+
+    def _grid_import_export_watts(self) -> tuple[float | None, float | None]:
+        if self.use_combined_grid_sensor():
+            balance = self._entity_power_watts("grid_power")
+            if balance is None:
+                return None, None
+            return max(0.0, balance), max(0.0, -balance)
+
+        grid_import = self._entity_power_watts("grid_import")
+        pv_export = self._entity_power_watts("pv_export")
+        if grid_import is None or pv_export is None:
+            return None, None
+        return max(0.0, grid_import), max(0.0, pv_export)
 
     def _state_power_watts(self, state: dict | None) -> float | None:
         if not state:
@@ -1409,7 +1465,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.2.0"
+    server_version = "OpenPool/1.2.1"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

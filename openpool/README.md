@@ -22,13 +22,14 @@ ausgelegt.
 Passe in der Add-on-Konfiguration alle Entitaeten an deine Home-Assistant-Anlage
 an. Besonders wichtig sind:
 
-- `entities.pump_switch`
-- `entities.heater_climate`
-- `entities.heater_operation_mode`
-- `entities.weather`
-- `entities.pv_generation`
-- `entities.pv_export`
-- `entities.grid_import`
+- `entities.control.pump_switch`
+- `entities.control.heater_climate`
+- `entities.control.heater_operation_mode`
+- `entities.control.weather`
+- `entities.energy.pv_generation`
+- Energie/Netz: entweder `entities.energy.pv_export` und
+  `entities.energy.grid_import` oder `entities.energy.grid_power` mit
+  `entities.energy.use_combined_grid_sensor`
 - Pumpen- und Heizungssensoren
 
 Falsche Entitaeten koennen dazu fuehren, dass OpenPool keine sauberen
