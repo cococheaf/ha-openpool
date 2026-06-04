@@ -1,90 +1,117 @@
 configuration:
   log_level:
     name: Log-Level
-    description: Detailgrad der OpenPool Add-on Logs.
+    description: Legt fest, wie ausführlich OpenPool ins Add-on-Protokoll schreibt.
   poll_interval_s:
     name: Aktualisierungsrate
-    description: Sekunden zwischen Home Assistant Abfragen und UI Live-Updates.
+    description: Zeit in Sekunden zwischen zwei Aktualisierungen der Home-Assistant-Werte.
   connection:
     name: Home Assistant Verbindung
-    description: Fallback-Zugang für Systeme ohne Supervisor-Token.
+    description: Verbindung zur Home-Assistant-Instanz. Normalerweise reicht die automatische Supervisor-Verbindung.
     fields:
       auth_mode:
         name: Authentifizierung
-        description: Supervisor-Token verwenden oder optional einen eigenen OpenPool Benutzer-Token nutzen.
+        description: Automatische Add-on-Verbindung verwenden oder einen eigenen Home-Assistant-Zugriff eintragen.
       homeassistant_url:
         name: Home Assistant URL
-        description: Interne URL der Home Assistant Instanz.
+        description: Interne Adresse deiner Home-Assistant-Instanz.
       access_token:
-        name: Long-Lived Access Token
-        description: Optionaler Fallback-Token für die Home Assistant REST API.
+        name: Zugriffstoken
+        description: Nur nötig, wenn die automatische Add-on-Verbindung nicht verwendet wird.
   features:
     name: Funktionen
-    description: Aktiviert oder deaktiviert optionale OpenPool Steuerbereiche.
+    description: Schaltet optionale Steuerbereiche ein oder aus.
     fields:
       heat_pump_control:
         name: Wärmepumpensteuerung
-        description: Steuert und überwacht die Wärmepumpe inklusive PV-Freigabe und Nachlauf.
+        description: OpenPool darf die Wärmepumpe steuern, überwachen und bei Bedarf nachlaufen lassen.
       weather_control:
         name: Wettersteuerung
-        description: Nutzt die Tagesvorhersage für Empfehlung oder automatische Pumpenprofilwahl.
-  entities:
-    name: Home Assistant Entitäten
-    description: Entitäten, die OpenPool für Anzeige und Steuerung verwendet.
+        description: OpenPool nutzt die Tagesvorhersage für eine Empfehlung oder automatische Pumpenprofilwahl.
+  devices:
+    name: Steuerbare Geräte
+    description: Geräte, die OpenPool direkt ein- und ausschalten oder abfragen darf.
     fields:
-      pump_switch:
-        name: Pumpe-/Chlorsystem-Schalter
-      heater_climate:
-        name: Wärmepumpen-Climate-Entität
-      heater_operation_mode:
-        name: Wärmepumpen-Betriebsmodus-Selector
-        description: Optionale Home-Assistant-select-Entität, aus der OpenPool die verfügbaren Start-Betriebsmodi der Wärmepumpe liest.
-      weather:
-        name: Wetter-Entität
-      pv_generation:
-        name: PV-Erzeugungssensor
-      pv_export:
-        name: Netzeinspeisungssensor
-      grid_import:
-        name: Netzbezugssensor
-      pump_power:
-        name: Pumpenleistungssensor
-      pump_current:
-        name: Pumpenstromsensor
-      pump_voltage:
-        name: Pumpenspannungssensor
-      pump_signal:
-        name: Pumpensignalsensor
-      heater_power:
-        name: Heizungsleistungssensor
-      heater_current:
-        name: Heizungsnetzstromsensor
-      heater_voltage:
-        name: Heizungsnetzspannungssensor
-      heater_fan:
-        name: Heizungslüftersensor
-      heater_ambient:
-        name: Heizung-Umgebungsluftsensor
-      heater_water_in:
-        name: Heizungs-Wassereingangssensor
-      heater_water_out:
-        name: Heizungs-Wasserausgangssensor
+      pump_and_chlorinator_switch:
+        name: Schalter für Pumpe und Chlorsystem
+        description: Home-Assistant-Schalter, der Pumpe und Chlorsystem mit Strom versorgt.
+      heat_pump:
+        name: Wärmepumpe
+        description: Wähle hier deine Pool-Wärmepumpe aus Home Assistant aus.
+      heat_pump_operating_mode:
+        name: Betriebsmodus der Wärmepumpe
+        description: Auswahlfeld in Home Assistant, mit dem OpenPool den Startmodus der Wärmepumpe setzt.
+      weather_service:
+        name: Wetterdienst
+        description: Wetterdienst in Home Assistant, aus dem OpenPool die Tagesvorhersage liest.
+  energy:
+    name: PV und Netz
+    description: Sensoren, mit denen OpenPool PV-Überschuss, Netzbezug und Einspeisung berechnet.
+    fields:
+      one_grid_sensor_for_import_and_export:
+        name: Ein gemeinsamer Netzsensor für Bezug und Einspeisung
+        description: Einschalten, wenn ein Sensor Netzbezug und Netzeinspeisung gemeinsam als positiven oder negativen Wert liefert.
+      positive_grid_value_is_import:
+        name: Positiver Wert des gemeinsamen Netzsensors ist Netzbezug
+        description: Eingeschaltet bedeutet Pluswert ist Netzbezug. Ausgeschaltet bedeutet Pluswert ist Netzeinspeisung. Nur relevant, wenn ein gemeinsamer Netzsensor verwendet wird.
+      shared_grid_power_sensor:
+        name: Gemeinsamer Netzsensor
+        description: Sensor für Bezug und Einspeisung in einem Wert. Nur relevant, wenn ein gemeinsamer Netzsensor verwendet wird.
+      pv_production_sensor:
+        name: PV-Erzeugung
+        description: Sensor für die aktuelle PV-Erzeugungsleistung.
+      grid_export_sensor:
+        name: Netzeinspeisung
+        description: Sensor für die aktuelle Einspeisung ins Netz. Wird nur bei zwei getrennten Netzsensoren verwendet.
+      grid_import_sensor:
+        name: Netzbezug
+        description: Sensor für den aktuellen Bezug aus dem Netz. Wird nur bei zwei getrennten Netzsensoren verwendet.
+  pump_readings:
+    name: Messwerte der Pumpe
+    description: Sensoren für die Anzeige und Erkennung des Pumpen- und Chlorsystemzustands.
+    fields:
+      pump_power_sensor:
+        name: Leistung der Pumpe
+      pump_current_sensor:
+        name: Stromaufnahme der Pumpe
+      pump_voltage_sensor:
+        name: Spannung der Pumpe
+      pump_signal_sensor:
+        name: Funksignal der Pumpe
+  heat_pump_readings:
+    name: Messwerte der Wärmepumpe
+    description: Sensoren für Anzeige, PV-Berechnung und Betriebsstatus der Wärmepumpe.
+    fields:
+      heat_pump_power_sensor:
+        name: Leistung der Wärmepumpe
+      heat_pump_current_sensor:
+        name: Stromaufnahme der Wärmepumpe
+      heat_pump_voltage_sensor:
+        name: Netzspannung der Wärmepumpe
+      heat_pump_fan_sensor:
+        name: Lüfterdrehzahl der Wärmepumpe
+      heat_pump_ambient_air_sensor:
+        name: Umgebungsluft an der Wärmepumpe
+      heat_pump_water_in_sensor:
+        name: Wassertemperatur Eingang
+      heat_pump_water_out_sensor:
+        name: Wassertemperatur Ausgang
   thresholds:
     name: Grenzwerte
-    description: Grenzwerte für Wärmepumpenfreigabe, Stabilzeiten und Temperaturbereich.
+    description: Werte, ab denen OpenPool die Wärmepumpe freigibt oder wieder stoppt.
     fields:
       pv_start_export_w:
-        name: Wärmepumpen-Startfreigabe in Watt
-        description: Verfügbare PV-Leistung, die mindestens erreicht werden muss, bevor die Wärmepumpe starten darf.
+        name: Wärmepumpe starten ab
+        description: Verfügbare PV-Leistung in Watt, die erreicht sein muss, bevor die Wärmepumpe starten darf.
       pv_stop_export_w:
-        name: Wärmepumpen-Stoppfreigabe in Watt
-        description: Verfügbare PV-Leistung, unter der die Wärmepumpe wieder ausgeschaltet wird.
+        name: Wärmepumpe stoppen unter
+        description: Fällt die verfügbare PV-Leistung darunter, wird die Wärmepumpe nach Ablauf der Stabilzeit gestoppt.
       pv_start_stable_minutes:
-        name: Wärmepumpen-Start stabil in Minuten
-        description: Minuten, die die Wärmepumpenfreigabe durchgehend erfüllt sein muss.
+        name: PV-Leistung vor Start stabil für
+        description: Minuten, die genug PV-Leistung durchgehend verfügbar sein muss.
       pv_stop_stable_minutes:
-        name: Wärmepumpen-Stopp stabil in Minuten
-        description: Minuten, die die Wärmepumpen-Stoppgrenze durchgehend unterschritten sein muss.
+        name: PV-Leistung vor Stopp zu niedrig für
+        description: Minuten, die zu wenig PV-Leistung durchgehend anliegen muss, bevor OpenPool stoppt.
       heater_temp_min:
         name: Minimale Heizungstemperatur
         description: Untere Grenze des Temperaturreglers in der OpenPool UI.
@@ -92,30 +119,33 @@ configuration:
         name: Maximale Heizungstemperatur
         description: Obere Grenze des Temperaturreglers in der OpenPool UI.
       pump_power_without_chlorinator_w:
-        name: Pumpenleistung ohne Chlorinator
-        description: Typische Pumpenleistung in Watt, wenn der Chlorinator nicht aktiv ist.
+        name: Pumpenleistung ohne Chlorsystem
+        description: Typische Leistung in Watt, wenn nur die Pumpe läuft.
       pump_power_with_chlorinator_w:
-        name: Pumpenleistung mit Chlorinator
-        description: Ab dieser Pumpenleistung in Watt zeigt OpenPool den Chlorinator als aktiv an.
+        name: Pumpenleistung mit Chlorsystem
+        description: Ab dieser Leistung in Watt zeigt OpenPool das Chlorsystem als aktiv an.
   profiles:
     name: Profile
-    description: Zeitfenster für die OpenPool Steuerlogik.
+    description: Zeitfenster für die automatischen Pumpenprofile.
     fields:
       pump_start:
         name: Pumpenstart
       pump_end:
         name: Pumpenende
       bad_weather_start:
-        name: Schlechtwetter-Start
+        name: Schlechtwetterbetrieb Start
       bad_weather_end:
-        name: Schlechtwetter-Ende
+        name: Schlechtwetterbetrieb Ende
       night_swim_duration_hours:
         name: Nachtbadedauer in Stunden
         description: Maximale Laufzeit des Nachtbaden-Profils in Stunden, bevor OpenPool automatisch beendet.
   restart_pulses:
-    name: Restart-Pulse
-    description: Automatische kurze Ausschaltimpulse für das Chlorsystem.
+    name: Chlorsystem-Neustarts
+    description: Kurze automatische Ausschaltungen, damit das Intex-Chlorsystem wieder startet.
     fields:
+      pulse_duration_s:
+        name: Ausschaltzeit in Sekunden
+        description: So lange bleibt die Pumpe bei jedem Chlorsystem-Neustart ausgeschaltet.
       pulse_1:
         name: Pulse 1
         fields:
@@ -123,8 +153,6 @@ configuration:
             name: Aktiviert
           time:
             name: Uhrzeit
-          duration_s:
-            name: Dauer in Sekunden
       pulse_2:
         name: Pulse 2
         fields:
@@ -132,8 +160,6 @@ configuration:
             name: Aktiviert
           time:
             name: Uhrzeit
-          duration_s:
-            name: Dauer in Sekunden
       pulse_3:
         name: Pulse 3
         fields:
@@ -141,8 +167,6 @@ configuration:
             name: Aktiviert
           time:
             name: Uhrzeit
-          duration_s:
-            name: Dauer in Sekunden
       pulse_4:
         name: Pulse 4
         fields:
@@ -150,7 +174,5 @@ configuration:
             name: Aktiviert
           time:
             name: Uhrzeit
-          duration_s:
-            name: Dauer in Sekunden
 network:
   8099/tcp: OpenPool Weboberfläche

@@ -1,5 +1,5 @@
 name: OpenPool
-version: "1.1.6"
+version: "1.2.4"
 slug: openpool
 description: OpenSource Pool System Controller currently designed for Intex 26680 based pump/chlorinator systems, heat pumps and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool
@@ -12,6 +12,9 @@ arch:
 startup: application
 boot: auto
 init: false
+backup: cold
+backup_exclude:
+  - "*.tmp"
 ingress: true
 ingress_port: 8099
 ingress_stream: true
@@ -40,25 +43,31 @@ options:
   features:
     heat_pump_control: true
     weather_control: true
-  entities:
-    pump_switch: switch.poolpumpe
-    heater_climate: climate.poolheizung
-    heater_operation_mode: select.poolheizung_betriebsmodus
-    weather: weather.home
-    pv_generation: sensor.pv_erzeugungsleistung
-    pv_export: sensor.stromzahler_active_power_minus
-    grid_import: sensor.stromzahler_active_power_plus
-    pump_power: sensor.poolpumpe_leistung
-    pump_current: sensor.poolpumpe_current
-    pump_voltage: sensor.poolpumpe_spannung
-    pump_signal: sensor.poolpumpe_signal
-    heater_power: sensor.poolheizung_leistung
-    heater_current: sensor.poolheizung_netzstrom
-    heater_voltage: sensor.poolheizung_netzspannung
-    heater_fan: sensor.poolheizung_lufter
-    heater_ambient: sensor.poolheizung_umgebungsluft_temperatur
-    heater_water_in: sensor.poolheizung_wassertemperatur_eingang
-    heater_water_out: sensor.poolheizung_wassertemperatur_ausgang
+  devices:
+    pump_and_chlorinator_switch: switch.poolpumpe
+    heat_pump: climate.poolheizung
+    heat_pump_operating_mode: select.poolheizung_betriebsmodus
+    weather_service: weather.home
+  energy:
+    one_grid_sensor_for_import_and_export: false
+    positive_grid_value_is_import: true
+    shared_grid_power_sensor: sensor.netzleistung
+    pv_production_sensor: sensor.pv_erzeugungsleistung
+    grid_export_sensor: sensor.stromzahler_active_power_minus
+    grid_import_sensor: sensor.stromzahler_active_power_plus
+  pump_readings:
+    pump_power_sensor: sensor.poolpumpe_leistung
+    pump_current_sensor: sensor.poolpumpe_current
+    pump_voltage_sensor: sensor.poolpumpe_spannung
+    pump_signal_sensor: sensor.poolpumpe_signal
+  heat_pump_readings:
+    heat_pump_power_sensor: sensor.poolheizung_leistung
+    heat_pump_current_sensor: sensor.poolheizung_netzstrom
+    heat_pump_voltage_sensor: sensor.poolheizung_netzspannung
+    heat_pump_fan_sensor: sensor.poolheizung_lufter
+    heat_pump_ambient_air_sensor: sensor.poolheizung_umgebungsluft_temperatur
+    heat_pump_water_in_sensor: sensor.poolheizung_wassertemperatur_eingang
+    heat_pump_water_out_sensor: sensor.poolheizung_wassertemperatur_ausgang
   thresholds:
     pv_start_export_w: 1500
     pv_stop_export_w: 1500
@@ -75,22 +84,19 @@ options:
     bad_weather_end: "16:15"
     night_swim_duration_hours: 10
   restart_pulses:
+    pulse_duration_s: 3
     pulse_1:
       enabled: true
       time: "11:59"
-      duration_s: 5
     pulse_2:
       enabled: true
       time: "16:59"
-      duration_s: 5
     pulse_3:
       enabled: true
       time: "23:59"
-      duration_s: 5
     pulse_4:
       enabled: false
       time: "00:00"
-      duration_s: 5
 schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   poll_interval_s: int
@@ -101,25 +107,31 @@ schema:
   features:
     heat_pump_control: bool
     weather_control: bool
-  entities:
-    pump_switch: str
-    heater_climate: str
-    heater_operation_mode: str
-    weather: str
-    pv_generation: str
-    pv_export: str
-    grid_import: str
-    pump_power: str
-    pump_current: str
-    pump_voltage: str
-    pump_signal: str
-    heater_power: str
-    heater_current: str
-    heater_voltage: str
-    heater_fan: str
-    heater_ambient: str
-    heater_water_in: str
-    heater_water_out: str
+  devices:
+    pump_and_chlorinator_switch: str
+    heat_pump: str
+    heat_pump_operating_mode: str
+    weather_service: str
+  energy:
+    one_grid_sensor_for_import_and_export: bool
+    positive_grid_value_is_import: bool
+    shared_grid_power_sensor: str
+    pv_production_sensor: str
+    grid_export_sensor: str
+    grid_import_sensor: str
+  pump_readings:
+    pump_power_sensor: str
+    pump_current_sensor: str
+    pump_voltage_sensor: str
+    pump_signal_sensor: str
+  heat_pump_readings:
+    heat_pump_power_sensor: str
+    heat_pump_current_sensor: str
+    heat_pump_voltage_sensor: str
+    heat_pump_fan_sensor: str
+    heat_pump_ambient_air_sensor: str
+    heat_pump_water_in_sensor: str
+    heat_pump_water_out_sensor: str
   thresholds:
     pv_start_export_w: int
     pv_stop_export_w: int
@@ -136,19 +148,16 @@ schema:
     bad_weather_end: str
     night_swim_duration_hours: float
   restart_pulses:
+    pulse_duration_s: int
     pulse_1:
       enabled: bool
       time: str
-      duration_s: int
     pulse_2:
       enabled: bool
       time: str
-      duration_s: int
     pulse_3:
       enabled: bool
       time: str
-      duration_s: int
     pulse_4:
       enabled: bool
       time: str
-      duration_s: int

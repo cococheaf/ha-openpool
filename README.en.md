@@ -56,13 +56,15 @@ examples from the original OpenPool setup.
 
 Especially important:
 
-- `entities.pump_switch`
-- `entities.heater_climate`
-- `entities.heater_operation_mode`
-- `entities.weather`
-- `entities.pv_generation`
-- `entities.pv_export`
-- `entities.grid_import`
+- `devices.pump_and_chlorinator_switch`
+- `devices.heat_pump`
+- `devices.heat_pump_operating_mode`
+- `devices.weather_service`
+- `energy.pv_production_sensor`
+- Energy/grid: either `energy.grid_export_sensor` and
+  `energy.grid_import_sensor` or `energy.shared_grid_power_sensor` with
+  `energy.one_grid_sensor_for_import_and_export` and the matching sign option
+  `energy.positive_grid_value_is_import`
 - Pump and heat pump sensors for power, current, voltage, signal and
   temperatures
 

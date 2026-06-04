@@ -30,8 +30,9 @@ DEFAULT_HA_URL = "http://homeassistant:8123"
 DEFAULT_POLL_INTERVAL_SECONDS = 1
 DEFAULT_LOG_LEVEL = "info"
 PULSE_TRIGGER_WINDOW_SECONDS = 90
+PULSE_RESTORE_GRACE_SECONDS = 20
 RUN_ON_SECONDS = 5 * 60
-RESTART_PULSE_SECONDS = 5
+DEFAULT_RESTART_PULSE_SECONDS = 3
 CONTINUOUS_RESTART_INTERVAL_SECONDS = 12 * 60 * 60
 COMMAND_LOG_LIMIT = 6
 WEATHER_FORECAST_REFRESH_SECONDS = 12 * 60 * 60
@@ -61,9 +62,11 @@ DEFAULT_ENTITIES = {
     "pump_switch": "switch.poolpumpe",
     "heater_climate": "climate.poolheizung",
     "heater_operation_mode": "select.poolheizung_betriebsmodus",
+    "weather": DEFAULT_WEATHER_ENTITY,
     "pv_generation": "sensor.pv_erzeugungsleistung",
     "pv_export": "sensor.stromzahler_active_power_minus",
     "grid_import": "sensor.stromzahler_active_power_plus",
+    "grid_power": "sensor.netzleistung",
     "pump_power": "sensor.poolpumpe_leistung",
     "pump_current": "sensor.poolpumpe_current",
     "pump_voltage": "sensor.poolpumpe_spannung",
@@ -84,6 +87,7 @@ UI_ENTITY_KEYS = {
     "entity-pv-generation": "pv_generation",
     "entity-pv-export": "pv_export",
     "entity-grid-import": "grid_import",
+    "entity-grid-power": "grid_power",
     "entity-pump-power": "pump_power",
     "entity-pump-current": "pump_current",
     "entity-pump-voltage": "pump_voltage",
@@ -95,6 +99,36 @@ UI_ENTITY_KEYS = {
     "entity-heater-ambient": "heater_ambient",
     "entity-heater-water-in": "heater_water_in",
     "entity-heater-water-out": "heater_water_out",
+}
+
+ENTITY_OPTION_KEYS = {
+    "devices": {
+        "pump_and_chlorinator_switch": "pump_switch",
+        "heat_pump": "heater_climate",
+        "heat_pump_operating_mode": "heater_operation_mode",
+        "weather_service": "weather",
+    },
+    "energy": {
+        "pv_production_sensor": "pv_generation",
+        "grid_export_sensor": "pv_export",
+        "grid_import_sensor": "grid_import",
+        "shared_grid_power_sensor": "grid_power",
+    },
+    "pump_readings": {
+        "pump_power_sensor": "pump_power",
+        "pump_current_sensor": "pump_current",
+        "pump_voltage_sensor": "pump_voltage",
+        "pump_signal_sensor": "pump_signal",
+    },
+    "heat_pump_readings": {
+        "heat_pump_power_sensor": "heater_power",
+        "heat_pump_current_sensor": "heater_current",
+        "heat_pump_voltage_sensor": "heater_voltage",
+        "heat_pump_fan_sensor": "heater_fan",
+        "heat_pump_ambient_air_sensor": "heater_ambient",
+        "heat_pump_water_in_sensor": "heater_water_in",
+        "heat_pump_water_out_sensor": "heater_water_out",
+    },
 }
 
 HEATER_ENTITY_KEYS = {
@@ -158,6 +192,18 @@ def public_options(options: dict) -> dict:
     return public
 
 
+def bool_option(value: object, fallback: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "on", "yes", "1"}:
+            return True
+        if normalized in {"false", "off", "no", "0"}:
+            return False
+    return fallback
+
+
 def read_s6_environment(name: str) -> str:
     for folder in ("/run/s6/container_environment", "/var/run/s6/container_environment"):
         path = Path(folder) / name
@@ -195,8 +241,24 @@ def day_key_for_ts(value: float) -> str:
     return time.strftime("%Y-%m-%d", time.localtime(value))
 
 
+def clean_mode_options(options: object) -> list[str]:
+    if not isinstance(options, (list, tuple)):
+        return []
+    modes: list[str] = []
+    for option in options:
+        mode = str(option or "").strip()
+        if mode and not any(existing.lower() == mode.lower() for existing in modes):
+            modes.append(mode)
+    return modes
+
+
+def stored_heater_start_mode(value: object) -> str:
+    mode = str(value or "").strip()
+    return mode or DEFAULT_HEATER_START_MODE
+
+
 def normalize_heater_start_mode(value: object, options: list[str] | tuple[str, ...] | None = None) -> str:
-    available = [str(option).strip() for option in (options or FALLBACK_HEATER_START_MODES) if str(option).strip()]
+    available = clean_mode_options(options or FALLBACK_HEATER_START_MODES)
     requested = str(value or "").strip().lower()
     for mode in available:
         if requested == mode.lower():
@@ -205,6 +267,14 @@ def normalize_heater_start_mode(value: object, options: list[str] | tuple[str, .
         if DEFAULT_HEATER_START_MODE.lower() == mode.lower():
             return mode
     return available[0] if available else DEFAULT_HEATER_START_MODE
+
+
+def normalize_restart_pulse_duration(value: object) -> int:
+    try:
+        duration_s = int(float(value if value is not None else DEFAULT_RESTART_PULSE_SECONDS))
+    except (TypeError, ValueError):
+        duration_s = DEFAULT_RESTART_PULSE_SECONDS
+    return max(1, duration_s)
 
 
 def seconds_to_clock(value: float | None) -> str:
@@ -432,7 +502,7 @@ class OpenPoolController:
             state["continuous_restart_last_at"] = None
         if state.get("heater_mode") == "Wetterautomatik":
             state["heater_mode"] = "PV-Automatik"
-        state["heater_start_mode"] = normalize_heater_start_mode(state.get("heater_start_mode"))
+        state["heater_start_mode"] = stored_heater_start_mode(state.get("heater_start_mode"))
         if state.get("weather_mode") not in WEATHER_MODE_OPTIONS:
             state["weather_mode"] = "Empfehlung"
         state["command_log"] = list(state.get("command_log") or [])[:COMMAND_LOG_LIMIT]
@@ -468,29 +538,54 @@ class OpenPoolController:
         return mode
 
     def weather_entity(self) -> str:
-        configured = (self.options().get("entities") or {}).get("weather")
+        entities = self.entities()
+        configured = entities.get("weather")
         entity_id = str(configured or DEFAULT_WEATHER_ENTITY).strip()
         return entity_id or DEFAULT_WEATHER_ENTITY
 
     def heater_start_modes(self) -> list[str]:
         selector = self.ha_states.get("heater_operation_mode") or {}
-        options = (selector.get("attributes") or {}).get("options")
-        if isinstance(options, list):
-            modes = [str(option).strip() for option in options if str(option).strip()]
-            if modes:
-                return modes
-        return list(FALLBACK_HEATER_START_MODES)
+        modes = clean_mode_options((selector.get("attributes") or {}).get("options"))
+        if modes:
+            return modes
+
+        modes = clean_mode_options(FALLBACK_HEATER_START_MODES)
+        stored = stored_heater_start_mode(self.state.get("heater_start_mode"))
+        if stored and not any(mode.lower() == stored.lower() for mode in modes):
+            modes.append(stored)
+        return modes
 
     def entities(self) -> dict:
         entities = dict(DEFAULT_ENTITIES)
-        configured = self.options().get("entities") or {}
-        for key in entities:
-            if configured.get(key) is not None:
-                entities[key] = configured[key]
+        options = self.options()
+        for group, keys in ENTITY_OPTION_KEYS.items():
+            group_options = options.get(group) or {}
+            if not isinstance(group_options, dict):
+                continue
+            for option_key, entity_key in keys.items():
+                if group_options.get(option_key) is not None:
+                    entities[entity_key] = group_options[option_key]
+        if self.use_combined_grid_sensor():
+            entities.pop("pv_export", None)
+            entities.pop("grid_import", None)
+        else:
+            entities.pop("grid_power", None)
         if not self.heat_pump_enabled():
             for key in HEATER_ENTITY_KEYS:
                 entities.pop(key, None)
         return entities
+
+    def use_combined_grid_sensor(self) -> bool:
+        energy = self.options().get("energy") or {}
+        if isinstance(energy, dict) and energy.get("one_grid_sensor_for_import_and_export") is not None:
+            return bool_option(energy.get("one_grid_sensor_for_import_and_export"))
+        return False
+
+    def grid_power_import_positive(self) -> bool:
+        energy = self.options().get("energy") or {}
+        if isinstance(energy, dict) and energy.get("positive_grid_value_is_import") is not None:
+            return bool_option(energy.get("positive_grid_value_is_import"), True)
+        return True
 
     def thresholds(self) -> dict:
         values = {
@@ -522,13 +617,6 @@ class OpenPoolController:
             "night_swim_duration_hours": 10,
         }
         configured = dict(self.options().get("profiles") or {})
-        if "night_swim_duration_hours" not in configured:
-            legacy_minutes = configured.get("night_swim_duration_minutes", configured.get("night_swim_max_minutes"))
-            if legacy_minutes is not None:
-                try:
-                    configured["night_swim_duration_hours"] = float(legacy_minutes) / 60
-                except (TypeError, ValueError):
-                    pass
         values.update(configured)
         try:
             hours = float(values.get("night_swim_duration_hours") or 10)
@@ -537,21 +625,26 @@ class OpenPoolController:
         hours = max(0.1, hours)
         values["night_swim_duration_hours"] = hours
         values["night_swim_duration_minutes"] = int(round(hours * 60))
-        values["night_swim_max_minutes"] = values["night_swim_duration_minutes"]
         return values
 
     def restart_pulses(self) -> list[dict]:
         configured = self.options().get("restart_pulses") or {}
         defaults = [
-            {"key": "pulse_1", "enabled": True, "time": "11:59", "duration_s": 5},
-            {"key": "pulse_2", "enabled": True, "time": "16:59", "duration_s": 5},
-            {"key": "pulse_3", "enabled": True, "time": "23:59", "duration_s": 5},
-            {"key": "pulse_4", "enabled": False, "time": "00:00", "duration_s": 5},
+            {"key": "pulse_1", "enabled": True, "time": "11:59"},
+            {"key": "pulse_2", "enabled": True, "time": "16:59"},
+            {"key": "pulse_3", "enabled": True, "time": "23:59"},
+            {"key": "pulse_4", "enabled": False, "time": "00:00"},
         ]
+        duration_s = self.restart_pulse_duration_s()
         for pulse in defaults:
             options = configured.get(pulse["key"]) or {}
             pulse.update({key: options[key] for key in pulse.keys() & options.keys()})
+            pulse["duration_s"] = duration_s
         return defaults
+
+    def restart_pulse_duration_s(self) -> int:
+        configured = self.options().get("restart_pulses") or {}
+        return normalize_restart_pulse_duration(configured.get("pulse_duration_s"))
 
     def weather_recommendation(self) -> dict:
         if not self.weather_control_enabled():
@@ -740,7 +833,7 @@ class OpenPoolController:
                 self._save_state()
                 self._set_heater_temperature()
             elif action_type == "restart_pulse":
-                self._start_restart_pulse(RESTART_PULSE_SECONDS, "Manueller Restart-Pulse")
+                self._start_restart_pulse(self.restart_pulse_duration_s(), "Manueller Restart-Pulse")
             else:
                 raise ValueError(f"Unknown action type: {action_type}")
 
@@ -864,20 +957,49 @@ class OpenPoolController:
             # Migration path for states written by 0.2.9: restart pulses no
             # longer wait for heat-pump run-on because the pulse is only a few
             # seconds long.
-            duration_s = int(job.get("duration_s") or RESTART_PULSE_SECONDS)
+            duration_s = normalize_restart_pulse_duration(job.get("duration_s"))
             title = str(job.get("title") or "Restart-Pulse")
             self.state["pending_job"] = None
             self._start_restart_pulse(duration_s, title)
+            return
+        if job.get("type") == "restart_pulse_restore":
+            if self._pump_is_active():
+                self.state["pending_job"] = None
+                self._save_state()
+                self._apply_control_rules()
+                return
+            if current_ts < float(job.get("until") or 0):
+                return
+            self.state["pending_job"] = None
+            self.command("Restart-Pulse Restore offen", "Pumpe wurde nicht bestaetigt, Sicherheitslogik wird angewendet.")
+            self._save_state()
+            self._apply_control_rules()
             return
 
         if current_ts < float(job.get("until") or 0):
             return
 
         if job.get("type") == "restart_pulse":
-            self.state["pending_job"] = None
-            self.command("Restart-Pulse fertig", "Pumpenprofil wird wieder angewendet.")
+            # Restart pulses are short enough that the heat pump may stay on;
+            # wait for Home Assistant to confirm pump flow again before normal rules resume.
+            pump_mode = str(self.state.get("pump_mode") or "Aus")
+            restore_pump = (
+                bool(job.get("restore_pump", True))
+                and bool(self.state.get("master_enabled"))
+                and self._pump_should_run(pump_mode)
+            )
+            if restore_pump:
+                self._turn_pump(True)
+                self.state["pending_job"] = {
+                    "type": "restart_pulse_restore",
+                    "until": current_ts + PULSE_RESTORE_GRACE_SECONDS,
+                }
+                self.command("Restart-Pulse fertig", "Pumpe wird wieder eingeschaltet.")
+            else:
+                self.state["pending_job"] = None
+                self.command("Restart-Pulse fertig", "Pumpenprofil wird wieder angewendet.")
+                self._apply_control_rules()
             self._save_state()
-            self._apply_control_rules()
             return
         elif job.get("type") == "pump_run_on":
             if not self.heat_pump_enabled():
@@ -924,7 +1046,7 @@ class OpenPoolController:
             if done.get(key):
                 continue
             done[key] = True
-            self._start_restart_pulse(int(pulse.get("duration_s") or 5), f"Automatischer {pulse['key']}")
+            self._start_restart_pulse(self.restart_pulse_duration_s(), f"Automatischer {pulse['key']}")
             break
 
     def _continuous_restart_due_ts(self, current_ts: float) -> float:
@@ -940,7 +1062,7 @@ class OpenPoolController:
         if current_ts < self._continuous_restart_due_ts(current_ts):
             return
         self.state["continuous_restart_last_at"] = current_ts
-        self._start_restart_pulse(RESTART_PULSE_SECONDS, "12h-Restart Dauerbetrieb")
+        self._start_restart_pulse(self.restart_pulse_duration_s(), "12h-Restart Dauerbetrieb")
 
     def _apply_control_rules(self) -> None:
         if self.state.get("pending_job"):
@@ -1177,11 +1299,25 @@ class OpenPoolController:
 
     def _calculated_house_consumption_watts(self) -> float | None:
         pv_generation = self._entity_power_watts("pv_generation")
-        pv_export = self._entity_power_watts("pv_export")
-        grid_import = self._entity_power_watts("grid_import")
+        grid_import, pv_export = self._grid_import_export_watts()
         if pv_generation is None or pv_export is None or grid_import is None:
             return None
         return pv_generation - pv_export + grid_import
+
+    def _grid_import_export_watts(self) -> tuple[float | None, float | None]:
+        if self.use_combined_grid_sensor():
+            balance = self._entity_power_watts("grid_power")
+            if balance is None:
+                return None, None
+            if self.grid_power_import_positive():
+                return max(0.0, balance), max(0.0, -balance)
+            return max(0.0, -balance), max(0.0, balance)
+
+        grid_import = self._entity_power_watts("grid_import")
+        pv_export = self._entity_power_watts("pv_export")
+        if grid_import is None or pv_export is None:
+            return None, None
+        return max(0.0, grid_import), max(0.0, pv_export)
 
     def _state_power_watts(self, state: dict | None) -> float | None:
         if not state:
@@ -1235,6 +1371,11 @@ class OpenPoolController:
         if current_state not in {"", "unknown", "unavailable"}:
             heater_on = current_state not in {"off", "idle"} or self._heater_power_is_active()
             if heater_on == enabled:
+                if enabled and self._heater_operation_mode_needs_update():
+                    try:
+                        self._set_heater_operation_mode()
+                    except RuntimeError as err:
+                        log("warning", f"could not set heat pump operation mode: {err}")
                 return
         if domain == "climate":
             if enabled:
@@ -1274,17 +1415,42 @@ class OpenPoolController:
         entity_id = self.entities().get("heater_operation_mode")
         if not entity_id:
             return
+        option = self._heater_operation_mode_target()
+        current = self._current_heater_operation_mode()
+        if current and current.lower() == option.lower():
+            self.state["heater_start_mode"] = option
+            return
+        self.state["heater_start_mode"] = option
         self.ha.service(
             "select",
             "select_option",
             entity_id=entity_id,
-            data={"option": normalize_heater_start_mode(self.state.get("heater_start_mode"), self.heater_start_modes())},
+            data={"option": option},
         )
+
+    def _heater_operation_mode_target(self) -> str:
+        return normalize_heater_start_mode(self.state.get("heater_start_mode"), self.heater_start_modes())
+
+    def _current_heater_operation_mode(self) -> str:
+        return str((self.ha_states.get("heater_operation_mode") or {}).get("state") or "").strip()
+
+    def _heater_operation_mode_needs_update(self) -> bool:
+        current = self._current_heater_operation_mode()
+        if current.lower() in {"", "unknown", "unavailable"}:
+            return False
+        return current.lower() != self._heater_operation_mode_target().lower()
 
     def _start_restart_pulse(self, duration_s: int, title: str) -> None:
         current_ts = now_ts()
+        duration_s = normalize_restart_pulse_duration(duration_s)
+        pump_mode = str(self.state.get("pump_mode") or "Aus")
+        restore_pump = bool(self.state.get("master_enabled")) and self._pump_should_run(pump_mode)
         self._turn_pump(False)
-        self.state["pending_job"] = {"type": "restart_pulse", "until": current_ts + max(1, duration_s)}
+        self.state["pending_job"] = {
+            "type": "restart_pulse",
+            "until": current_ts + duration_s,
+            "restore_pump": restore_pump,
+        }
         if self.state.get("pump_mode") == "Dauerbetrieb":
             self.state["continuous_restart_last_at"] = current_ts
         self.command(title, f"Pumpe fuer {duration_s} Sekunden ausgeschaltet.")
@@ -1307,7 +1473,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.1.6"
+    server_version = "OpenPool/1.2.4"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

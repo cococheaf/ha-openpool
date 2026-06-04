@@ -1,5 +1,78 @@
 # Changelog
 
+## 1.2.4
+
+- Move device and sensor options to top-level groups so Home Assistant displays
+  their translated labels reliably.
+- Rename the energy option keys to clearer names, especially the combined grid
+  sensor settings.
+- Clarify that grid import/export fields are only used with two separate grid
+  sensors.
+
+## 1.2.3
+
+- Remove old duplicate entity fields from the add-on options schema.
+- Hide obsolete per-pulse duration fields so only the central pulse duration is
+  shown.
+- Rewrite add-on option labels and descriptions in clearer user-facing wording.
+- Drop old option-name fallbacks from the controller where they are no longer
+  shown in the add-on options.
+
+## 1.2.2
+
+- Add `entities.energy.grid_power_import_positive` so combined grid sensors can
+  be configured for either sign convention.
+- Use the configured combined grid-sensor sign direction consistently in the
+  controller and web UI.
+
+## 1.2.1
+
+- Group OpenPool entity add-on options into control, energy/grid, pump and heat
+  pump sections.
+- Add `entities.energy.use_combined_grid_sensor` and
+  `entities.energy.grid_power` for installations that expose grid import and
+  export through one signed sensor.
+- Keep legacy flat entity options working during upgrades.
+
+## 1.2.0
+
+- Preserve the selected heat-pump start mode across add-on restarts even before
+  Home Assistant has reported the selector options.
+- Re-apply the stored heat-pump operating mode after an add-on restart when the
+  heat pump is already running.
+- Shorten OpenPool README files and clean up add-on documentation wording.
+
+## 1.1.10
+
+- Switch OpenPool add-on backups from hot to cold mode so Home Assistant
+  Supervisor stops the add-on briefly while backing up the frequently updated
+  runtime state file.
+- Exclude transient `*.tmp` state-write files from add-on backups.
+
+## 1.1.9
+
+- Remove the hard 3-second restart-pulse limit again. The add-on option
+  `restart_pulses.pulse_duration_s` now defines the actual pump-off duration.
+- Keep `3` seconds as the default and validate only that pulse duration is at
+  least 1 second.
+
+## 1.1.8
+
+- Add one central add-on option `restart_pulses.pulse_duration_s` (`Pulse-Dauer`)
+  for manual, scheduled and 12-hour restart pulses.
+- Reduce the default pulse duration to 3 seconds and clamp every restart pulse
+  to a maximum pump-off time of 3 seconds.
+- Keep legacy per-pulse `duration_s` values as migration fallback, but clamp
+  them to the same safety limit.
+- Keep legacy per-pulse duration options schema-compatible during upgrades.
+
+## 1.1.7
+
+- Keep heat-pump control untouched during short restart pulses and add a short
+  pump-restore confirmation window after each pulse.
+- Avoid the false `Heizung AUS` command-log entry that could happen while Home
+  Assistant had not yet reported the pump as on again after a pulse.
+
 ## 1.1.6
 
 - Read the available heat-pump start operating modes from the configured Home
