@@ -67,6 +67,9 @@ DEFAULT_ENTITIES = {
     "pv_export": "sensor.stromzahler_active_power_minus",
     "grid_import": "sensor.stromzahler_active_power_plus",
     "grid_power": "sensor.netzleistung",
+    "battery_power": "",
+    "battery_charge": "",
+    "battery_discharge": "",
     "pump_power": "sensor.poolpumpe_leistung",
     "pump_current": "sensor.poolpumpe_current",
     "pump_voltage": "sensor.poolpumpe_spannung",
@@ -88,6 +91,9 @@ UI_ENTITY_KEYS = {
     "entity-pv-export": "pv_export",
     "entity-grid-import": "grid_import",
     "entity-grid-power": "grid_power",
+    "entity-battery-power": "battery_power",
+    "entity-battery-charge": "battery_charge",
+    "entity-battery-discharge": "battery_discharge",
     "entity-pump-power": "pump_power",
     "entity-pump-current": "pump_current",
     "entity-pump-voltage": "pump_voltage",
@@ -113,6 +119,9 @@ ENTITY_OPTION_KEYS = {
         "grid_export_sensor": "pv_export",
         "grid_import_sensor": "grid_import",
         "shared_grid_power_sensor": "grid_power",
+        "shared_battery_power_sensor": "battery_power",
+        "battery_charge_sensor": "battery_charge",
+        "battery_discharge_sensor": "battery_discharge",
     },
     "pump_readings": {
         "pump_power_sensor": "pump_power",
@@ -570,10 +579,15 @@ class OpenPoolController:
             entities.pop("grid_import", None)
         else:
             entities.pop("grid_power", None)
+        if self.use_combined_battery_sensor():
+            entities.pop("battery_charge", None)
+            entities.pop("battery_discharge", None)
+        else:
+            entities.pop("battery_power", None)
         if not self.heat_pump_enabled():
             for key in HEATER_ENTITY_KEYS:
                 entities.pop(key, None)
-        return entities
+        return {key: value for key, value in entities.items() if str(value or "").strip()}
 
     def use_combined_grid_sensor(self) -> bool:
         energy = self.options().get("energy") or {}
@@ -586,6 +600,24 @@ class OpenPoolController:
         if isinstance(energy, dict) and energy.get("positive_grid_value_is_import") is not None:
             return bool_option(energy.get("positive_grid_value_is_import"), True)
         return True
+
+    def use_combined_battery_sensor(self) -> bool:
+        energy = self.options().get("energy") or {}
+        if isinstance(energy, dict) and energy.get("one_battery_sensor_for_charge_and_discharge") is not None:
+            return bool_option(energy.get("one_battery_sensor_for_charge_and_discharge"))
+        return False
+
+    def battery_power_charge_positive(self) -> bool:
+        energy = self.options().get("energy") or {}
+        if isinstance(energy, dict) and energy.get("positive_battery_value_is_charge") is not None:
+            return bool_option(energy.get("positive_battery_value_is_charge"), True)
+        return True
+
+    def prefer_battery_charging(self) -> bool:
+        energy = self.options().get("energy") or {}
+        if isinstance(energy, dict) and energy.get("prefer_battery_charging") is not None:
+            return bool_option(energy.get("prefer_battery_charging"))
+        return False
 
     def thresholds(self) -> dict:
         values = {
@@ -1284,15 +1316,18 @@ class OpenPoolController:
         self.state["pv_last_available_w"] = None
 
     def _pv_available_watts(self) -> float | None:
-        pv_generation = self._entity_power_watts("pv_generation")
-        house_consumption = self._calculated_house_consumption_watts()
-        if pv_generation is None or house_consumption is None:
+        grid_import, pv_export = self._grid_import_export_watts()
+        battery_charge, battery_discharge = self._battery_charge_discharge_watts()
+        if grid_import is None or pv_export is None or battery_charge is None or battery_discharge is None:
             return None
 
-        # House consumption includes PV self-consumption and any grid import.
-        # Subtracting it from PV production yields the current export/import
-        # balance that can be used for the heat pump.
-        available = pv_generation - house_consumption
+        # Grid export minus import is the surplus that remains after house load.
+        # When battery priority is disabled, current battery charging is also
+        # available to the heat pump. When priority is enabled, only surplus
+        # after battery charging is eligible; discharge always reduces release.
+        available = pv_export - grid_import - battery_discharge
+        if not self.prefer_battery_charging():
+            available += battery_charge
         if self._heater_is_active():
             available += abs(self._entity_power_watts("heater_power") or 0)
         return available
@@ -1318,6 +1353,32 @@ class OpenPoolController:
         if grid_import is None or pv_export is None:
             return None, None
         return max(0.0, grid_import), max(0.0, pv_export)
+
+    def _battery_charge_discharge_watts(self) -> tuple[float | None, float | None]:
+        entities = self.entities()
+        if self.use_combined_battery_sensor():
+            if "battery_power" not in entities:
+                return 0.0, 0.0
+            balance = self._entity_power_watts("battery_power")
+            if balance is None:
+                return None, None
+            if self.battery_power_charge_positive():
+                return max(0.0, balance), max(0.0, -balance)
+            return max(0.0, -balance), max(0.0, balance)
+
+        charge = 0.0
+        discharge = 0.0
+        if "battery_charge" in entities:
+            charge_value = self._entity_power_watts("battery_charge")
+            if charge_value is None:
+                return None, None
+            charge = max(0.0, charge_value)
+        if "battery_discharge" in entities:
+            discharge_value = self._entity_power_watts("battery_discharge")
+            if discharge_value is None:
+                return None, None
+            discharge = max(0.0, discharge_value)
+        return charge, discharge
 
     def _state_power_watts(self, state: dict | None) -> float | None:
         if not state:
@@ -1473,7 +1534,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.2.4"
+    server_version = "OpenPool/1.2.5"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

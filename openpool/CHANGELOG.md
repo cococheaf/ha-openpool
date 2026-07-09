@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.5
+
+- Add optional battery charge/discharge sensors to the energy add-on options.
+- Add battery-priority PV release logic so the heat pump can wait until PV
+  surplus remains after battery charging.
+- Clean up the dashboard by removing low-value helper copy and tile tooltips.
+
 ## 1.2.4
 
 - Move device and sensor options to top-level groups so Home Assistant displays

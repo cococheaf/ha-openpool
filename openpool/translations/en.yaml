@@ -45,8 +45,8 @@ configuration:
         name: Weather service
         description: Weather entity from which OpenPool reads the daily forecast.
   energy:
-    name: PV and grid
-    description: Sensors OpenPool uses to calculate PV surplus, grid import and grid export.
+    name: Grid, PV and battery
+    description: Sensors OpenPool uses to calculate PV surplus, grid import, grid export and optional battery charging.
     fields:
       one_grid_sensor_for_import_and_export:
         name: One shared grid sensor for import and export
@@ -66,6 +66,24 @@ configuration:
       grid_import_sensor:
         name: Grid import
         description: Sensor for the current import from the grid. Used only with two separate grid sensors.
+      one_battery_sensor_for_charge_and_discharge:
+        name: One shared battery sensor for charge and discharge
+        description: Turn this on when one sensor reports battery charge and discharge together as positive or negative values.
+      positive_battery_value_is_charge:
+        name: Positive value of the shared battery sensor means charging
+        description: On means a positive value is battery charging. Off means a positive value is battery discharging. Only relevant when a shared battery sensor is used.
+      shared_battery_power_sensor:
+        name: Shared battery sensor
+        description: Sensor for battery charge and discharge in one value. Only relevant when a shared battery sensor is used.
+      battery_charge_sensor:
+        name: Battery charge
+        description: Sensor for current battery charging power. Used only with two separate battery sensors.
+      battery_discharge_sensor:
+        name: Battery discharge
+        description: Sensor for current battery discharging power. Used only with two separate battery sensors.
+      prefer_battery_charging:
+        name: Prefer battery charging
+        description: OpenPool releases the heat pump only when enough PV surplus remains after house consumption and battery charging.
   pump_readings:
     name: Pump readings
     description: Sensors for display and for detecting pump/chlorination state.

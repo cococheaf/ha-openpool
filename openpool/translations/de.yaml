@@ -45,8 +45,8 @@ configuration:
         name: Wetterdienst
         description: Wetterdienst in Home Assistant, aus dem OpenPool die Tagesvorhersage liest.
   energy:
-    name: PV und Netz
-    description: Sensoren, mit denen OpenPool PV-Überschuss, Netzbezug und Einspeisung berechnet.
+    name: Netz, PV und Batterie
+    description: Sensoren, mit denen OpenPool PV-Überschuss, Netzbezug, Einspeisung und optional Batterieladung berechnet.
     fields:
       one_grid_sensor_for_import_and_export:
         name: Ein gemeinsamer Netzsensor für Bezug und Einspeisung
@@ -66,6 +66,24 @@ configuration:
       grid_import_sensor:
         name: Netzbezug
         description: Sensor für den aktuellen Bezug aus dem Netz. Wird nur bei zwei getrennten Netzsensoren verwendet.
+      one_battery_sensor_for_charge_and_discharge:
+        name: Ein gemeinsamer Batteriesensor für Laden und Entladen
+        description: Einschalten, wenn ein Sensor Batterieladung und Batterieentladung gemeinsam als positiven oder negativen Wert liefert.
+      positive_battery_value_is_charge:
+        name: Positiver Wert des gemeinsamen Batteriesensors ist Ladung
+        description: Eingeschaltet bedeutet Pluswert ist Batterieladung. Ausgeschaltet bedeutet Pluswert ist Batterieentladung. Nur relevant, wenn ein gemeinsamer Batteriesensor verwendet wird.
+      shared_battery_power_sensor:
+        name: Gemeinsamer Batteriesensor
+        description: Sensor für Batterieladung und Batterieentladung in einem Wert. Nur relevant, wenn ein gemeinsamer Batteriesensor verwendet wird.
+      battery_charge_sensor:
+        name: Batterieladung
+        description: Sensor für die aktuelle Ladeleistung der Batterie. Wird nur bei zwei getrennten Batteriesensoren verwendet.
+      battery_discharge_sensor:
+        name: Batterieentladung
+        description: Sensor für die aktuelle Entladeleistung der Batterie. Wird nur bei zwei getrennten Batteriesensoren verwendet.
+      prefer_battery_charging:
+        name: Batterieladung bevorzugen
+        description: OpenPool gibt die Wärmepumpe erst frei, wenn nach Hausverbrauch und Batterieladung noch genug PV-Überschuss übrig ist.
   pump_readings:
     name: Messwerte der Pumpe
     description: Sensoren für die Anzeige und Erkennung des Pumpen- und Chlorsystemzustands.

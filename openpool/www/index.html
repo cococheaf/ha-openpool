@@ -235,79 +235,11 @@
       margin-bottom: 8px;
     }
 
-    .metric .hint,
-    .mode small {
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      padding: 0 !important;
-      margin: -1px !important;
-      overflow: hidden !important;
-      clip: rect(0, 0, 0, 0) !important;
-      white-space: nowrap !important;
-      border: 0 !important;
-    }
-
     .master,
     .metric,
     .mode,
     .temperature-value {
       position: relative;
-    }
-
-    [data-tooltip]::before,
-    [data-tooltip]::after {
-      position: absolute;
-      left: 50%;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .14s ease, transform .14s ease;
-      z-index: 30;
-    }
-
-    [data-tooltip]::before {
-      content: "";
-      bottom: calc(100% + 8px);
-      width: 10px;
-      height: 10px;
-      background: rgba(11,18,32,.98);
-      border-right: 1px solid rgba(255,255,255,.12);
-      border-bottom: 1px solid rgba(255,255,255,.12);
-      transform: translate(-50%, 3px) rotate(45deg);
-    }
-
-    [data-tooltip]::after {
-      content: attr(data-tooltip);
-      bottom: calc(100% + 12px);
-      width: max-content;
-      max-width: min(280px, 84vw);
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(11,18,32,.98);
-      color: var(--text);
-      box-shadow: 0 12px 28px rgba(0,0,0,.30);
-      font-size: 12px;
-      line-height: 1.25;
-      text-align: center;
-      white-space: normal;
-      transform: translate(-50%, 3px);
-    }
-
-    [data-tooltip]:hover,
-    [data-tooltip]:focus-visible,
-    [data-tooltip]:focus-within {
-      z-index: 40;
-    }
-
-    [data-tooltip]:hover::before,
-    [data-tooltip]:hover::after,
-    [data-tooltip]:focus-visible::before,
-    [data-tooltip]:focus-visible::after,
-    [data-tooltip]:focus-within::before,
-    [data-tooltip]:focus-within::after {
-      opacity: 1;
-      transform: translate(-50%, 0);
     }
 
     .master {
@@ -432,14 +364,7 @@
     }
 
     .metric .hint {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 5px;
-      overflow: visible;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
+      display: none;
     }
 
     .section-title {
@@ -528,16 +453,7 @@
       overflow-wrap: anywhere;
     }
     .mode small {
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.16;
-      overflow: visible;
-      overflow-wrap: anywhere;
-      align-self: start;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
+      display: none;
     }
 
     /* Compact climate-style target temperature control. */
@@ -1348,14 +1264,6 @@
       }
     }
 
-    @media (hover: none), (pointer: coarse), (max-width: 1024px) {
-      [data-tooltip]::before,
-      [data-tooltip]::after {
-        display: none;
-        content: none;
-      }
-    }
-
     @media (max-width: 980px) {
       :root {
         --page-gap: 10px;
@@ -1685,6 +1593,8 @@
                   <div><span>PV Erzeugung</span><strong id="pv-generation-value">--</strong></div>
                   <div><span>Netzeinspeisung</span><strong id="pv-export-value">--</strong></div>
                   <div><span>Netzbezug</span><strong id="grid-import-value">--</strong></div>
+                  <div><span>Batterieladung</span><strong id="battery-charge-value">--</strong></div>
+                  <div><span>Batterieentladung</span><strong id="battery-discharge-value">--</strong></div>
                   <div><span>Hausverbrauch</span><strong id="house-consumption-value">--</strong></div>
                   <div><span>Verfügbar für WP</span><strong id="pv-free-list-value">--</strong></div>
                 </div>
@@ -1715,6 +1625,9 @@
       nightSwimMaxMinutes: 600,
       useCombinedGridSensor: false,
       gridPowerImportPositive: true,
+      useCombinedBatterySensor: false,
+      batteryPowerChargePositive: true,
+      preferBatteryCharging: false,
       heatPumpControl: true,
       weatherControl: true
     };
@@ -2042,39 +1955,6 @@
       renderCommandLog();
     }
 
-    function tooltipTileForNode(node) {
-      return node?.closest('.master, .metric, .mode, .temperature-value');
-    }
-
-    function syncTileTooltip(tile) {
-      if (!tile) return;
-      const parts = [
-        ...tile.querySelectorAll('.sub, .hint, small')
-      ]
-        .map(part => part.textContent.trim())
-        .filter(Boolean);
-
-      if (parts.length) {
-        tile.dataset.tooltip = parts.join(' · ');
-      } else {
-        delete tile.dataset.tooltip;
-      }
-    }
-
-    function syncTooltipForNode(node) {
-      syncTileTooltip(tooltipTileForNode(node));
-    }
-
-    function syncTileTooltips(scope = document) {
-      const tiles = new Set();
-      scope.querySelectorAll('.metric .hint, .mode small')
-        .forEach(node => {
-          const tile = tooltipTileForNode(node);
-          if (tile) tiles.add(tile);
-        });
-      tiles.forEach(syncTileTooltip);
-    }
-
     function applyStatusTone(node, id, value) {
       if (!['pump-status', 'chlor-status', 'heater-status', 'master-state-label'].includes(id)) return;
       const normalized = String(value).toUpperCase();
@@ -2091,7 +1971,6 @@
       if (!node) return;
       node.textContent = value;
       applyStatusTone(node, id, value);
-      syncTooltipForNode(node);
     }
 
     function setConnectionStatus(connected, text) {
@@ -2147,6 +2026,18 @@
       controlConfig.gridPowerImportPositive = optionBool(
         energy.positive_grid_value_is_import,
         controlConfig.gridPowerImportPositive
+      );
+      controlConfig.useCombinedBatterySensor = optionBool(
+        energy.one_battery_sensor_for_charge_and_discharge,
+        controlConfig.useCombinedBatterySensor
+      );
+      controlConfig.batteryPowerChargePositive = optionBool(
+        energy.positive_battery_value_is_charge,
+        controlConfig.batteryPowerChargePositive
+      );
+      controlConfig.preferBatteryCharging = optionBool(
+        energy.prefer_battery_charging,
+        controlConfig.preferBatteryCharging
       );
       controlConfig.pvStartExportW = optionNumber(thresholds.pv_start_export_w, controlConfig.pvStartExportW);
       controlConfig.pvStopExportW = optionNumber(thresholds.pv_stop_export_w, controlConfig.pvStopExportW);
@@ -2238,6 +2129,35 @@
       return {
         gridImport: entityPowerWatts(states['entity-grid-import']),
         pvExport: entityPowerWatts(states['entity-pv-export'])
+      };
+    }
+
+    function batteryChargeDischargeWatts(states) {
+      if (controlConfig.useCombinedBatterySensor) {
+        const balance = entityPowerWatts(states['entity-battery-power']);
+        if (balance === null) return { batteryCharge: 0, batteryDischarge: 0, batteryConfigured: false };
+        if (controlConfig.batteryPowerChargePositive) {
+          return {
+            batteryCharge: Math.max(0, balance),
+            batteryDischarge: Math.max(0, -balance),
+            batteryConfigured: true
+          };
+        }
+        return {
+          batteryCharge: Math.max(0, -balance),
+          batteryDischarge: Math.max(0, balance),
+          batteryConfigured: true
+        };
+      }
+
+      const chargeState = states['entity-battery-charge'];
+      const dischargeState = states['entity-battery-discharge'];
+      const chargeConfigured = !isUnavailableState(chargeState);
+      const dischargeConfigured = !isUnavailableState(dischargeState);
+      return {
+        batteryCharge: chargeConfigured ? Math.max(0, entityPowerWatts(chargeState) || 0) : 0,
+        batteryDischarge: dischargeConfigured ? Math.max(0, entityPowerWatts(dischargeState) || 0) : 0,
+        batteryConfigured: chargeConfigured || dischargeConfigured
       };
     }
 
@@ -2460,20 +2380,29 @@
       const { gridImport, pvExport } = gridImportExportWatts(states);
       const heaterPower = entityPowerWatts(states['entity-heater-power']);
       const heaterActive = isHeatPumpRunning(states);
+      const { batteryCharge, batteryDischarge, batteryConfigured } = batteryChargeDischargeWatts(states);
 
       setText('pv-generation-value', formatPower(pvGeneration));
       setText('pv-export-value', formatPower(pvExport));
       setText('grid-import-value', formatPower(gridImport));
+      setText('battery-charge-value', batteryConfigured ? formatPower(batteryCharge) : 'nicht konfiguriert');
+      setText('battery-discharge-value', batteryConfigured ? formatPower(batteryDischarge) : 'nicht konfiguriert');
       updateHeatSourceMetric(states);
 
-      if ([pvGeneration, pvExport, gridImport].some(value => value === null)) {
+      if ([pvExport, gridImport].some(value => value === null)) {
         setText('house-consumption-value', '--');
         setText('pv-free-list-value', '--');
         return;
       }
 
-      const houseConsumption = pvGeneration - pvExport + gridImport;
-      const available = pvGeneration - houseConsumption + (heaterActive ? Math.abs(heaterPower || 0) : 0);
+      const houseConsumption = pvGeneration === null ? null : pvGeneration - pvExport + gridImport;
+      let available = pvExport - gridImport - batteryDischarge;
+      if (!controlConfig.preferBatteryCharging) {
+        available += batteryCharge;
+      }
+      if (heaterActive) {
+        available += Math.abs(heaterPower || 0);
+      }
       setText('house-consumption-value', formatPower(houseConsumption));
 
       const text = formatPower(available);
@@ -3134,7 +3063,6 @@
     });
 
     async function bootOpenPool() {
-      syncTileTooltips();
       await loadInitialState();
       updateTemperatureRange();
       renderCommandLog();
