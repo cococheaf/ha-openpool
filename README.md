@@ -40,7 +40,8 @@ Logik mit den ohnehin vorhandenen Home-Assistant-Entitaeten.
 - Chlorinator-Erkennung ueber die Pumpenleistung.
 - Waermepumpensteuerung mit Zieltemperatur, Start-Betriebsmodus aus
   Home-Assistant-Selector, Pumpennachlauf und optionaler PV-Automatik.
-- PV-Freigabe mit Start-/Stoppgrenzen und Stabilzeiten.
+- PV-Freigabe mit Start-/Stoppgrenzen, Stabilzeiten und optionaler
+  Batterie-Prioritaet.
 - Wettersteuerung als Empfehlung oder Automatik fuer Badebetrieb und
   Schlechtwetterprofil.
 - Provider-neutrale Wetter-Entitaet, nur zwei Vorhersageabrufe pro Tag.
@@ -61,10 +62,17 @@ Besonders wichtig sind:
 - `devices.heat_pump_operating_mode`
 - `devices.weather_service`
 - `energy.pv_production_sensor`
-- Energie/Netz: entweder `energy.grid_export_sensor` und
+- Energie/Netz/Batterie: entweder `energy.grid_export_sensor` und
   `energy.grid_import_sensor` oder `energy.shared_grid_power_sensor` mit
   `energy.one_grid_sensor_for_import_and_export` und passender Vorzeichen-Option
-  `energy.positive_grid_value_is_import`
+  `energy.positive_grid_value_is_import`. Fuer Batteriespeicher kann entweder
+  `energy.shared_battery_power_sensor` mit
+  `energy.one_battery_sensor_for_charge_and_discharge` und
+  `energy.positive_battery_value_is_charge` verwendet werden oder getrennt
+  `energy.battery_charge_sensor` und `energy.battery_discharge_sensor`.
+  `energy.prefer_battery_charging` sorgt dafuer, dass OpenPool die Waermepumpe
+  erst freigibt, wenn nach Hausverbrauch und Batterieladung noch genug
+  PV-Ueberschuss bleibt.
 - Pumpen- und Heizungssensoren fuer Leistung, Strom, Spannung, Signal und
   Temperaturen
 

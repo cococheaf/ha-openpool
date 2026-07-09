@@ -40,7 +40,8 @@ Assistant entities that already exist in the installation.
 - Chlorinator detection from pump power.
 - Heat pump control with target temperature, start operating mode from a Home
   Assistant selector, pump run-on and optional PV automation.
-- PV release with start/stop thresholds and stability times.
+- PV release with start/stop thresholds, stability times and optional battery
+  priority.
 - Weather control as recommendation or automation for swim mode and bad weather
   mode.
 - Provider-neutral weather entity with only two forecast refreshes per day.
@@ -61,10 +62,16 @@ Especially important:
 - `devices.heat_pump_operating_mode`
 - `devices.weather_service`
 - `energy.pv_production_sensor`
-- Energy/grid: either `energy.grid_export_sensor` and
+- Energy/grid/battery: either `energy.grid_export_sensor` and
   `energy.grid_import_sensor` or `energy.shared_grid_power_sensor` with
   `energy.one_grid_sensor_for_import_and_export` and the matching sign option
-  `energy.positive_grid_value_is_import`
+  `energy.positive_grid_value_is_import`. For battery storage, use either
+  `energy.shared_battery_power_sensor` with
+  `energy.one_battery_sensor_for_charge_and_discharge` and
+  `energy.positive_battery_value_is_charge`, or the separate
+  `energy.battery_charge_sensor` and `energy.battery_discharge_sensor`.
+  `energy.prefer_battery_charging` makes OpenPool release the heat pump only
+  when enough PV surplus remains after house consumption and battery charging.
 - Pump and heat pump sensors for power, current, voltage, signal and
   temperatures
 

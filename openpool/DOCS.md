@@ -63,18 +63,31 @@ rule because they only stop the pump for a few seconds.
 
 ## Heat Pump Release
 
-OpenPool derives the current house consumption from PV production and the grid
-meter. With separate sensors the formula is
-`pv_generation - pv_export + grid_import`. If
+OpenPool calculates heat-pump release from the current grid balance and optional
+battery power. With separate grid sensors, `energy.grid_export_sensor` is treated
+as export/feed-in and `energy.grid_import_sensor` as import. If
 `energy.one_grid_sensor_for_import_and_export` is enabled, OpenPool reads
 `energy.shared_grid_power_sensor` instead. With
-`energy.positive_grid_value_is_import` enabled, positive values are grid
-import and negative values are export/feed-in; disabling the option reverses
-that sign direction. The heat-pump release value is then calculated as
-`pv_generation - house_consumption`, which is equivalent to the current grid
-export minus grid import balance. When the heat pump is already running, its
-current power sensor is added back to estimate the surplus that would exist
-without the heat pump load.
+`energy.positive_grid_value_is_import` enabled, positive values are grid import
+and negative values are export/feed-in; disabling the option reverses that sign
+direction.
+
+Battery storage can be configured with one signed sensor or two separate
+sensors. For one signed value, enable
+`energy.one_battery_sensor_for_charge_and_discharge`, set
+`energy.shared_battery_power_sensor` and choose the sign direction with
+`energy.positive_battery_value_is_charge`. For separate values, set
+`energy.battery_charge_sensor` and/or `energy.battery_discharge_sensor`.
+Unconfigured battery sensors count as `0 W`.
+
+The available heat-pump power starts as `grid_export - grid_import`. Battery
+discharge is always subtracted because the heat pump should not start from
+battery energy. If `energy.prefer_battery_charging` is disabled, current battery
+charging is added back and may be redirected to the heat pump. If it is enabled,
+OpenPool protects battery charging and releases the heat pump only from surplus
+that remains after house load and battery charging. When the heat pump is
+already running, its current power sensor is added back to estimate the surplus
+that would exist without the heat pump load.
 OpenPool only enables the heat pump after the pump switch is confirmed on by
 Home Assistant, so the pump load is already represented at the grid meter.
 The add-on options control the heat-pump release with a start threshold, stop

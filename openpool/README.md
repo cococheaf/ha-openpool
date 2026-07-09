@@ -13,6 +13,7 @@ ausgelegt.
 - Restart-Pulse fuer das Chlorsystem mit einstellbarer Pulse-Dauer.
 - Waermepumpensteuerung mit Zieltemperatur, Start-Betriebsmodus aus einem
   Home-Assistant-Auswahlfeld, Nachlauf und optionaler PV-Automatik.
+- PV-Freigabe mit optionaler Batterie-Prioritaet.
 - Wettersteuerung als Empfehlung oder Automatik.
 - Live-Sync zwischen mehreren Browsern und persistenter Zustand unter
   `/data/openpool_state.json`.
@@ -27,10 +28,16 @@ an. Besonders wichtig sind:
 - `devices.heat_pump_operating_mode`
 - `devices.weather_service`
 - `energy.pv_production_sensor`
-- Energie/Netz: entweder `energy.grid_export_sensor` und
+- Energie/Netz/Batterie: entweder `energy.grid_export_sensor` und
   `energy.grid_import_sensor` oder `energy.shared_grid_power_sensor` mit
   `energy.one_grid_sensor_for_import_and_export` und passender Vorzeichen-Option
-  `energy.positive_grid_value_is_import`
+  `energy.positive_grid_value_is_import`. Fuer Batteriespeicher kann entweder
+  `energy.shared_battery_power_sensor` mit
+  `energy.one_battery_sensor_for_charge_and_discharge` und
+  `energy.positive_battery_value_is_charge` verwendet werden oder getrennt
+  `energy.battery_charge_sensor` und `energy.battery_discharge_sensor`.
+  `energy.prefer_battery_charging` schuetzt die Batterieladung vor der
+  Waermepumpenfreigabe.
 - Pumpen- und Heizungssensoren
 
 Falsche Entitaeten koennen dazu fuehren, dass OpenPool keine sauberen
