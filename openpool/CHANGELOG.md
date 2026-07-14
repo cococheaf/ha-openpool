@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.6
+
+- Stop PV heat-pump operation immediately when battery priority is enabled and
+  the battery starts discharging.
+- Keep the dashboard PV availability calculation from adding active heat-pump
+  load back while battery discharge is present.
+
 ## 1.2.5
 
 - Add optional battery charge/discharge sensors to the energy add-on options.

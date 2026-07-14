@@ -37,6 +37,7 @@ CONTINUOUS_RESTART_INTERVAL_SECONDS = 12 * 60 * 60
 COMMAND_LOG_LIMIT = 6
 WEATHER_FORECAST_REFRESH_SECONDS = 12 * 60 * 60
 HEATER_ACTIVE_POWER_W = 100
+BATTERY_DISCHARGE_TOLERANCE_W = 50
 DEFAULT_WEATHER_ENTITY = "weather.home"
 DEFAULT_HEATER_START_MODE = "Auto"
 FALLBACK_HEATER_START_MODES = ("Heat", "Cool", "Auto", "Boost Heat", "Silent Heat")
@@ -1264,6 +1265,10 @@ class OpenPoolController:
 
         if self._heater_is_active():
             self.state["pv_above_since"] = None
+            if self._battery_priority_discharge_active():
+                self._turn_heater(False)
+                self.state["pv_below_since"] = None
+                return
             if available < config["stop_w"]:
                 if not self.state.get("pv_below_since"):
                     self.state["pv_below_since"] = current_ts
@@ -1328,9 +1333,18 @@ class OpenPoolController:
         available = pv_export - grid_import - battery_discharge
         if not self.prefer_battery_charging():
             available += battery_charge
-        if self._heater_is_active():
+        if self._heater_is_active() and not self._battery_priority_discharge_active(battery_discharge):
             available += abs(self._entity_power_watts("heater_power") or 0)
         return available
+
+    def _battery_priority_discharge_active(self, battery_discharge: float | None = None) -> bool:
+        if not self.prefer_battery_charging():
+            return False
+        if battery_discharge is None:
+            _battery_charge, battery_discharge = self._battery_charge_discharge_watts()
+        if battery_discharge is None:
+            return False
+        return battery_discharge > BATTERY_DISCHARGE_TOLERANCE_W
 
     def _calculated_house_consumption_watts(self) -> float | None:
         pv_generation = self._entity_power_watts("pv_generation")
@@ -1534,7 +1548,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.2.5"
+    server_version = "OpenPool/1.2.6"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

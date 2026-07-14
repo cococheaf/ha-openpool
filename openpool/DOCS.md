@@ -86,8 +86,11 @@ battery energy. If `energy.prefer_battery_charging` is disabled, current battery
 charging is added back and may be redirected to the heat pump. If it is enabled,
 OpenPool protects battery charging and releases the heat pump only from surplus
 that remains after house load and battery charging. When the heat pump is
-already running, its current power sensor is added back to estimate the surplus
-that would exist without the heat pump load.
+already running, its current power sensor is normally added back to estimate the
+surplus that would exist without the heat pump load. With battery priority
+enabled, that add-back is suppressed as soon as battery discharge is detected,
+and OpenPool turns the heat pump off immediately above a small discharge
+tolerance instead of waiting for the normal PV stop stability time.
 OpenPool only enables the heat pump after the pump switch is confirmed on by
 Home Assistant, so the pump load is already represented at the grid meter.
 The add-on options control the heat-pump release with a start threshold, stop
