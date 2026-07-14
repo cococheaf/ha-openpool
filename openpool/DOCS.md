@@ -80,6 +80,8 @@ sensors. For one signed value, enable
 `energy.battery_charge_sensor` and/or `energy.battery_discharge_sensor`.
 `energy.battery_soc_sensor` can be set to display the current battery state of
 charge. Unconfigured battery power sensors count as `0 W`.
+If the installation has no battery storage, disable `features.battery_logic`.
+OpenPool then ignores all battery sensors and battery-priority options.
 
 The available heat-pump power starts as `grid_export - grid_import`. Battery
 discharge is always subtracted because the heat pump should not start from

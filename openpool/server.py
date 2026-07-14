@@ -85,6 +85,13 @@ DEFAULT_ENTITIES = {
     "heater_water_out": "sensor.poolheizung_wassertemperatur_ausgang",
 }
 
+BATTERY_ENTITY_KEYS = {
+    "battery_power",
+    "battery_charge",
+    "battery_discharge",
+    "battery_soc",
+}
+
 UI_ENTITY_KEYS = {
     "entity-pump-switch": "pump_switch",
     "entity-heater-climate": "heater_climate",
@@ -534,6 +541,7 @@ class OpenPoolController:
         values = {
             "heat_pump_control": True,
             "weather_control": True,
+            "battery_logic": True,
         }
         values.update((self.options().get("features") or {}))
         return {key: bool(values.get(key)) for key in values}
@@ -543,6 +551,9 @@ class OpenPoolController:
 
     def weather_control_enabled(self) -> bool:
         return bool(self.features().get("weather_control", True))
+
+    def battery_logic_enabled(self) -> bool:
+        return bool(self.features().get("battery_logic", True))
 
     def weather_mode(self) -> str:
         mode = str(self.state.get("weather_mode") or "Empfehlung")
@@ -583,7 +594,10 @@ class OpenPoolController:
             entities.pop("grid_import", None)
         else:
             entities.pop("grid_power", None)
-        if self.use_combined_battery_sensor():
+        if not self.battery_logic_enabled():
+            for key in BATTERY_ENTITY_KEYS:
+                entities.pop(key, None)
+        elif self.use_combined_battery_sensor():
             entities.pop("battery_charge", None)
             entities.pop("battery_discharge", None)
         else:
@@ -606,6 +620,8 @@ class OpenPoolController:
         return True
 
     def use_combined_battery_sensor(self) -> bool:
+        if not self.battery_logic_enabled():
+            return False
         energy = self.options().get("energy") or {}
         if isinstance(energy, dict) and energy.get("one_battery_sensor_for_charge_and_discharge") is not None:
             return bool_option(energy.get("one_battery_sensor_for_charge_and_discharge"))
@@ -618,6 +634,8 @@ class OpenPoolController:
         return True
 
     def prefer_battery_charging(self) -> bool:
+        if not self.battery_logic_enabled():
+            return False
         energy = self.options().get("energy") or {}
         if isinstance(energy, dict) and energy.get("prefer_battery_charging") is not None:
             return bool_option(energy.get("prefer_battery_charging"))
@@ -787,7 +805,11 @@ class OpenPoolController:
 
     def _ui_ha_states(self) -> dict:
         entities = self.entities()
-        return {ui_key: self.ha_states.get(option_key) for ui_key, option_key in UI_ENTITY_KEYS.items()}
+        return {
+            ui_key: self.ha_states.get(option_key)
+            for ui_key, option_key in UI_ENTITY_KEYS.items()
+            if option_key in entities
+        }
 
     def _runtime_snapshot(self, current_ts: float) -> dict:
         runtime_today = float(self.state.get("pump_runtime_today_s") or 0)
@@ -1386,6 +1408,8 @@ class OpenPoolController:
         return max(0.0, grid_import), max(0.0, pv_export)
 
     def _battery_charge_discharge_watts(self) -> tuple[float | None, float | None]:
+        if not self.battery_logic_enabled():
+            return 0.0, 0.0
         entities = self.entities()
         if self.use_combined_battery_sensor():
             if "battery_power" not in entities:
@@ -1565,7 +1589,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.2.7"
+    server_version = "OpenPool/1.2.8"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

@@ -28,6 +28,9 @@ configuration:
       weather_control:
         name: Wettersteuerung
         description: OpenPool nutzt die Tagesvorhersage für eine Empfehlung oder automatische Pumpenprofilwahl.
+      battery_logic:
+        name: Batterielogik
+        description: OpenPool liest Batteriesensoren und schützt optional die Batterieladung vor der Wärmepumpenfreigabe.
   devices:
     name: Steuerbare Geräte
     description: Geräte, die OpenPool direkt ein- und ausschalten oder abfragen darf.

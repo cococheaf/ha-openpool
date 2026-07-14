@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.8
+
+- Add a `features.battery_logic` toggle so installations without battery
+  storage can disable all battery-specific behavior and UI rows.
+- Ignore battery sensors, battery priority and discharge thresholds completely
+  when battery logic is disabled.
+
 ## 1.2.7
 
 - Add a battery SOC entity option and show the configured value in live energy

@@ -1593,9 +1593,9 @@
                   <div><span>PV Erzeugung</span><strong id="pv-generation-value">--</strong></div>
                   <div><span>Netzeinspeisung</span><strong id="pv-export-value">--</strong></div>
                   <div><span>Netzbezug</span><strong id="grid-import-value">--</strong></div>
-                  <div><span>Batterieladung</span><strong id="battery-charge-value">--</strong></div>
-                  <div><span>Batterieentladung</span><strong id="battery-discharge-value">--</strong></div>
-                  <div><span>Batterie SOC</span><strong id="battery-soc-value">--</strong></div>
+                  <div id="battery-charge-row"><span>Batterieladung</span><strong id="battery-charge-value">--</strong></div>
+                  <div id="battery-discharge-row"><span>Batterieentladung</span><strong id="battery-discharge-value">--</strong></div>
+                  <div id="battery-soc-row"><span>Batterie SOC</span><strong id="battery-soc-value">--</strong></div>
                   <div><span>Hausverbrauch</span><strong id="house-consumption-value">--</strong></div>
                   <div><span>Verfügbar für WP</span><strong id="pv-free-list-value">--</strong></div>
                 </div>
@@ -1631,6 +1631,7 @@
       batteryPowerChargePositive: true,
       preferBatteryCharging: false,
       batteryDischargeThresholdW: DEFAULT_BATTERY_DISCHARGE_THRESHOLD_W,
+      batteryLogic: true,
       heatPumpControl: true,
       weatherControl: true
     };
@@ -2022,6 +2023,7 @@
       const energy = options?.energy || {};
       controlConfig.heatPumpControl = features.heat_pump_control !== false;
       controlConfig.weatherControl = features.weather_control !== false;
+      controlConfig.batteryLogic = features.battery_logic !== false;
       controlConfig.useCombinedGridSensor = optionBool(
         energy.one_grid_sensor_for_import_and_export,
         controlConfig.useCombinedGridSensor
@@ -2069,6 +2071,9 @@
       setFeatureVisible('heater-status-metric', controlConfig.heatPumpControl);
       setFeatureVisible('heat-source-status-metric', controlConfig.heatPumpControl);
       setFeatureVisible('heater-sensor-category', controlConfig.heatPumpControl);
+      setFeatureVisible('battery-charge-row', controlConfig.batteryLogic);
+      setFeatureVisible('battery-discharge-row', controlConfig.batteryLogic);
+      setFeatureVisible('battery-soc-row', controlConfig.batteryLogic);
       setText(
         'night-swim-hint',
         controlConfig.heatPumpControl
@@ -2140,6 +2145,9 @@
     }
 
     function batteryChargeDischargeWatts(states) {
+      if (!controlConfig.batteryLogic) {
+        return { batteryCharge: 0, batteryDischarge: 0, batteryConfigured: false };
+      }
       if (controlConfig.useCombinedBatterySensor) {
         const balance = entityPowerWatts(states['entity-battery-power']);
         if (balance === null) return { batteryCharge: 0, batteryDischarge: 0, batteryConfigured: false };
@@ -2169,6 +2177,7 @@
     }
 
     function batterySocText(states) {
+      if (!controlConfig.batteryLogic) return 'deaktiviert';
       const state = states['entity-battery-soc'];
       if (isUnavailableState(state)) return 'nicht konfiguriert';
       return formatSensorValue(state, '%', 0);
@@ -2412,10 +2421,11 @@
 
       const houseConsumption = pvGeneration === null ? null : pvGeneration - pvExport + gridImport;
       let available = pvExport - gridImport - batteryDischarge;
-      if (!controlConfig.preferBatteryCharging) {
+      if (!controlConfig.batteryLogic || !controlConfig.preferBatteryCharging) {
         available += batteryCharge;
       }
-      const batteryPriorityBlocksAddBack = controlConfig.preferBatteryCharging
+      const batteryPriorityBlocksAddBack = controlConfig.batteryLogic
+        && controlConfig.preferBatteryCharging
         && batteryDischarge > controlConfig.batteryDischargeThresholdW;
       if (heaterActive && !batteryPriorityBlocksAddBack) {
         available += Math.abs(heaterPower || 0);

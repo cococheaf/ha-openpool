@@ -28,6 +28,9 @@ configuration:
       weather_control:
         name: Weather control
         description: Uses the daily forecast for a recommendation or automatic pump profile selection.
+      battery_logic:
+        name: Battery logic
+        description: Lets OpenPool read battery sensors and optionally protect battery charging before heat-pump release.
   devices:
     name: Controlled devices
     description: Devices OpenPool may switch or read directly.

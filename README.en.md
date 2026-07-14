@@ -42,6 +42,7 @@ Assistant entities that already exist in the installation.
   Assistant selector, pump run-on and optional PV automation.
 - PV release with start/stop thresholds, stability times and optional battery
   priority.
+- Battery logic can be disabled for installations without battery storage.
 - Weather control as recommendation or automation for swim mode and bad weather
   mode.
 - Provider-neutral weather entity with only two forecast refreshes per day.
@@ -61,6 +62,8 @@ Especially important:
 - `devices.heat_pump`
 - `devices.heat_pump_operating_mode`
 - `devices.weather_service`
+- `features.battery_logic` if battery sensors and battery priority should be
+  used
 - `energy.pv_production_sensor`
 - Energy/grid/battery: either `energy.grid_export_sensor` and
   `energy.grid_import_sensor` or `energy.shared_grid_power_sensor` with

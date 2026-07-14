@@ -42,6 +42,7 @@ Logik mit den ohnehin vorhandenen Home-Assistant-Entitaeten.
   Home-Assistant-Selector, Pumpennachlauf und optionaler PV-Automatik.
 - PV-Freigabe mit Start-/Stoppgrenzen, Stabilzeiten und optionaler
   Batterie-Prioritaet.
+- Abschaltbare Batterielogik fuer Anlagen ohne Batteriespeicher.
 - Wettersteuerung als Empfehlung oder Automatik fuer Badebetrieb und
   Schlechtwetterprofil.
 - Provider-neutrale Wetter-Entitaet, nur zwei Vorhersageabrufe pro Tag.
@@ -61,6 +62,8 @@ Besonders wichtig sind:
 - `devices.heat_pump`
 - `devices.heat_pump_operating_mode`
 - `devices.weather_service`
+- `features.battery_logic`, falls Batteriesensoren und Batterie-Prioritaet
+  genutzt werden sollen
 - `energy.pv_production_sensor`
 - Energie/Netz/Batterie: entweder `energy.grid_export_sensor` und
   `energy.grid_import_sensor` oder `energy.shared_grid_power_sensor` mit

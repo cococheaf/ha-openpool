@@ -15,6 +15,7 @@ system.
 - Heat-pump control with target temperature, start operating mode from a Home
   Assistant selection list, run-on protection and optional PV automation.
 - PV release with optional battery priority.
+- Battery logic can be disabled for installations without battery storage.
 - Weather control as recommendation or automation.
 - Live sync between multiple browsers and persistent state in
   `/data/openpool_state.json`.
@@ -28,6 +29,8 @@ Most important:
 - `devices.heat_pump`
 - `devices.heat_pump_operating_mode`
 - `devices.weather_service`
+- `features.battery_logic` if battery sensors and battery priority should be
+  used
 - `energy.pv_production_sensor`
 - Energy/grid/battery: either `energy.grid_export_sensor` and
   `energy.grid_import_sensor` or `energy.shared_grid_power_sensor` with
