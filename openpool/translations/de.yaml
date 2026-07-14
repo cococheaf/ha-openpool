@@ -81,6 +81,12 @@ configuration:
       battery_discharge_sensor:
         name: Batterieentladung
         description: Sensor für die aktuelle Entladeleistung der Batterie. Wird nur bei zwei getrennten Batteriesensoren verwendet.
+      battery_soc_sensor:
+        name: Batterie-Ladezustand (SOC)
+        description: Optionaler Sensor für den Ladezustand der Batterie in Prozent.
+      battery_discharge_threshold_w:
+        name: Entladeschwelle bei Batterie-Priorität
+        description: Batterieentladung bis zu diesem Wert in Watt wird als kurze Lastspitze toleriert. Darüber stoppt OpenPool die Wärmepumpe sofort, wenn Batterieladung bevorzugen aktiv ist.
       prefer_battery_charging:
         name: Batterieladung bevorzugen
         description: OpenPool gibt die Wärmepumpe erst frei, wenn nach Hausverbrauch und Batterieladung noch genug PV-Überschuss übrig ist.

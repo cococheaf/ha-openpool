@@ -37,7 +37,7 @@ CONTINUOUS_RESTART_INTERVAL_SECONDS = 12 * 60 * 60
 COMMAND_LOG_LIMIT = 6
 WEATHER_FORECAST_REFRESH_SECONDS = 12 * 60 * 60
 HEATER_ACTIVE_POWER_W = 100
-BATTERY_DISCHARGE_TOLERANCE_W = 50
+DEFAULT_BATTERY_DISCHARGE_THRESHOLD_W = 50
 DEFAULT_WEATHER_ENTITY = "weather.home"
 DEFAULT_HEATER_START_MODE = "Auto"
 FALLBACK_HEATER_START_MODES = ("Heat", "Cool", "Auto", "Boost Heat", "Silent Heat")
@@ -71,6 +71,7 @@ DEFAULT_ENTITIES = {
     "battery_power": "",
     "battery_charge": "",
     "battery_discharge": "",
+    "battery_soc": "",
     "pump_power": "sensor.poolpumpe_leistung",
     "pump_current": "sensor.poolpumpe_current",
     "pump_voltage": "sensor.poolpumpe_spannung",
@@ -95,6 +96,7 @@ UI_ENTITY_KEYS = {
     "entity-battery-power": "battery_power",
     "entity-battery-charge": "battery_charge",
     "entity-battery-discharge": "battery_discharge",
+    "entity-battery-soc": "battery_soc",
     "entity-pump-power": "pump_power",
     "entity-pump-current": "pump_current",
     "entity-pump-voltage": "pump_voltage",
@@ -123,6 +125,7 @@ ENTITY_OPTION_KEYS = {
         "shared_battery_power_sensor": "battery_power",
         "battery_charge_sensor": "battery_charge",
         "battery_discharge_sensor": "battery_discharge",
+        "battery_soc_sensor": "battery_soc",
     },
     "pump_readings": {
         "pump_power_sensor": "pump_power",
@@ -619,6 +622,20 @@ class OpenPoolController:
         if isinstance(energy, dict) and energy.get("prefer_battery_charging") is not None:
             return bool_option(energy.get("prefer_battery_charging"))
         return False
+
+    def battery_discharge_threshold_w(self) -> float:
+        energy = self.options().get("energy") or {}
+        try:
+            configured = (
+                energy.get("battery_discharge_threshold_w")
+                if isinstance(energy, dict)
+                else None
+            )
+            fallback = DEFAULT_BATTERY_DISCHARGE_THRESHOLD_W
+            threshold = float(configured if configured is not None else fallback)
+        except (TypeError, ValueError):
+            threshold = DEFAULT_BATTERY_DISCHARGE_THRESHOLD_W
+        return max(0.0, threshold)
 
     def thresholds(self) -> dict:
         values = {
@@ -1344,7 +1361,7 @@ class OpenPoolController:
             _battery_charge, battery_discharge = self._battery_charge_discharge_watts()
         if battery_discharge is None:
             return False
-        return battery_discharge > BATTERY_DISCHARGE_TOLERANCE_W
+        return battery_discharge > self.battery_discharge_threshold_w()
 
     def _calculated_house_consumption_watts(self) -> float | None:
         pv_generation = self._entity_power_watts("pv_generation")
@@ -1548,7 +1565,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.2.6"
+    server_version = "OpenPool/1.2.7"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

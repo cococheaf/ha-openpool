@@ -78,7 +78,8 @@ sensors. For one signed value, enable
 `energy.shared_battery_power_sensor` and choose the sign direction with
 `energy.positive_battery_value_is_charge`. For separate values, set
 `energy.battery_charge_sensor` and/or `energy.battery_discharge_sensor`.
-Unconfigured battery sensors count as `0 W`.
+`energy.battery_soc_sensor` can be set to display the current battery state of
+charge. Unconfigured battery power sensors count as `0 W`.
 
 The available heat-pump power starts as `grid_export - grid_import`. Battery
 discharge is always subtracted because the heat pump should not start from
@@ -88,9 +89,10 @@ OpenPool protects battery charging and releases the heat pump only from surplus
 that remains after house load and battery charging. When the heat pump is
 already running, its current power sensor is normally added back to estimate the
 surplus that would exist without the heat pump load. With battery priority
-enabled, that add-back is suppressed as soon as battery discharge is detected,
-and OpenPool turns the heat pump off immediately above a small discharge
-tolerance instead of waiting for the normal PV stop stability time.
+enabled, that add-back is suppressed above
+`energy.battery_discharge_threshold_w`, and OpenPool turns the heat pump off
+immediately instead of waiting for the normal PV stop stability time. Discharge
+up to this threshold is treated as a short load spike or sensor noise.
 OpenPool only enables the heat pump after the pump switch is confirmed on by
 Home Assistant, so the pump load is already represented at the grid meter.
 The add-on options control the heat-pump release with a start threshold, stop

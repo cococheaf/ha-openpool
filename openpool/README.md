@@ -36,6 +36,9 @@ an. Besonders wichtig sind:
   `energy.one_battery_sensor_for_charge_and_discharge` und
   `energy.positive_battery_value_is_charge` verwendet werden oder getrennt
   `energy.battery_charge_sensor` und `energy.battery_discharge_sensor`.
+  `energy.battery_soc_sensor` zeigt optional den Batterie-Ladezustand an.
+  `energy.battery_discharge_threshold_w` legt fest, welche kurze
+  Batterie-Entladespitze bei Batterie-Prioritaet noch toleriert wird.
   `energy.prefer_battery_charging` schuetzt die Batterieladung vor der
   Waermepumpenfreigabe.
 - Pumpen- und Heizungssensoren

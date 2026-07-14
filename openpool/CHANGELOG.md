@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.7
+
+- Add a battery SOC entity option and show the configured value in live energy
+  data.
+- Add a configurable battery-discharge threshold for battery priority so short
+  load spikes can be tolerated while real discharge still stops the heat pump.
+- Use the configured discharge threshold in both server-side PV release logic
+  and the dashboard availability calculation.
+
 ## 1.2.6
 
 - Stop PV heat-pump operation immediately when battery priority is enabled and

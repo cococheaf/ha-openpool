@@ -70,6 +70,9 @@ Especially important:
   `energy.one_battery_sensor_for_charge_and_discharge` and
   `energy.positive_battery_value_is_charge`, or the separate
   `energy.battery_charge_sensor` and `energy.battery_discharge_sensor`.
+  `energy.battery_soc_sensor` optionally displays the battery state of charge.
+  `energy.battery_discharge_threshold_w` sets which short battery-discharge
+  spike is still tolerated while battery priority is enabled.
   `energy.prefer_battery_charging` makes OpenPool release the heat pump only
   when enough PV surplus remains after house consumption and battery charging.
 - Pump and heat pump sensors for power, current, voltage, signal and

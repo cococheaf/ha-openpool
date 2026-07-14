@@ -1,5 +1,5 @@
 name: OpenPool
-version: "1.2.6"
+version: "1.2.7"
 slug: openpool
 description: OpenSource Pool System Controller currently designed for Intex 26680 based pump/chlorinator systems, heat pumps and PV surplus control.
 url: https://github.com/cococheaf/ha-openpool
@@ -60,6 +60,8 @@ options:
     shared_battery_power_sensor: ""
     battery_charge_sensor: ""
     battery_discharge_sensor: ""
+    battery_soc_sensor: ""
+    battery_discharge_threshold_w: 50
     prefer_battery_charging: false
   pump_readings:
     pump_power_sensor: sensor.poolpumpe_leistung
@@ -130,6 +132,8 @@ schema:
     shared_battery_power_sensor: str
     battery_charge_sensor: str
     battery_discharge_sensor: str
+    battery_soc_sensor: str
+    battery_discharge_threshold_w: int
     prefer_battery_charging: bool
   pump_readings:
     pump_power_sensor: str

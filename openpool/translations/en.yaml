@@ -81,6 +81,12 @@ configuration:
       battery_discharge_sensor:
         name: Battery discharge
         description: Sensor for current battery discharging power. Used only with two separate battery sensors.
+      battery_soc_sensor:
+        name: Battery state of charge (SOC)
+        description: Optional sensor for the battery charge level in percent.
+      battery_discharge_threshold_w:
+        name: Battery-priority discharge threshold
+        description: Battery discharge up to this value in watts is tolerated as a short load spike. Above it, OpenPool stops the heat pump immediately when prefer battery charging is enabled.
       prefer_battery_charging:
         name: Prefer battery charging
         description: OpenPool releases the heat pump only when enough PV surplus remains after house consumption and battery charging.
