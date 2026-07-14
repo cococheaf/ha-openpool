@@ -44,8 +44,13 @@ an. Besonders wichtig sind:
   Batterie-Entladespitze bei Batterie-Prioritaet noch toleriert wird.
   `energy.prefer_battery_charging` schuetzt die Batterieladung vor der
   Waermepumpenfreigabe. Wenn die Batterie nicht laedt und trotzdem
-  PV-Ueberschuss bleibt, behandelt OpenPool sie als voll.
+  PV-Ueberschuss bleibt, behandelt OpenPool sie als voll. Bei aktiver
+  Batterie-Prioritaet ist ein Batterieentlade- oder gemeinsamer Batteriesensor
+  Pflicht; ohne dieses Signal blockiert OpenPool PV-Heizen fail-safe.
 - Pumpen- und Heizungssensoren
+
+`Heizung Ein` und `Nachtbaden` sind bewusste manuelle Overrides. Sie umgehen die
+PV-/Batterieautomatik, brauchen aber weiterhin Pumpenflow und Hauptfreigabe.
 
 Falsche Entitaeten koennen dazu fuehren, dass OpenPool keine sauberen
 Entscheidungen trifft oder Befehle an das falsche Geraet sendet.

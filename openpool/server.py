@@ -41,6 +41,11 @@ DEFAULT_BATTERY_DISCHARGE_THRESHOLD_W = 50
 DEFAULT_WEATHER_ENTITY = "weather.home"
 DEFAULT_HEATER_START_MODE = "Auto"
 FALLBACK_HEATER_START_MODES = ("Heat", "Cool", "Auto", "Boost Heat", "Silent Heat")
+FEATURE_DEFAULTS = {
+    "heat_pump_control": True,
+    "weather_control": True,
+    "battery_logic": True,
+}
 BAD_WEATHER_CONDITIONS = {
     "cloudy",
     "fog",
@@ -179,9 +184,15 @@ def read_options() -> dict:
         return {}
 
     try:
-        return json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
+        payload = json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def option_group(options: dict, name: str) -> dict:
+    group = options.get(name) if isinstance(options, dict) else {}
+    return group if isinstance(group, dict) else {}
 
 
 def configured_log_level() -> str:
@@ -215,6 +226,8 @@ def public_options(options: dict) -> dict:
 def bool_option(value: object, fallback: bool = False) -> bool:
     if isinstance(value, bool):
         return value
+    if isinstance(value, (int, float)):
+        return bool(value)
     if isinstance(value, str):
         normalized = value.strip().lower()
         if normalized in {"true", "on", "yes", "1"}:
@@ -330,7 +343,7 @@ class HomeAssistantClient:
         self._last_auth_source = "missing"
 
     def credentials(self) -> tuple[str, str, str] | None:
-        connection = read_options().get("connection") or {}
+        connection = option_group(read_options(), "connection")
         auth_mode = str(connection.get("auth_mode") or "supervisor").strip()
         access_token = str(connection.get("access_token") or "").strip()
         homeassistant_url = str(connection.get("homeassistant_url") or DEFAULT_HA_URL).rstrip("/")
@@ -361,7 +374,7 @@ class HomeAssistantClient:
         return labels.get(credentials[2], "using configured token")
 
     def auth_error_detail(self) -> str:
-        connection = read_options().get("connection") or {}
+        connection = option_group(read_options(), "connection")
         auth_mode = str(connection.get("auth_mode") or "supervisor").strip()
         if auth_mode == "openpool_user_token":
             return "connection.auth_mode is openpool_user_token but connection.access_token is empty."
@@ -537,14 +550,15 @@ class OpenPoolController:
     def options(self) -> dict:
         return read_options()
 
+    def option_group(self, name: str) -> dict:
+        return option_group(self.options(), name)
+
     def features(self) -> dict:
-        values = {
-            "heat_pump_control": True,
-            "weather_control": True,
-            "battery_logic": True,
+        configured = self.option_group("features")
+        return {
+            key: bool_option(configured.get(key), fallback)
+            for key, fallback in FEATURE_DEFAULTS.items()
         }
-        values.update((self.options().get("features") or {}))
-        return {key: bool(values.get(key)) for key in values}
 
     def heat_pump_enabled(self) -> bool:
         return bool(self.features().get("heat_pump_control", True))
@@ -608,47 +622,43 @@ class OpenPoolController:
         return {key: value for key, value in entities.items() if str(value or "").strip()}
 
     def use_combined_grid_sensor(self) -> bool:
-        energy = self.options().get("energy") or {}
-        if isinstance(energy, dict) and energy.get("one_grid_sensor_for_import_and_export") is not None:
+        energy = self.option_group("energy")
+        if energy.get("one_grid_sensor_for_import_and_export") is not None:
             return bool_option(energy.get("one_grid_sensor_for_import_and_export"))
         return False
 
     def grid_power_import_positive(self) -> bool:
-        energy = self.options().get("energy") or {}
-        if isinstance(energy, dict) and energy.get("positive_grid_value_is_import") is not None:
+        energy = self.option_group("energy")
+        if energy.get("positive_grid_value_is_import") is not None:
             return bool_option(energy.get("positive_grid_value_is_import"), True)
         return True
 
     def use_combined_battery_sensor(self) -> bool:
         if not self.battery_logic_enabled():
             return False
-        energy = self.options().get("energy") or {}
-        if isinstance(energy, dict) and energy.get("one_battery_sensor_for_charge_and_discharge") is not None:
+        energy = self.option_group("energy")
+        if energy.get("one_battery_sensor_for_charge_and_discharge") is not None:
             return bool_option(energy.get("one_battery_sensor_for_charge_and_discharge"))
         return False
 
     def battery_power_charge_positive(self) -> bool:
-        energy = self.options().get("energy") or {}
-        if isinstance(energy, dict) and energy.get("positive_battery_value_is_charge") is not None:
+        energy = self.option_group("energy")
+        if energy.get("positive_battery_value_is_charge") is not None:
             return bool_option(energy.get("positive_battery_value_is_charge"), True)
         return True
 
     def prefer_battery_charging(self) -> bool:
         if not self.battery_logic_enabled():
             return False
-        energy = self.options().get("energy") or {}
-        if isinstance(energy, dict) and energy.get("prefer_battery_charging") is not None:
+        energy = self.option_group("energy")
+        if energy.get("prefer_battery_charging") is not None:
             return bool_option(energy.get("prefer_battery_charging"))
         return False
 
     def battery_discharge_threshold_w(self) -> float:
-        energy = self.options().get("energy") or {}
+        energy = self.option_group("energy")
         try:
-            configured = (
-                energy.get("battery_discharge_threshold_w")
-                if isinstance(energy, dict)
-                else None
-            )
+            configured = energy.get("battery_discharge_threshold_w")
             fallback = DEFAULT_BATTERY_DISCHARGE_THRESHOLD_W
             threshold = float(configured if configured is not None else fallback)
         except (TypeError, ValueError):
@@ -666,7 +676,7 @@ class OpenPoolController:
             "pump_power_without_chlorinator_w": 450,
             "pump_power_with_chlorinator_w": 500,
         }
-        values.update((self.options().get("thresholds") or {}))
+        values.update(self.option_group("thresholds"))
         return values
 
     def poll_interval_seconds(self) -> float:
@@ -684,7 +694,7 @@ class OpenPoolController:
             "bad_weather_end": "16:15",
             "night_swim_duration_hours": 10,
         }
-        configured = dict(self.options().get("profiles") or {})
+        configured = dict(self.option_group("profiles"))
         values.update(configured)
         try:
             hours = float(values.get("night_swim_duration_hours") or 10)
@@ -696,7 +706,7 @@ class OpenPoolController:
         return values
 
     def restart_pulses(self) -> list[dict]:
-        configured = self.options().get("restart_pulses") or {}
+        configured = self.option_group("restart_pulses")
         defaults = [
             {"key": "pulse_1", "enabled": True, "time": "11:59"},
             {"key": "pulse_2", "enabled": True, "time": "16:59"},
@@ -711,7 +721,7 @@ class OpenPoolController:
         return defaults
 
     def restart_pulse_duration_s(self) -> int:
-        configured = self.options().get("restart_pulses") or {}
+        configured = self.option_group("restart_pulses")
         return normalize_restart_pulse_duration(configured.get("pulse_duration_s"))
 
     def weather_recommendation(self) -> dict:
@@ -1596,7 +1606,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.2.9"
+    server_version = "OpenPool/2.0.0"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

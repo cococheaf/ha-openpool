@@ -79,9 +79,14 @@ Besonders wichtig sind:
   `energy.prefer_battery_charging` sorgt dafuer, dass OpenPool die Waermepumpe
   erst freigibt, wenn nach Hausverbrauch und Batterieladung noch genug
   PV-Ueberschuss bleibt. Wenn die Batterie nicht laedt und trotzdem
-  PV-Ueberschuss bleibt, behandelt OpenPool sie als voll.
+  PV-Ueberschuss bleibt, behandelt OpenPool sie als voll. Bei aktiver
+  Batterie-Prioritaet ist ein Batterieentlade- oder gemeinsamer Batteriesensor
+  Pflicht; ohne dieses Signal blockiert OpenPool PV-Heizen fail-safe.
 - Pumpen- und Heizungssensoren fuer Leistung, Strom, Spannung, Signal und
   Temperaturen
+
+`Heizung Ein` und `Nachtbaden` sind bewusste manuelle Overrides. Sie umgehen die
+PV-/Batterieautomatik, brauchen aber weiterhin Pumpenflow und Hauptfreigabe.
 
 Wenn diese Entitaeten nicht passen, kann OpenPool starten, aber keine sauberen
 Entscheidungen treffen oder Befehle an die richtigen Geraete senden.

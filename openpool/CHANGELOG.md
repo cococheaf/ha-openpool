@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.0
+
+- Review and clean up add-on option parsing so invalid or older nested option
+  blocks fall back safely instead of breaking control logic.
+- Keep feature toggles parsed as real booleans and preserve the existing
+  battery-logic default for safe upgrades.
+- Document the final 2.0 battery-priority behavior: PV automation protects the
+  battery, while manual heat mode remains an intentional override.
+- Validate the add-on option schema, translations, server code and dashboard
+  JavaScript as part of the release.
+
 ## 1.2.9
 
 - Clarify and harden battery-priority PV release: battery discharge above the

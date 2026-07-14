@@ -79,9 +79,14 @@ Especially important:
   `energy.prefer_battery_charging` makes OpenPool release the heat pump only
   when enough PV surplus remains after house consumption and battery charging.
   If the battery is not charging and PV surplus still remains, OpenPool treats
-  it as full.
+  it as full. When battery priority is enabled, configure either a battery
+  discharge sensor or the shared battery power sensor; without that signal,
+  OpenPool blocks PV heating fail-safe.
 - Pump and heat pump sensors for power, current, voltage, signal and
   temperatures
+
+`Heizung Ein`/manual heat and night swimming are intentional overrides. They
+bypass PV/battery automation, but still require pump flow and the master enable.
 
 If these entities do not match your system, OpenPool may start but cannot make
 reliable decisions or send commands to the correct devices.

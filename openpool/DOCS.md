@@ -79,7 +79,8 @@ sensors. For one signed value, enable
 `energy.positive_battery_value_is_charge`. For separate values, set
 `energy.battery_charge_sensor` and/or `energy.battery_discharge_sensor`.
 `energy.battery_soc_sensor` can be set to display the current battery state of
-charge. Unconfigured battery power sensors count as `0 W`.
+charge. Unconfigured battery power sensors count as `0 W` only while battery
+priority is disabled.
 If the installation has no battery storage, disable `features.battery_logic`.
 OpenPool then ignores all battery sensors and battery-priority options.
 With `energy.prefer_battery_charging` enabled, configure either the shared
@@ -109,6 +110,11 @@ PV power has been available continuously for the configured start stability
 time. While the heat pump is running, OpenPool waits until the available PV
 power stays below the stop threshold for the configured stop stability time
 before switching it off.
+
+Manual heat mode (`Ein`) and `Nachtbaden` are intentional overrides. They still
+require pump flow and the normal master/profile safety gates, but they do not
+use the PV surplus or battery-priority release logic. Use them when heating is
+more important than preserving battery energy.
 
 ## Heat Pump Start Mode
 
