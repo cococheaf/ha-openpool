@@ -78,7 +78,8 @@ Besonders wichtig sind:
   Batterie-Entladespitze bei Batterie-Prioritaet noch toleriert wird.
   `energy.prefer_battery_charging` sorgt dafuer, dass OpenPool die Waermepumpe
   erst freigibt, wenn nach Hausverbrauch und Batterieladung noch genug
-  PV-Ueberschuss bleibt.
+  PV-Ueberschuss bleibt. Wenn die Batterie nicht laedt und trotzdem
+  PV-Ueberschuss bleibt, behandelt OpenPool sie als voll.
 - Pumpen- und Heizungssensoren fuer Leistung, Strom, Spannung, Signal und
   Temperaturen
 

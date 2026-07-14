@@ -92,7 +92,7 @@ configuration:
         description: Batterieentladung bis zu diesem Wert in Watt wird als kurze Lastspitze toleriert. Darüber stoppt OpenPool die Wärmepumpe sofort, wenn Batterieladung bevorzugen aktiv ist.
       prefer_battery_charging:
         name: Batterieladung bevorzugen
-        description: OpenPool gibt die Wärmepumpe erst frei, wenn nach Hausverbrauch und Batterieladung noch genug PV-Überschuss übrig ist.
+        description: OpenPool gibt die Wärmepumpe erst frei, wenn nach Hausverbrauch und aktueller Batterieladung noch genug PV-Überschuss übrig ist. Lädt die Batterie nicht und bleibt trotzdem Überschuss, gilt sie als voll.
   pump_readings:
     name: Messwerte der Pumpe
     description: Sensoren für die Anzeige und Erkennung des Pumpen- und Chlorsystemzustands.

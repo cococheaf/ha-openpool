@@ -1301,7 +1301,6 @@ class OpenPoolController:
         current_ts = now_ts()
         config = self._pv_release_settings()
         self.state["pv_last_available_w"] = round(available, 1)
-
         if self._heater_is_active():
             self.state["pv_above_since"] = None
             if self._battery_priority_discharge_active():
@@ -1366,13 +1365,16 @@ class OpenPoolController:
             return None
 
         # Grid export minus import is the surplus that remains after house load.
-        # When battery priority is disabled, current battery charging is also
-        # available to the heat pump. When priority is enabled, only surplus
-        # after battery charging is eligible; discharge always reduces release.
+        # With battery priority enabled, current battery charging is protected:
+        # only surplus that remains after house load and battery charging can
+        # start the heat pump. If the battery is neither charging nor
+        # discharging, visible surplus is treated as "battery full".
+        # Discharge always reduces release.
         available = pv_export - grid_import - battery_discharge
         if not self.prefer_battery_charging():
             available += battery_charge
-        if self._heater_is_active() and not self._battery_priority_discharge_active(battery_discharge):
+        can_add_heater_load = not self._battery_priority_discharge_active(battery_discharge)
+        if self._heater_is_active() and can_add_heater_load:
             available += abs(self._entity_power_watts("heater_power") or 0)
         return available
 
@@ -1413,7 +1415,7 @@ class OpenPoolController:
         entities = self.entities()
         if self.use_combined_battery_sensor():
             if "battery_power" not in entities:
-                return 0.0, 0.0
+                return (None, None) if self.prefer_battery_charging() else (0.0, 0.0)
             balance = self._entity_power_watts("battery_power")
             if balance is None:
                 return None, None
@@ -1421,14 +1423,19 @@ class OpenPoolController:
                 return max(0.0, balance), max(0.0, -balance)
             return max(0.0, -balance), max(0.0, balance)
 
+        charge_configured = "battery_charge" in entities
+        discharge_configured = "battery_discharge" in entities
+        if self.prefer_battery_charging() and not discharge_configured:
+            return None, None
+
         charge = 0.0
         discharge = 0.0
-        if "battery_charge" in entities:
+        if charge_configured:
             charge_value = self._entity_power_watts("battery_charge")
             if charge_value is None:
                 return None, None
             charge = max(0.0, charge_value)
-        if "battery_discharge" in entities:
+        if discharge_configured:
             discharge_value = self._entity_power_watts("battery_discharge")
             if discharge_value is None:
                 return None, None
@@ -1589,7 +1596,7 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 
 class OpenPoolHandler(BaseHTTPRequestHandler):
-    server_version = "OpenPool/1.2.8"
+    server_version = "OpenPool/1.2.9"
     protocol_version = "HTTP/1.1"
 
     def do_GET(self) -> None:

@@ -82,16 +82,22 @@ sensors. For one signed value, enable
 charge. Unconfigured battery power sensors count as `0 W`.
 If the installation has no battery storage, disable `features.battery_logic`.
 OpenPool then ignores all battery sensors and battery-priority options.
+With `energy.prefer_battery_charging` enabled, configure either the shared
+battery power sensor or at least a battery discharge sensor. Otherwise OpenPool
+cannot prove that the heat pump is not using the battery and blocks PV heating
+fail-safe.
 
 The available heat-pump power starts as `grid_export - grid_import`. Battery
 discharge is always subtracted because the heat pump should not start from
 battery energy. If `energy.prefer_battery_charging` is disabled, current battery
 charging is added back and may be redirected to the heat pump. If it is enabled,
-OpenPool protects battery charging and releases the heat pump only from surplus
-that remains after house load and battery charging. When the heat pump is
-already running, its current power sensor is normally added back to estimate the
-surplus that would exist without the heat pump load. With battery priority
-enabled, that add-back is suppressed above
+OpenPool protects battery charging and releases the heat pump only from visible
+surplus that remains after house load and current battery charging. If the
+battery is not charging but enough PV surplus remains, OpenPool treats that as a
+full battery and may release the heat pump. When the heat pump is already
+running, its current power sensor is normally added back to estimate the surplus
+that would exist without the heat pump load. With battery priority enabled, that
+add-back is suppressed above
 `energy.battery_discharge_threshold_w`, and OpenPool turns the heat pump off
 immediately instead of waiting for the normal PV stop stability time. Discharge
 up to this threshold is treated as a short load spike or sensor noise.

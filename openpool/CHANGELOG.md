@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.9
+
+- Clarify and harden battery-priority PV release: battery discharge above the
+  configured threshold blocks heat-pump operation immediately.
+- Treat "battery not charging, not discharging, and enough PV surplus remains"
+  as a full-battery condition so SOC is informative but not required for
+  release.
+- Block PV heating fail-safe when battery priority is enabled but no battery
+  discharge or shared battery sensor is configured.
+
 ## 1.2.8
 
 - Add a `features.battery_logic` toggle so installations without battery

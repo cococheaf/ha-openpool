@@ -43,7 +43,8 @@ an. Besonders wichtig sind:
   `energy.battery_discharge_threshold_w` legt fest, welche kurze
   Batterie-Entladespitze bei Batterie-Prioritaet noch toleriert wird.
   `energy.prefer_battery_charging` schuetzt die Batterieladung vor der
-  Waermepumpenfreigabe.
+  Waermepumpenfreigabe. Wenn die Batterie nicht laedt und trotzdem
+  PV-Ueberschuss bleibt, behandelt OpenPool sie als voll.
 - Pumpen- und Heizungssensoren
 
 Falsche Entitaeten koennen dazu fuehren, dass OpenPool keine sauberen

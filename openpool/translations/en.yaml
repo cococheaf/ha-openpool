@@ -92,7 +92,7 @@ configuration:
         description: Battery discharge up to this value in watts is tolerated as a short load spike. Above it, OpenPool stops the heat pump immediately when prefer battery charging is enabled.
       prefer_battery_charging:
         name: Prefer battery charging
-        description: OpenPool releases the heat pump only when enough PV surplus remains after house consumption and battery charging.
+        description: OpenPool releases the heat pump only when enough PV surplus remains after house consumption and current battery charging. If the battery is not charging and surplus still remains, it is treated as full.
   pump_readings:
     name: Pump readings
     description: Sensors for display and for detecting pump/chlorination state.

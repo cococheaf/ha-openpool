@@ -78,6 +78,8 @@ Especially important:
   spike is still tolerated while battery priority is enabled.
   `energy.prefer_battery_charging` makes OpenPool release the heat pump only
   when enough PV surplus remains after house consumption and battery charging.
+  If the battery is not charging and PV surplus still remains, OpenPool treats
+  it as full.
 - Pump and heat pump sensors for power, current, voltage, signal and
   temperatures
 

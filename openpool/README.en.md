@@ -44,7 +44,8 @@ Most important:
   `energy.battery_discharge_threshold_w` sets which short battery-discharge
   spike is still tolerated while battery priority is enabled.
   `energy.prefer_battery_charging` protects battery charging before heat-pump
-  release.
+  release. If the battery is not charging and PV surplus still remains,
+  OpenPool treats it as full.
 - Pump and heat pump sensors
 
 Wrong entities can make OpenPool take bad decisions or send commands to the

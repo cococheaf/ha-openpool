@@ -2150,7 +2150,11 @@
       }
       if (controlConfig.useCombinedBatterySensor) {
         const balance = entityPowerWatts(states['entity-battery-power']);
-        if (balance === null) return { batteryCharge: 0, batteryDischarge: 0, batteryConfigured: false };
+        if (balance === null) {
+          return controlConfig.preferBatteryCharging
+            ? { batteryCharge: null, batteryDischarge: null, batteryConfigured: false }
+            : { batteryCharge: 0, batteryDischarge: 0, batteryConfigured: false };
+        }
         if (controlConfig.batteryPowerChargePositive) {
           return {
             batteryCharge: Math.max(0, balance),
@@ -2169,6 +2173,9 @@
       const dischargeState = states['entity-battery-discharge'];
       const chargeConfigured = !isUnavailableState(chargeState);
       const dischargeConfigured = !isUnavailableState(dischargeState);
+      if (controlConfig.preferBatteryCharging && !dischargeConfigured) {
+        return { batteryCharge: null, batteryDischarge: null, batteryConfigured: false };
+      }
       return {
         batteryCharge: chargeConfigured ? Math.max(0, entityPowerWatts(chargeState) || 0) : 0,
         batteryDischarge: dischargeConfigured ? Math.max(0, entityPowerWatts(dischargeState) || 0) : 0,
@@ -2420,6 +2427,12 @@
       }
 
       const houseConsumption = pvGeneration === null ? null : pvGeneration - pvExport + gridImport;
+      if ([batteryCharge, batteryDischarge].some(value => value === null)) {
+        setText('house-consumption-value', formatPower(houseConsumption));
+        setText('pv-free-list-value', '--');
+        return;
+      }
+
       let available = pvExport - gridImport - batteryDischarge;
       if (!controlConfig.batteryLogic || !controlConfig.preferBatteryCharging) {
         available += batteryCharge;
